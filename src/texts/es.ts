@@ -137,6 +137,8 @@ export const ES_TEXTS = {
     lintDuplicateCheckFailedDetail: 'Falló la comprobación de duplicados en {step}: {error}',
     lintMergeItemFailed: 'Falló la fusión: {source} → {target} — {error}',
     lintAliasesMissing: 'Alias faltantes: {count} página(s) sin alias',
+    lintAliasesSection: 'Páginas sin alias (detectadas)',
+    lintAliasesItem: '- [[{page}]]',
     lintAliasesCompleteBtn: 'Completar alias ({count})',
     lintAliasesFilling: 'Generando alias {current}/{total}: {page}',
     lintAliasesFilled: 'Completado de alias finalizado. Rellenadas {filled}/{total} páginas.',
@@ -318,6 +320,8 @@ export const ES_TEXTS = {
     lintDeadLinkMore: '- ... {count} enlaces rotos más',
     lintEmptyPageItem: '- [[{page}]] — menos de 50 caracteres de contenido sustantivo',
     lintOrphanItem: '- [[{page}]] — ninguna otra página Wiki enlaza aquí{dupFlag}',
+    lintPollutedSection: 'Páginas con contaminación de ruta (detectadas)',
+    lintPollutedItem: '- [[{page}]] → debería ser "{clean}"',
     lintDuplicateItem: '- [[{target}]] y [[{source}]] — {reason}',
     lintDeadLinkAffectedByDup: ' (⚠️ implica página duplicada)',
     lintOrphanIsDuplicate: ' (⚠️ página duplicada)',
@@ -376,4 +380,7 @@ export const ES_TEXTS = {
     // Advertencias de límite de tasa
     rateLimitDetected: '⚠️ Límite de tasa detectado: {count} página(s) fallaron con errores 429. Sugerencias: (1) Reducir concurrencia a {suggestedConcurrency} o 1 (serial), (2) Aumentar retraso entre lotes a {suggestedDelay}ms, (3) Cambiar a un proveedor con límites de tasa más altos.',
     rateLimitDetectedShort: '⚠️ Límite de tasa alcanzado — considere reducir la concurrencia o aumentar el retraso entre lotes en Configuración → Aceleración de ingestión.',
+
+    longSourceNotice: '"📄 「{filename}」 tiene {lines} líneas ({size}). Los textos largos requieren extracción iterativa por lotes — el LLM lee el documento completo en múltiples pasadas. Esto puede tomar varios minutos. Por favor, ten paciencia."',
+    longSourceNoticeShort: '"📄 Archivo grande detectado ({lines} líneas). La ingestión puede tardar un poco."',
 } as const;

@@ -2,7 +2,7 @@
 
 > Feature planning and improvement proposals
 
-**Version:** 1.8.1 | **Updated:** 2026-05-19
+**Version:** 1.9.0 | **Updated:** 2026-05-19
 
 ---
 
@@ -44,6 +44,25 @@ Following an independent code audit (score: B+), targeted technical debt repayme
 - **53 unit tests** via vitest: slugify (13), parseFrontmatter (9), detectRateLimitFailures (8), formatRateLimitNotice (2), cleanMarkdownResponse (8), enforceFrontmatterConstraints (13)
 - CI-ready: `pnpm lint && pnpm test && pnpm build`
 - Previously: **F (zero tests)** → Now: **B-** (pure functions covered, integration tests pending)
+
+### Implemented (v1.9.0) — Pollution Defense & Quality Upgrade
+
+**Pollution Defense System (4-layer)**
+- L1 (write gate): Expanded regex catches both display-name and path-duplication patterns in `createOrUpdateFile`
+- L2 (index purification): Filters polluted entries from all LLM input sources (fixDeadLink, fillEmptyPage, linkOrphanPage, buildPagesListForPrompt, resolvePagePath)
+- L3 (stub sanitization): Strips folder prefixes from stub titles before file creation
+- L4 (detection & repair): `detectPollutedPages()` scans existing pages; `fixPollutedPage()` renames + updates all incoming links
+- "Fix polluted pages" button in Lint report + Smart Fix All Phase -1
+
+**Code Quality Upgrade (B+ → A-)**
+- P0: Removed `analyzeMerge` dead code (50 lines, zero callers); extracted `createLLMClient` factory; consolidated `updateRelatedPage` prompt into PROMPTS
+- P1: `getText` type safety (`keyof typeof TEXTS.en`); ~130 console logs standardized to English; slider onChange partial refresh; CONTRIBUTING.md
+- P2: Python Zen design principles + Key Design Decisions in CLAUDE.md; EngineContext interface comments
+
+**Lint Report & UX**
+- Missing aliases now listed per-page (was count only)
+- Long source ingestion notice (>1000 lines)
+- Modal 8-language support
 
 ### Implemented (v1.8.1) — UX Hardening
 
@@ -300,7 +319,8 @@ Karpathy: *"I like to do them one at a time, and be involved myself."*
 | **v1.6.2** | 2026-05 | Iterative batch extraction, granularity control, JSON enforcement | Released |
 | **v1.4.0** | 2026-04 | Schema layer, auto-maintenance, ESLint compliance | Released |
 | **v1.0.0** | 2026-04 | Multi-page generation, entity/concept extraction, bidirectional links | Released |
-| **v1.8.x** | 2026-05 | Code quality upgrade: dead code removal, type safety, prompt consolidation, logging standardization, CONTRIBUTING.md | In progress |
+| **v1.9.0** | 2026-05 | 4-layer pollution defense, code quality upgrade (B+→A-), lint report enhancements, long source notice | Released |
+| **v1.8.x** | — | ~~Quality upgrade~~ Merged into v1.9.0 | Superseded |
 | **v1.10.0** | TBD | Ingest Wizard, lint per-item review, query keyword pre-filter | Planned |
 | **v2.0.0** | TBD | Agent mode, multi-modal | Concept |
 

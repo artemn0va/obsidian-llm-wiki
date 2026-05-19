@@ -4,33 +4,18 @@
 
 ---
 
-## Current Phase: v1.8.x — Code Quality Upgrade (B+ → A-)
+## Current Phase: Post-v1.9.0 — Pollution Defense & Quality Upgrade Complete
 
-**v1.8.1 released.** Technical debt repayment within 1.8.x cycle — no feature changes.
+**v1.9.0 in preparation.** Four-layer pollution defense system, lint report enhancements, long source ingestion notice, code quality upgrade (B+ → A-).
 
-### Quality Upgrade Roadmap
+### Recently Completed (v1.9.0)
+- **4-layer pollution defense**: Write-gate regex (L1), index purification (L2), stub sanitization (L3), detection & repair (L4)
+- **Lint report**: Missing aliases listed per-page, polluted pages section with clean name suggestions, "Fix polluted pages" button
+- **Long source notice**: Files >1000 lines trigger persistent Notice during ingestion
+- **Quality upgrade**: Dead code removal, type safety (`keyof typeof TEXTS.en`), console log English standardization, slider partial refresh, CONTRIBUTING.md, Python Zen principles, Key Design Decisions
 
-**P0 — Immediate**
-- Remove `analyzeMerge` dead code (page-factory.ts:536, 50 lines, zero callers)
-- Extract `createLLMClient` factory (eliminates 11 duplicated lines in main.ts)
-- Move `updateRelatedPage` inline prompt into PROMPTS system
-
-**P1 — Short-term**
-- Fix `getText` type safety: `keyof typeof TEXTS.en` replacing `as unknown as Record<string, string>`
-- Standardize console logs to English (36 Chinese debug calls in wiki-engine.ts)
-- Optimize settings slider: onChange updates only desc text, not full DOM rebuild
-- Add CONTRIBUTING.md
-
-**P2 — Medium-term**
-- Split `ingestSource` into stage methods, keyword pre-filter for query, ADR docs, JSDoc interfaces
-
-### Test Coverage
-- **53 unit tests** (vitest): slugify, parseFrontmatter, detectRateLimitFailures, formatRateLimitNotice, cleanMarkdownResponse, enforceFrontmatterConstraints
-- CI: `pnpm lint && pnpm test && pnpm build`
-
-### Recently Completed
-- **v1.8.1**: Rate limit detection, Smart Fix All modal, settings reorganization, dynamic badges, persistent fix notices, README command accuracy, single-value aliases crash fix, concurrency default 1→3
-- **v1.8.0**: 8-language i18n (EN/ZH/JA/KO/DE/FR/ES/PT), dynamic download badge, complete badge suite
+### Recently Completed (v1.8.1)
+- Rate limit detection, Smart Fix All modal, settings reorganization, dynamic badges, persistent fix notices, README command accuracy, single-value aliases crash fix, 53 unit tests
 
 ---
 

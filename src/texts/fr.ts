@@ -137,6 +137,8 @@ export const FR_TEXTS = {
     lintDuplicateCheckFailedDetail: 'Échec de la vérification des doublons à l\'étape {step} : {error}',
     lintMergeItemFailed: 'Échec de la fusion : {source} → {target} — {error}',
     lintAliasesMissing: 'Alias manquants : {count} page(s) sans alias',
+    lintAliasesSection: 'Pages sans alias (détectées)',
+    lintAliasesItem: '- [[{page}]]',
     lintAliasesCompleteBtn: 'Compléter les alias ({count})',
     lintAliasesFilling: "Génération d'alias {current}/{total} : {page}",
     lintAliasesFilled: 'Complétion des alias terminée. {filled}/{total} pages remplies.',
@@ -318,6 +320,8 @@ export const FR_TEXTS = {
     lintDeadLinkMore: '- ... {count} liens cassés supplémentaires',
     lintEmptyPageItem: '- [[{page}]] — moins de 50 caractères de contenu substantiel',
     lintOrphanItem: '- [[{page}]] — aucune autre page wiki ne pointe vers ici{dupFlag}',
+    lintPollutedSection: 'Pages avec pollution de chemin (détectées)',
+    lintPollutedItem: '- [[{page}]] → devrait être "{clean}"',
     lintDuplicateItem: '- [[{target}]] et [[{source}]] — {reason}',
     lintDeadLinkAffectedByDup: ' (⚠️ implique une page dupliquée)',
     lintOrphanIsDuplicate: ' (⚠️ page dupliquée)',
@@ -376,4 +380,7 @@ export const FR_TEXTS = {
     // Avertissements de limite de débit
     rateLimitDetected: "⚠️ Limite de débit détectée : {count} page(s) ont échoué avec des erreurs 429. Suggestions : (1) Réduire la concurrence à {suggestedConcurrency} ou 1 (séquentiel), (2) Augmenter le délai entre lots à {suggestedDelay}ms, (3) Passer à un fournisseur avec des limites de débit plus élevées.",
     rateLimitDetectedShort: "⚠️ Limite de débit atteinte — envisagez de réduire la concurrence ou d'augmenter le délai entre lots dans Paramètres → Accélération d'import.",
+
+    longSourceNotice: '📄 "{filename}" contient {lines} lignes ({size}). Les textes longs nécessitent une extraction itérative par lots — le LLM lit le document complet en plusieurs passes. Cela peut prendre plusieurs minutes. Veuillez patienter.',
+    longSourceNoticeShort: '📄 Fichier volumineux détecté ({lines} lignes). Ingestion peut prendre du temps.',
 } as const;

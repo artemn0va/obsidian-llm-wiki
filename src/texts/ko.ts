@@ -137,6 +137,8 @@ export const KO_TEXTS = {
     lintDuplicateCheckFailedDetail: '중복 확인 실패 ({step}): {error}',
     lintMergeItemFailed: '병합 실패: {source} → {target} — {error}',
     lintAliasesMissing: '별칭 누락: {count}개의 페이지에 별칭이 없습니다',
+    lintAliasesSection: '별칭 누락 페이지 (프로그램 감지)',
+    lintAliasesItem: '- [[{page}]]',
     lintAliasesCompleteBtn: '별칭 완성 ({count})',
     lintAliasesFilling: '별칭 생성 {current}/{total}: {page}',
     lintAliasesFilled: '별칭 완성 완료. {filled}/{total} 페이지 채움.',
@@ -318,6 +320,8 @@ export const KO_TEXTS = {
     lintDeadLinkMore: '- ... {count}개의 깨진 링크 추가',
     lintEmptyPageItem: '- [[{page}]] — 실질적인 콘텐츠가 50자 미만',
     lintOrphanItem: '- [[{page}]] — 다른 위키 페이지에서 링크하지 않음{dupFlag}',
+    lintPollutedSection: '경로 오염 페이지 (프로그램 감지)',
+    lintPollutedItem: '- [[{page}]] → "{clean}"(으)로 수정 필요',
     lintDuplicateItem: '- [[{target}]] 및 [[{source}]] — {reason}',
     lintDeadLinkAffectedByDup: ' (⚠️ 중복 페이지 관련)',
     lintOrphanIsDuplicate: ' (⚠️ 중복 페이지)',
@@ -376,4 +380,7 @@ export const KO_TEXTS = {
     // 속도 제한 경고
     rateLimitDetected: '⚠️ 속도 제한 감지: {count}개 페이지가 429 오류로 실패했습니다. 권장 조치: (1) 동시성을 {suggestedConcurrency} 또는 1(직렬)로 낮추기, (2) 배치 지연을 {suggestedDelay}ms로 늘리기, (3) 더 높은 속도 제한을 가진 제공업체로 전환.',
     rateLimitDetectedShort: '⚠️ 속도 제한 발생 — 설정 → 수집 가속에서 동시성을 낮추거나 배치 지연을 늘리는 것이 좋습니다.',
+
+    longSourceNotice: '"📄 「{filename}」 파일은 {lines}줄({size})입니다. 장문은 다중 패스 반복 추출이 필요하므로 LLM이 전체 문서를 분석하는 데 몇 분이 걸릴 수 있습니다. 잠시만 기다려 주세요."',
+    longSourceNoticeShort: '"📄 대용량 파일({lines}줄)이 감지되었습니다. 수집에 시간이 걸릴 수 있습니다."',
 } as const;

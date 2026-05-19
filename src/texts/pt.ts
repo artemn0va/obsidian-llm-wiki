@@ -137,6 +137,8 @@ export const PT_TEXTS = {
     lintDuplicateCheckFailedDetail: 'Verificação de duplicatas falhou em {step}: {error}',
     lintMergeItemFailed: 'Falha na mesclagem: {source} → {target} — {error}',
     lintAliasesMissing: 'Aliases ausentes: {count} página(s) sem aliases',
+    lintAliasesSection: 'Páginas sem aliases (detectadas)',
+    lintAliasesItem: '- [[{page}]]',
     lintAliasesCompleteBtn: 'Completar aliases ({count})',
     lintAliasesFilling: 'Gerando aliases {current}/{total}: {page}',
     lintAliasesFilled: 'Completar aliases concluído. Preenchidas {filled}/{total} páginas.',
@@ -318,6 +320,8 @@ export const PT_TEXTS = {
     lintDeadLinkMore: '- ... mais {count} links quebrados',
     lintEmptyPageItem: '- [[{page}]] — menos de 50 caracteres de conteúdo substantivo',
     lintOrphanItem: '- [[{page}]] — nenhuma outra página da Wiki linka aqui{dupFlag}',
+    lintPollutedSection: 'Páginas com poluição de caminho (detectadas)',
+    lintPollutedItem: '- [[{page}]] → deveria ser "{clean}"',
     lintDuplicateItem: '- [[{target}]] e [[{source}]] — {reason}',
     lintDeadLinkAffectedByDup: ' (⚠️ envolve página duplicada)',
     lintOrphanIsDuplicate: ' (⚠️ página duplicada)',
@@ -376,4 +380,7 @@ export const PT_TEXTS = {
     // Avisos de limite de taxa
     rateLimitDetected: '⚠️ Limite de taxa detectado: {count} página(s) falharam com erros 429. Sugestões: (1) Reduzir concorrência para {suggestedConcurrency} ou 1 (serial), (2) Aumentar atraso entre lotes para {suggestedDelay}ms, (3) Mudar para um provedor com limites de taxa mais altos.',
     rateLimitDetectedShort: '⚠️ Limite de taxa atingido — considere reduzir a concorrência ou aumentar o atraso entre lotes em Configurações → Aceleração de ingestão.',
+
+    longSourceNotice: '"📄 「{filename}」 tem {lines} linhas ({size}). Textos longos exigem extração iterativa por lotes — o LLM lê o documento completo em múltiplas passagens. Isso pode levar vários minutos. Por favor, aguarde."',
+    longSourceNoticeShort: '"📄 Arquivo grande detectado ({lines} linhas). A ingestão pode demorar um pouco."',
 } as const;

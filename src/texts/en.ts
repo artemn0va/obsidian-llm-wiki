@@ -137,6 +137,8 @@ export const EN_TEXTS = {
     lintDuplicateCheckFailedDetail: 'Duplicate check failed at {step}: {error}',
     lintMergeItemFailed: 'Merge failed: {source} → {target} — {error}',
     lintAliasesMissing: 'Aliases missing: {count} page(s) without aliases',
+    lintAliasesSection: 'Pages missing aliases (detected)',
+    lintAliasesItem: '- [[{page}]]',
     lintAliasesCompleteBtn: 'Complete aliases ({count})',
     lintAliasesFilling: 'Generating aliases {current}/{total}: {page}',
     lintAliasesFilled: 'Alias completion complete. Filled {filled}/{total} pages.',
@@ -313,6 +315,8 @@ export const EN_TEXTS = {
     lintOrphanSection: 'Orphan pages (detected)',
     lintContradictionSection: 'Contradictions (detected)',
     lintDuplicateSection: 'Duplicate pages (detected)',
+    lintPollutedSection: 'Polluted pages (detected)',
+    lintPollutedItem: '- [[{page}]] → should be "{clean}"',
     lintNoIssuesFound: 'No duplicates, dead links, empty pages, or orphan pages detected.',
     lintDeadLinkItem: '- [[{source}]] → **{target}** (page does not exist){dupFlag}',
     lintDeadLinkMore: '- ... {count} more dead links',
@@ -376,4 +380,8 @@ export const EN_TEXTS = {
     // Rate Limit Warnings
     rateLimitDetected: '⚠️ Rate limit detected: {count} page(s) failed with 429 errors. Try: (1) Lower concurrency to {suggestedConcurrency} or 1 (serial), (2) Increase batch delay to {suggestedDelay}ms, (3) Switch to a provider with higher rate limits.',
     rateLimitDetectedShort: '⚠️ Rate limit hit — consider lowering concurrency or increasing batch delay in Settings → Ingestion Acceleration.',
+
+    // Long source warning
+    longSourceNotice: '📄 "{filename}" has {lines} lines ({size}). Long texts require iterative batch extraction — the LLM reads the full document in multiple passes. This may take several minutes. Please be patient.',
+    longSourceNoticeShort: '📄 Large file detected ({lines} lines). Ingestion may take a while.',
 } as const;

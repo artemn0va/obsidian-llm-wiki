@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.0] - 2026-05-19
+
+### Added
+- **Pollution defense system (4-layer)**: Comprehensive folder-prefix pollution prevention for wiki-links. L1: expanded regex at write gate catches both display-name (`[[X/Y|X/Z]]`) and path-duplication (`[[X/Xname|name]]`) patterns. L2: index purification filters polluted entries before LLM sees them. L3: stub title sanitization strips folder prefixes. L4: `detectPollutedPages()` scans existing pages and `fixPollutedPage()` repairs them (rename file + update all incoming links)
+- **"Fix polluted pages" in Lint report**: New button detects and repairs polluted pages with one click. Integrated into Smart Fix All as Phase -1 (before aliases)
+- **Missing aliases section in Lint report**: Previously only showed count — now lists each page individually with `[[wiki-link]]` format
+- **Long source ingestion notice**: Files exceeding 1000 lines trigger a persistent Notice explaining that iterative batch extraction takes longer and asking for patience. Shows filename, line count, and file size
+
+### Changed
+- **Lint report enhancements**: Polluted pages now listed with clean name suggestions. Enhanced report readability with dedicated sections
+- **Modal language support**: LintReportModal now supports all 8 UI languages (was limited to en/zh)
+- **`getText` type safety**: Replaced `as unknown as Record<string, string>` with `keyof typeof TEXTS.en` for compile-time key validation
+
+### Fixed
+- **Folder-prefix path pollution**: Root cause fix for recurring issue where pages were created with names like `concepts/concepts布局优化.md`. Four-layer defense breaks the pollution amplification cycle: write gate → index purification → stub sanitization → detection & repair
+- **`analyzeMerge` dead code removed**: 50-line method in page-factory.ts with zero callers
+
 ## [1.8.1] - 2026-05-18
 
 ### Added

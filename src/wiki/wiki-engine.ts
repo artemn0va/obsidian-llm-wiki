@@ -138,6 +138,26 @@ export class WikiEngine {
     console.debug('Source file:', file.path);
     const totalStartTime = Date.now();
 
+    // Long-source warning: read file early to estimate processing time.
+    // Large files trigger iterative batch extraction (multiple LLM passes),
+    // which takes significantly longer than single-pass small files.
+    const LONG_SOURCE_LINE_THRESHOLD = 1000;
+    const fileContent = await this.app.vault.read(file);
+    const lineCount = fileContent.split('\n').length;
+    if (lineCount > LONG_SOURCE_LINE_THRESHOLD) {
+      const t = TEXTS[this.settings.language] || TEXTS.en;
+      const sizeKB = Math.round(fileContent.length / 1024);
+      new Notice(
+        (t as unknown as Record<string, string>).longSourceNotice
+          ?.replace('{filename}', file.basename)
+          ?.replace('{lines}', String(lineCount))
+          ?.replace('{size}', sizeKB >= 1024 ? `${(sizeKB / 1024).toFixed(1)}MB` : `${sizeKB}KB`)
+        || `Large file detected: ${file.basename} (${lineCount} lines). Ingestion may take a while.`,
+        0
+      );
+      console.debug(`[Long Source] ${file.basename}: ${lineCount} lines, ${sizeKB}KB — long ingestion expected`);
+    }
+
     this.onProgress?.(`Analyzing: ${file.basename}`);
 
     const failedItems: Array<{ type: 'entity' | 'concept'; name: string; reason: string }> = [];
@@ -523,15 +543,37 @@ export class WikiEngine {
     // Central pollution detection: strip folder-prefix duplication from wiki-links
     // before writing. This catches pollution from ALL sources (page generation,
     // stub expansion, dead link fixes, merges, etc.).
-    const POLLUTION_REGEX = /\[\[(entities|concepts|sources)\/([^|\]]+)\|(entities|concepts|sources)\/([^|\]]+)\]\]/g;
-    if (POLLUTION_REGEX.test(content)) {
+    //
+    // Pattern A: display-name pollution — [[entities/X|entities/Y]]
+    //   e.g. [[entities/Qwen|entities/Qwen]] → [[entities/Qwen|Qwen]]
+    const DISPLAY_POLLUTION_REGEX = /\[\[(entities|concepts|sources)\/([^|\]]+)\|(entities|concepts|sources)\/([^|\]]+)\]\]/g;
+    if (DISPLAY_POLLUTION_REGEX.test(content)) {
       console.warn(
-        `createOrUpdateFile: detected folder-prefix pollution in ${path}, auto-correcting`
+        `createOrUpdateFile: detected display-name pollution in ${path}, auto-correcting`
       );
       content = content.replace(
-        POLLUTION_REGEX,
+        DISPLAY_POLLUTION_REGEX,
         (_match: string, _folder: string, _path: string, _dupFolder: string, display: string) => {
           return `[[${_folder}/${_path}|${display}]]`;
+        }
+      );
+    }
+
+    // Pattern B: path-prefix duplication — [[X/Xname|name]]
+    //   e.g. [[concepts/concepts布局优化|布局优化]] → [[concepts/布局优化|布局优化]]
+    //   The folder prefix is duplicated in the path portion, directly before
+    //   the page name with no separator (CJK char, letter, etc.).
+    //   Safe: [[concepts/concepts-of-ML|...]] — '-' separator indicates legitimate slug.
+    const PATH_DUP_REGEX = /\[\[(entities|concepts|sources)\/\1([^\s\-_|\]]+)(\|[^\]]+)?\]\]/g;
+    if (PATH_DUP_REGEX.test(content)) {
+      console.warn(
+        `createOrUpdateFile: detected path-prefix pollution in ${path}, auto-correcting`
+      );
+      content = content.replace(
+        PATH_DUP_REGEX,
+        (_match: string, folder: string, rest: string, display: string | undefined) => {
+          const displayPart = display || '';
+          return `[[${folder}/${rest}${displayPart}]]`;
         }
       );
     }

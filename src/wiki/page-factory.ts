@@ -76,7 +76,13 @@ export class PageFactory {
     // Slow path: LLM semantic resolution against existing pages of the same type
     try {
       const allPages = await getExistingWikiPages(this.ctx.app, this.ctx.settings.wikiFolder);
-      const sameTypePages = allPages.filter(p => p.path.includes(`/${folder}/`));
+      const sameTypePages = allPages
+        .filter(p => p.path.includes(`/${folder}/`))
+        .filter(p => {
+          // Purge polluted entries from LLM input (L2)
+          const bn = p.title || '';
+          return !/^(entities|concepts|sources)([^\s\-_a-zA-Z0-9])/.test(bn);
+        });
       if (sameTypePages.length === 0) return slugPath;
 
       const pagesList = sameTypePages
@@ -121,10 +127,15 @@ export class PageFactory {
 
   async buildPagesListForPrompt(includePaths: string[] = []): Promise<string> {
     const allPages = await getExistingWikiPages(this.ctx.app, this.ctx.settings.wikiFolder);
+    // Filter out pages with polluted basenames before showing to LLM (L2)
+    const cleanPages = allPages.filter(p => {
+      const bn = p.title || '';
+      return !/^(entities|concepts|sources)([^\s\-_a-zA-Z0-9])/.test(bn);
+    });
     const MAX_PAGES = 50;
-    let pages = allPages;
+    let pages = cleanPages;
     let truncated = false;
-    if (allPages.length > MAX_PAGES) {
+    if (cleanPages.length > MAX_PAGES) {
       const hasEntityExtra = includePaths.some(p => p.includes('/entities/'));
       const hasConceptExtra = includePaths.some(p => p.includes('/concepts/'));
       if (hasEntityExtra && !hasConceptExtra) {

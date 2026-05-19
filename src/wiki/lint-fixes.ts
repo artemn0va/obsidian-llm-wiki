@@ -94,10 +94,20 @@ export class LintFixer {
     }
 
     // ---- LLM path: semantic matching with alias-aware prompt ----
-    const pagesList = existingPages.map(p => {
-      const aliasSuffix = p.aliases?.length ? ` \`aliases: ${p.aliases.join(', ')}\`` : '';
-      return `- ${p.wikiLink}${aliasSuffix}`;
-    }).join('\n');
+    const pagesList = existingPages
+      .filter(p => {
+        // Purge polluted entries from the index before showing to LLM.
+        // Polluted basename pattern: "<folder><non-separator-chars>"
+        // e.g. "concepts布局优化", "entities张三" — folder prefix glued to CJK name.
+        // Safe: "Concepts-of-ML", "entities-list" — separator after folder prefix.
+        const bn = p.title || '';
+        const hasPollutedBasename = /^(entities|concepts|sources)([^\s\-_a-zA-Z0-9])/.test(bn);
+        return !hasPollutedBasename;
+      })
+      .map(p => {
+        const aliasSuffix = p.aliases?.length ? ` \`aliases: ${p.aliases.join(', ')}\`` : '';
+        return `- ${p.wikiLink}${aliasSuffix}`;
+      }).join('\n');
 
     const prompt = PROMPTS.fixDeadLink
       .replace('{{source_content}}', sourceContent.substring(0, 2000))
@@ -163,10 +173,14 @@ export class LintFixer {
     }
 
     if (result?.action === 'create_stub' && result.stub_title) {
+      // Sanitize stub title: strip folder-prefix pollution if LLM prepended it.
+      // e.g. "concepts布局优化" → "布局优化", "entities张三" → "张三" (L3)
+      const sanitizedTitle = result.stub_title.replace(/^(entities|concepts|sources)([^\s\-_a-zA-Z0-9])/, '$2');
+
       // Safety net: re-check aliases before creating a stub.
       // The LLM may have missed an alias match even though aliases were
       // included in the prompt. This prevents duplicate page creation.
-      const stubTitleLower = result.stub_title.toLowerCase();
+      const stubTitleLower = sanitizedTitle.toLowerCase();
       const aliasMatch = existingPages.find(p =>
         p.title.toLowerCase() === stubTitleLower ||
         p.aliases?.some(a => a.toLowerCase() === stubTitleLower)
@@ -191,7 +205,7 @@ export class LintFixer {
         concept: 'concepts',
       };
       const stubDir = pluralMap[stubType] || `${stubType}s`;
-      const stubSlug = slugify(result.stub_title);
+      const stubSlug = slugify(sanitizedTitle);
       const stubPath = `${this.ctx.settings.wikiFolder}/${stubDir}/${stubSlug}.md`;
       const sourceRel = sourcePath
         .replace(this.ctx.settings.wikiFolder + '/', '')
@@ -202,7 +216,7 @@ created: ${new Date().toISOString().split('T')[0]}
 sources: ["[[${sourceRel}]]"]
 tags: [${stubType === 'entity' ? 'other' : 'term'}]
 ---
-# ${result.stub_title}
+# ${sanitizedTitle}
 
 > Auto-generated stub page — referenced by [[${sourceRel}]].
 `;
@@ -210,7 +224,7 @@ tags: [${stubType === 'entity' ? 'other' : 'term'}]
       // Expand the stub with AI-generated content immediately (LLM path)
       await this.fillEmptyPage(stubPath);
       // Update the source page's broken link to point to the new stub
-      const newLink = `[[${stubDir}/${stubSlug}|${result.stub_title}]]`;
+      const newLink = `[[${stubDir}/${stubSlug}|${sanitizedTitle}]]`;
       const linkRegex = /\[\[([^\]|#]+)(?:[|#][^\]]+)?\]\]/g;
       const updatedContent = sourceContent.replace(
         linkRegex,
@@ -255,11 +269,13 @@ tags: [${stubType === 'entity' ? 'other' : 'term'}]
       }
 
       // No match — create a basic stub (Bug 4 fix: also expand it)
+      // Sanitize basename: strip folder-prefix pollution from fallback path (L3)
+      const cleanBasename = targetBasename.replace(/^(entities|concepts|sources)([^\s\-_a-zA-Z0-9])/, '$2');
       const stubType = targetName.includes('/entities/')
         ? 'entity'
         : 'concept';
       const stubDir = stubType === 'entity' ? 'entities' : 'concepts';
-      const stubSlug = slugify(targetBasename);
+      const stubSlug = slugify(cleanBasename);
       const stubPath = `${this.ctx.settings.wikiFolder}/${stubDir}/${stubSlug}.md`;
       const sourceRel = sourcePath
         .replace(this.ctx.settings.wikiFolder + '/', '')
@@ -270,7 +286,7 @@ created: ${new Date().toISOString().split('T')[0]}
 sources: ["[[${sourceRel}]]"]
 tags: [${stubType === 'entity' ? 'other' : 'term'}]
 ---
-# ${targetBasename}
+# ${cleanBasename}
 
 > Auto-generated stub page — referenced by [[${sourceRel}]].
 `;
@@ -278,7 +294,7 @@ tags: [${stubType === 'entity' ? 'other' : 'term'}]
       // Bug 4 fix: expand fallback stubs too
       await this.fillEmptyPage(stubPath);
       // Update the source page's broken link to point to the new stub
-      const newLink = `[[${stubDir}/${stubSlug}|${targetBasename}]]`;
+      const newLink = `[[${stubDir}/${stubSlug}|${cleanBasename}]]`;
       const linkRegex = /\[\[([^\]|#]+)(?:[|#][^\]]+)?\]\]/g;
       const updatedContent = sourceContent.replace(
         linkRegex,
@@ -312,7 +328,17 @@ tags: [${stubType === 'entity' ? 'other' : 'term'}]
         ? 'concepts'
         : 'sources';
     const indexPath = `${this.ctx.settings.wikiFolder}/index.md`;
-    const wikiIndex = (await this.ctx.tryReadFile(indexPath)) || '';
+    let wikiIndex = (await this.ctx.tryReadFile(indexPath)) || '';
+
+    // Purge polluted entries from the index before passing to LLM.
+    wikiIndex = wikiIndex
+      .split('\n')
+      .filter(line => {
+        if (/\[\[(entities|concepts|sources)\/[^\]]*\/\1[^\s\-_|\]]/.test(line)) return false;
+        if (/\[\[(entities|concepts|sources)\/[^|\]]+\|(entities|concepts|sources)\//.test(line)) return false;
+        return true;
+      })
+      .join('\n');
 
     const limits = getGranularityFixLimits(this.ctx.settings);
 
@@ -343,14 +369,17 @@ tags: [${stubType === 'entity' ? 'other' : 'term'}]
     const cleaned = cleanMarkdownResponse(filledContent);
 
     // Detect folder-prefix pollution in LLM output before writing
-    const POLLUTION_REGEX = /\[\[(entities|concepts|sources)\/[^|\]]+\|(entities|concepts|sources)\/[^|\]]+\]\]/g;
-    if (POLLUTION_REGEX.test(cleaned)) {
+    const DISPLAY_POLLUTION_REGEX = /\[\[(entities|concepts|sources)\/[^|\]]+\|(entities|concepts|sources)\/[^|\]]+\]\]/g;
+    const PATH_DUP_REGEX = /\[\[(entities|concepts|sources)\/\1([^\s\-_|\]]+)(\|[^\]]+)?\]\]/g;
+    const hasDisplayPollution = DISPLAY_POLLUTION_REGEX.test(cleaned);
+    const hasPathDup = PATH_DUP_REGEX.test(cleaned);
+    if (hasDisplayPollution || hasPathDup) {
       console.warn(
         `fillEmptyPage: detected folder-prefix pollution in LLM output for ${pagePath}, auto-correcting`
       );
     }
-    const pollutionFree = cleaned.replace(
-      POLLUTION_REGEX,
+    let pollutionFree = cleaned.replace(
+      DISPLAY_POLLUTION_REGEX,
       (match: string) => {
         const parts = match.match(/\[\[([^|\]]+)\|([^|\]]+)\]\]/);
         if (parts) {
@@ -360,6 +389,13 @@ tags: [${stubType === 'entity' ? 'other' : 'term'}]
           return `[[${path}|${cleanDisplay}]]`;
         }
         return match;
+      }
+    );
+    pollutionFree = pollutionFree.replace(
+      PATH_DUP_REGEX,
+      (_match: string, folder: string, rest: string, display: string | undefined) => {
+        const displayPart = display || '';
+        return `[[${folder}/${rest}${displayPart}]]`;
       }
     );
 
@@ -402,7 +438,17 @@ tags: [${stubType === 'entity' ? 'other' : 'term'}]
     if (!orphanContent) return [];
 
     const indexPath = `${this.ctx.settings.wikiFolder}/index.md`;
-    const wikiIndex = (await this.ctx.tryReadFile(indexPath)) || '';
+    let wikiIndex = (await this.ctx.tryReadFile(indexPath)) || '';
+
+    // Purge polluted entries from index before passing to LLM (L2)
+    wikiIndex = wikiIndex
+      .split('\n')
+      .filter(line => {
+        if (/\[\[(entities|concepts|sources)\/[^\]]*\/\1[^\s\-_|\]]/.test(line)) return false;
+        if (/\[\[(entities|concepts|sources)\/[^|\]]+\|(entities|concepts|sources)\//.test(line)) return false;
+        return true;
+      })
+      .join('\n');
 
     const prompt = PROMPTS.linkOrphanPage
       .replace('{{orphan_content}}', orphanContent.substring(0, 2000))
@@ -654,6 +700,56 @@ tags: [${stubType === 'entity' ? 'other' : 'term'}]
 
     return `merged ${sourceRel} → ${targetRel}`;
   }
+
+  // Fix a single polluted page: rename file, update all incoming links,
+  // rebuild index. Returns a description of what was done.
+  async fixPollutedPage(
+    oldPath: string,
+    newBasename: string
+  ): Promise<string> {
+    const oldRel = oldPath.replace(this.ctx.settings.wikiFolder + '/', '').replace('.md', '');
+    const dir = oldRel.split('/').slice(0, -1).join('/');
+    const newPath = `${this.ctx.settings.wikiFolder}/${dir}/${newBasename}.md`;
+    const newRel = `${dir}/${newBasename}`;
+
+    // If new path already exists, merge content instead of renaming
+    const existingAtNew = await this.ctx.tryReadFile(newPath);
+    if (existingAtNew !== null) {
+      console.debug(`fixPollutedPage: clean path already exists, merging ${oldRel} → ${newRel}`);
+      await this.ctx.createOrUpdateFile(newPath, existingAtNew);
+      await this.ctx.deleteFile(oldPath);
+      return `merged ${oldRel} → ${newRel} (clean path existed)`;
+    }
+
+    // Read old content, write to new path, delete old
+    const oldContent = await this.ctx.tryReadFile(oldPath);
+    if (oldContent === null) {
+      return `cannot fix ${oldRel}: file not found`;
+    }
+
+    await this.ctx.createOrUpdateFile(newPath, oldContent);
+    await this.ctx.deleteFile(oldPath);
+
+    // Scan all wiki pages for references to old path and update them
+    const allPages = await getExistingWikiPages(this.ctx.app, this.ctx.settings.wikiFolder);
+    let updatedCount = 0;
+    for (const page of allPages) {
+      const content = await this.ctx.tryReadFile(page.path);
+      if (!content) continue;
+
+      // Replace all wiki-link variants pointing to the old path
+      const newContent = content
+        .replace(new RegExp(`\\[\\[${escapeRegex(oldRel)}\\|([^\\]]+)\\]\\]`, 'g'), `[[${newRel}|$1]]`)
+        .replace(new RegExp(`\\[\\[${escapeRegex(oldRel)}\\]\\]`, 'g'), `[[${newRel}]]`);
+
+      if (content !== newContent) {
+        await this.ctx.createOrUpdateFile(page.path, newContent);
+        updatedCount++;
+      }
+    }
+
+    return `renamed ${oldRel} → ${newRel} (${updatedCount} pages updated)`;
+  }
 }
 
 function escapeRegex(s: string): string {
@@ -721,4 +817,25 @@ export function isPageEmpty(content: string): boolean {
     .replace(EMPTY_CONTENT_STRIP, '')
     .trim();
   return textBody.length < MIN_SUBSTANTIVE_CHARS;
+}
+
+// Detect pages with polluted basenames — folder-prefix duplication where
+// the page slug starts with "entities", "concepts", or "sources" directly
+// followed by a non-separator character (CJK, letter, etc.).
+// e.g. "concepts布局优化.md", "entities张三.md"
+export function detectPollutedPages(
+  pages: Array<{ path: string; title: string }>
+): Array<{ path: string; title: string; cleanTitle: string }> {
+  const polluted: Array<{ path: string; title: string; cleanTitle: string }> = [];
+  for (const p of pages) {
+    const match = /^(entities|concepts|sources)([^\s\-_a-zA-Z0-9])/.exec(p.title);
+    if (match) {
+      polluted.push({
+        path: p.path,
+        title: p.title,
+        cleanTitle: p.title.replace(/^(entities|concepts|sources)/, ''),
+      });
+    }
+  }
+  return polluted;
 }

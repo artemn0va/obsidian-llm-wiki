@@ -137,6 +137,8 @@ export const ZH_TEXTS = {
     lintDuplicateCheckFailedDetail: '重复检测在{step}失败：{error}',
     lintMergeItemFailed: '合并失败：{source} → {target} — {error}',
     lintAliasesMissing: '检测到 {count} 个页面缺少别名',
+    lintAliasesSection: '缺少别名的页面（程序检测）',
+    lintAliasesItem: '- [[{page}]]',
     lintAliasesCompleteBtn: '补全别名（{count}）',
     lintAliasesFilling: '生成别名 {current}/{total}：{page}',
     lintAliasesFilled: '别名补全完成。已填充 {filled}/{total} 页。',
@@ -349,6 +351,8 @@ export const ZH_TEXTS = {
     lintModalMergeDuplicates: '合并重复页面（{count}）',
     lintModalFixAll: '一键修复所有问题（{count}）',
     lintDuplicateSection: '重复页面（程序检测）',
+    lintPollutedSection: '路径污染页面（程序检测）',
+    lintPollutedItem: '- [[{page}]] → 应为 "{clean}"',
     lintDuplicateItem: '- [[{target}]] 与 [[{source}]] — {reason}',
     lintMergeProgress: '合并 {current}/{total}：{source} → {target}',
     lintMergeComplete: '重复页面合并完成。已合并 {merged}/{total} 对。',
@@ -375,4 +379,8 @@ export const ZH_TEXTS = {
     // 速率限制警告
     rateLimitDetected: '⚠️ 检测到速率限制：{count} 个页面因 429 错误失败。建议：(1) 降低并发度至 {suggestedConcurrency} 或 1（串行），(2) 增大批次延迟至 {suggestedDelay}ms，(3) 切换到速率限制更高的提供商。',
     rateLimitDetectedShort: '⚠️ 触发速率限制 — 建议在设置 → 摄入加速中降低并发度或增大批次延迟。',
+
+    // 长文本摄入提示
+    longSourceNotice: '📄 "{filename}" 包含 {lines} 行（{size}）。长文本需要多轮迭代提取，LLM 将完整读取文档进行多次分析，耗时可能较长，请耐心等待。',
+    longSourceNoticeShort: '📄 检测到大文件（{lines} 行），摄入可能需要较长时间。',
 } as const;

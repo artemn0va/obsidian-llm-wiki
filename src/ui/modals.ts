@@ -73,6 +73,7 @@ export interface LintFixCallbacks {
   onAnalyzeSchema?: () => void;
   onMergeDuplicates?: () => void;
   onFixAll?: () => void;
+  onFixPollutedPages?: () => void;
 }
 
 export interface LintCounts {
@@ -81,16 +82,17 @@ export interface LintCounts {
   orphans: number;
   duplicates: number;
   pagesMissingAliases: number;
+  pollutedPages: number;
 }
 
 export class LintReportModal extends Modal {
   report: string;
   fixCallbacks: LintFixCallbacks;
   counts: LintCounts;
-  private language: 'en' | 'zh';
+  private language: string;
   private renderComponent: Component | null = null;
 
-  constructor(app: App, report: string, fixCallbacks: LintFixCallbacks, counts: LintCounts, language: 'en' | 'zh' = 'en') {
+  constructor(app: App, report: string, fixCallbacks: LintFixCallbacks, counts: LintCounts, language: string = 'en') {
     super(app);
     this.report = report;
     this.fixCallbacks = fixCallbacks;
@@ -103,7 +105,7 @@ export class LintReportModal extends Modal {
     this.renderComponent = new Component();
     this.renderComponent.load();
 
-    const t = TEXTS[this.language];
+    const t = TEXTS[this.language as keyof typeof TEXTS] || TEXTS.en;
 
     const reportDiv = contentEl.createDiv({
       attr: { style: 'max-height: 50vh; overflow-y: auto; padding: 8px 0;' }
@@ -135,6 +137,20 @@ export class LintReportModal extends Modal {
       });
       btn.addEventListener('click', () => {
         this.fixCallbacks.onCompleteAliases?.();
+        this.close();
+      });
+    }
+
+    // === Layer 1b: Polluted page fix (structural root cause) ===
+    if (this.counts.pollutedPages > 0 && this.fixCallbacks.onFixPollutedPages) {
+      const row = actionSection.createDiv({ attr: { style: 'margin-bottom: 10px;' } });
+      const btn = row.createEl('button', {
+        text: `🧹 Fix polluted pages (${this.counts.pollutedPages})`,
+        cls: 'mod-cta',
+        attr: { style: 'font-weight: bold;' }
+      });
+      btn.addEventListener('click', () => {
+        this.fixCallbacks.onFixPollutedPages?.();
         this.close();
       });
     }

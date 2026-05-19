@@ -137,6 +137,8 @@ export const JA_TEXTS = {
     lintDuplicateCheckFailedDetail: '重複チェックが{step}で失敗：{error}',
     lintMergeItemFailed: 'マージ失敗：{source} → {target} — {error}',
     lintAliasesMissing: '別名未設定：{count}件のページに別名がありません',
+    lintAliasesSection: 'エイリアス不足のページ（プログラム検出）',
+    lintAliasesItem: '- [[{page}]]',
     lintAliasesCompleteBtn: '別名を補完（{count}件）',
     lintAliasesFilling: '別名生成中 {current}/{total}：{page}',
     lintAliasesFilled: '別名補完完了。{filled}/{total}ページに入力しました。',
@@ -318,6 +320,8 @@ export const JA_TEXTS = {
     lintDeadLinkMore: '- ... 他{count}件のリンク切れ',
     lintEmptyPageItem: '- [[{page}]] — 実質的なコンテンツが50文字未満',
     lintOrphanItem: '- [[{page}]] — 他のWikiページからリンクされていません{dupFlag}',
+    lintPollutedSection: 'パス汚染ページ（プログラム検出）',
+    lintPollutedItem: '- [[{page}]] → "{clean}"に修正必要',
     lintDuplicateItem: '- [[{target}]] と [[{source}]] — {reason}',
     lintDeadLinkAffectedByDup: ' （⚠️ 重複ページが関連）',
     lintOrphanIsDuplicate: ' （⚠️ 重複ページ）',
@@ -376,4 +380,7 @@ export const JA_TEXTS = {
     // レートリミット警告
     rateLimitDetected: '⚠️ レートリミットを検出：{count}ページが429エラーで失敗しました。対処法：(1) 並列度を{suggestedConcurrency}または1（直列）に下げる、(2) バッチ遅延を{suggestedDelay}msに増やす、(3) より高いレートリミットを持つプロバイダーに切り替える。',
     rateLimitDetectedShort: '⚠️ レートリミット発生 — 設定→取り込み加速で並列度を下げるかバッチ遅延を増やすことを推奨。',
+
+    longSourceNotice: '"📄 「{filename}」は{lines}行（{size}）です。長文は複数パスの反復抽出が必要で、LLMが全文書を分析するため数分かかる場合があります。しばらくお待ちください。"',
+    longSourceNoticeShort: '"📄 大きなファイル（{lines}行）を検出しました。取り込みに時間がかかることがあります。"',
 } as const;

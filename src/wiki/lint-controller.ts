@@ -7,7 +7,7 @@ import { LintFixCallbacks, LintCounts, LintReportModal, FixReportModal, FixRepor
 import { TEXTS } from '../texts';
 import { PROMPTS } from '../prompts';
 import { cleanMarkdownResponse, parseJsonResponse, parseFrontmatter, detectRateLimitFailures, formatRateLimitNotice } from '../utils';
-import { isPageEmpty } from './lint-fixes';
+import { isPageEmpty, detectPollutedPages } from './lint-fixes';
 import { generateDuplicateCandidates, DuplicateCandidate } from './lint/duplicate-detection';
 import { runAliasCompletion, runDeadLinkFixes, runEmptyPageFixes, runOrphanFixes, runDuplicateMerges } from './lint/fix-runners';
 import { WikiEngine } from './wiki-engine';
@@ -329,6 +329,15 @@ export async function runLintWiki(ctx: LintContext): Promise<void> {
     // Build report in causality-aware order: Duplicates → Dead Links → Empty Pages → Orphans
     let progReport = '';
 
+    // 0. Missing aliases section (listed before duplicates — aliases enable detection)
+    if (aliasDeficientPages.length > 0) {
+      progReport += `## ${t.lintAliasesSection}\n\n`;
+      for (const p of aliasDeficientPages) {
+        progReport += t.lintAliasesItem.replace('{page}', p.path.replace(ctx.settings.wikiFolder + '/', '').replace('.md', '')) + '\n';
+      }
+      progReport += '\n';
+    }
+
     // 1. Duplicates section (root cause, shown first)
     if (duplicates.length > 0) {
       progReport += `## ${t.lintDuplicateSection}\n\n`;
@@ -369,6 +378,30 @@ export async function runLintWiki(ctx: LintContext): Promise<void> {
       for (const ep of emptyPages) {
         const epRel = ep.path.replace(ctx.settings.wikiFolder + '/', '').replace('.md', '');
         progReport += t.lintEmptyPageItem.replace('{page}', epRel) + '\n';
+      }
+      progReport += '\n';
+    }
+
+    // 3.5 Polluted pages — basenames with folder-prefix duplication
+    const allPages = Array.from(pageMap.values()).map(({ path, basename }) => ({
+      path, title: basename
+    }));
+    const pollutedPages = detectPollutedPages(allPages);
+    if (pollutedPages.length > 0) {
+      console.warn(`[Lint] Detected ${pollutedPages.length} polluted page(s):`);
+      for (const pp of pollutedPages) {
+        console.warn(`  - ${pp.path} → should be "${pp.cleanTitle}"`);
+      }
+    }
+
+    // 3.5 Polluted pages section
+    if (pollutedPages.length > 0) {
+      progReport += `## ${t.lintPollutedSection}\n\n`;
+      for (const pp of pollutedPages) {
+        const ppRel = pp.path.replace(ctx.settings.wikiFolder + '/', '').replace('.md', '');
+        progReport += t.lintPollutedItem
+          .replace('{page}', ppRel)
+          .replace('{clean}', pp.cleanTitle) + '\n';
       }
       progReport += '\n';
     }
@@ -482,6 +515,7 @@ export async function runLintWiki(ctx: LintContext): Promise<void> {
     const counts: LintCounts = {
       deadLinks: deadLinks.length,
       emptyPages: emptyPages.length,
+      pollutedPages: pollutedPages.length,
       orphans: orphans.length,
       duplicates: duplicates.length,
       pagesMissingAliases: aliasDeficientPages.length
@@ -490,6 +524,31 @@ export async function runLintWiki(ctx: LintContext): Promise<void> {
     // ---- Build callbacks ----
     const fixCallbacks: LintFixCallbacks = {};
     fixCallbacks.onAnalyzeSchema = () => { void ctx.onAnalyzeSchema(); };
+
+    // Polluted page repair (structural root cause — similar to aliases)
+    if (pollutedPages.length > 0) {
+      fixCallbacks.onFixPollutedPages = () => {
+        void (async () => {
+          let fixed = 0;
+          const fixNotice = new Notice('', 0);
+          for (const pp of pollutedPages) {
+            fixNotice.setMessage(`Fixing polluted page ${fixed + 1}/${pollutedPages.length}: ${pp.title} → ${pp.cleanTitle}`);
+            try {
+              const result = await ctx.wikiEngine.lintFixer.fixPollutedPage(pp.path, pp.cleanTitle);
+              console.debug(`[Pollution Fix] ${result}`);
+              fixed++;
+            } catch (e) {
+              console.error(`[Pollution Fix] Failed: ${pp.path}`, e);
+            }
+          }
+          fixNotice.hide();
+          if (fixed > 0) {
+            await ctx.wikiEngine.generateIndexFromEngine();
+          }
+          new Notice(`Polluted pages fixed: ${fixed}/${pollutedPages.length}. Index regenerated.`, 0);
+        })();
+      };
+    }
 
     // Alias completion (runs first — improves duplicate detection for future Lint runs)
     if (aliasDeficientPages.length > 0) {
@@ -568,7 +627,7 @@ export async function runLintWiki(ctx: LintContext): Promise<void> {
     }
 
     const totalFixable = deadLinks.length + emptyPages.length + orphans.length + duplicates.length;
-    const totalFixableIncludingAliases = totalFixable + aliasDeficientPages.length;
+    const totalFixableIncludingAliases = totalFixable + aliasDeficientPages.length + pollutedPages.length;
     if (totalFixableIncludingAliases > 0) {
       fixCallbacks.onFixAll = () => {
         void (async () => {
@@ -576,6 +635,7 @@ export async function runLintWiki(ctx: LintContext): Promise<void> {
           const fixAllNotice = new Notice('', 0);
 
           // Track per-phase counts for final summary
+          let pollutedFixed = 0;
           let aliasesFilled = 0;
           let duplicatesMerged = 0;
           let deadLinksFixed = 0;
@@ -583,6 +643,23 @@ export async function runLintWiki(ctx: LintContext): Promise<void> {
           let emptyPagesFilled = 0;
 
           // Smart fix strategy: follow causality chain with aliases as foundation
+          // Phase -1: Fix polluted pages (structural root cause before everything else)
+          fixAllNotice.setMessage('Smart fix: Phase -1 — Fixing polluted pages...');
+          if (pollutedPages.length > 0) {
+            for (const pp of pollutedPages) {
+              try {
+                const result = await ctx.wikiEngine.lintFixer.fixPollutedPage(pp.path, pp.cleanTitle);
+                console.debug(`[Pollution Fix] ${result}`);
+                pollutedFixed++;
+              } catch (e) {
+                console.error(`[Pollution Fix] Failed: ${pp.path}`, e);
+              }
+            }
+            if (pollutedFixed > 0) {
+              allResults.push(`## Fix Polluted Pages\nFixed ${pollutedFixed}/${pollutedPages.length} polluted pages`);
+            }
+          }
+
           // Phase 0: Complete aliases (pre-flight, ensures duplicate detection accuracy)
           // → Aliases are required for Tier 1 duplicate signals (crossLang)
           // → Missing aliases → duplicate detection misses true duplicates → downstream fixes incomplete
@@ -655,6 +732,12 @@ export async function runLintWiki(ctx: LintContext): Promise<void> {
 
           // Build phase result data for modal report
           const phases: FixReportPhase[] = [];
+          if (pollutedPages.length > 0) {
+            phases.push({
+              label: `🧹 Fix polluted pages (${pollutedPages.length})`,
+              detail: `${pollutedFixed}/${pollutedPages.length}`
+            });
+          }
           if (aliasDeficientPages.length > 0) {
             phases.push({
               label: t.lintAliasesCompleteBtn.replace('{count}', String(aliasDeficientPages.length)),

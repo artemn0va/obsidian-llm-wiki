@@ -137,6 +137,8 @@ export const DE_TEXTS = {
     lintDuplicateCheckFailedDetail: 'Duplikatprüfung fehlgeschlagen bei {step}: {error}',
     lintMergeItemFailed: 'Zusammenführung fehlgeschlagen: {source} → {target} — {error}',
     lintAliasesMissing: 'Fehlende Aliase: {count} Seite(n) ohne Aliase',
+    lintAliasesSection: 'Seiten ohne Aliase (erkannt)',
+    lintAliasesItem: '- [[{page}]]',
     lintAliasesCompleteBtn: 'Aliase vervollständigen ({count})',
     lintAliasesFilling: 'Aliase werden generiert {current}/{total}: {page}',
     lintAliasesFilled: 'Alias-Vervollständigung abgeschlossen. {filled}/{total} Seiten ergänzt.',
@@ -318,6 +320,8 @@ export const DE_TEXTS = {
     lintDeadLinkMore: '- ... {count} weitere defekte Links',
     lintEmptyPageItem: '- [[{page}]] — weniger als 50 Zeichen substanziellen Inhalts',
     lintOrphanItem: '- [[{page}]] — keine anderen Wiki-Seiten verweisen hierher{dupFlag}',
+    lintPollutedSection: 'Pfadverschmutzte Seiten (erkannt)',
+    lintPollutedItem: '- [[{page}]] → sollte "{clean}" sein',
     lintDuplicateItem: '- [[{target}]] und [[{source}]] — {reason}',
     lintDeadLinkAffectedByDup: ' (⚠️ betrifft doppelte Seite)',
     lintOrphanIsDuplicate: ' (⚠️ doppelte Seite)',
@@ -376,4 +380,7 @@ export const DE_TEXTS = {
     // Ratenbegrenzungs-Warnungen
     rateLimitDetected: '⚠️ Ratenbegrenzung erkannt: {count} Seite(n) mit 429-Fehlern fehlgeschlagen. Empfehlungen: (1) Parallelität auf {suggestedConcurrency} oder 1 (seriell) reduzieren, (2) Batch-Verzögerung auf {suggestedDelay}ms erhöhen, (3) Zu einem Anbieter mit höheren Ratenbegrenzungen wechseln.',
     rateLimitDetectedShort: '⚠️ Ratenbegrenzung erreicht — Reduzieren Sie die Parallelität oder erhöhen Sie die Batch-Verzögerung in Einstellungen → Aufnahmebeschleunigung.',
+
+    longSourceNotice: '"📄 「{filename}」 hat {lines} Zeilen ({size}). Lange Texte erfordern iterative Batch-Extraktion — das LLM liest das gesamte Dokument in mehreren Durchläufen. Dies kann einige Minuten dauern. Bitte haben Sie Geduld."',
+    longSourceNoticeShort: '"📄 Große Datei erkannt ({lines} Zeilen). Aufnahme kann eine Weile dauern."',
 } as const;

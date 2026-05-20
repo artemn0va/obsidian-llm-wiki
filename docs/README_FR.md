@@ -62,6 +62,22 @@ LLM-Wiki inverse cette logique. Au lieu de construire le graphe à la main, l'IA
 
 **🔨 Développement :** `git clone`, `pnpm install`, `pnpm build`.
 
+### 🔄 Mettre à jour le plugin
+
+Ce projet évolue rapidement — de nouvelles fonctionnalités, corrections de bugs et améliorations sont publiées fréquemment. Nous vous recommandons de rester à jour :
+
+**Option A — Mise à jour manuelle (recommandée) :**
+1. Ouvrez **Paramètres → Plugins communautaires**
+2. Cliquez sur **Rechercher les mises à jour**
+3. Trouvez **Karpathy LLM Wiki** dans la liste et cliquez sur **Mettre à jour**
+
+**Option B — Activer la mise à jour automatique :**
+1. Ouvrez **Paramètres → Plugins communautaires**
+2. Activez **Vérification automatique des mises à jour des plugins**
+3. Les nouvelles versions seront détectées automatiquement ; mettez à jour manuellement à votre convenance
+
+> 💡 **Pourquoi rester à jour ?** Chaque version peut inclure de nouvelles fonctionnalités, des améliorations de performances et des corrections de bugs importantes. Nous entretenons activement ce plugin — manquer une mise à jour signifie manquer une meilleure expérience.
+
 ### 🔑 Configuration d'un Provider LLM
 
 1. Ouvrez Paramètres → Karpathy LLM Wiki

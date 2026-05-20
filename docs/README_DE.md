@@ -62,6 +62,22 @@ LLM Wiki ändert das. Statt den Graph manuell aufzubauen, wächst die KI mit. Ne
 
 **🔨 Entwicklung:** `git clone`, `pnpm install`, `pnpm build`
 
+### 🔄 Plugin aktualisieren
+
+Dieses Projekt entwickelt sich rasch — neue Funktionen, Fehlerbehebungen und Verbesserungen werden häufig veröffentlicht. Wir empfehlen, stets auf dem neuesten Stand zu bleiben:
+
+**Option A — Manuelle Aktualisierung (empfohlen):**
+1. Öffnen Sie **Settings → Community plugins**
+2. Klicken Sie auf **Check for updates**
+3. Finden Sie **Karpathy LLM Wiki** in der Liste und klicken Sie auf **Update**
+
+**Option B — Automatische Aktualisierung aktivieren:**
+1. Öffnen Sie **Settings → Community plugins**
+2. Aktivieren Sie **Automatically check for plugins updates**
+3. Neue Versionen werden automatisch erkannt; aktualisieren Sie nach Bedarf manuell
+
+> 💡 **Warum aktuell bleiben?** Jede Version kann neue Funktionen, Leistungsverbesserungen und wichtige Fehlerbehebungen enthalten. Wir pflegen dieses Plugin aktiv — veraltete Versionen bedeuten, dass Sie Verbesserungen verpassen.
+
 ### 🔑 LLM Provider konfigurieren
 
 1. Settings → Karpathy LLM Wiki öffnen

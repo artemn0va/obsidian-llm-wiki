@@ -181,9 +181,12 @@ export class LintFixer {
       // The LLM may have missed an alias match even though aliases were
       // included in the prompt. This prevents duplicate page creation.
       const stubTitleLower = sanitizedTitle.toLowerCase();
+      const safetySlug = slugify(sanitizedTitle).toLowerCase();
       const aliasMatch = existingPages.find(p =>
         p.title.toLowerCase() === stubTitleLower ||
-        p.aliases?.some(a => a.toLowerCase() === stubTitleLower)
+        p.aliases?.some(a => a.toLowerCase() === stubTitleLower) ||
+        slugify(p.title).toLowerCase() === safetySlug ||
+        p.aliases?.some(a => slugify(a).toLowerCase() === safetySlug)
       );
       if (aliasMatch) {
         const newLink = `[[${aliasMatch.path.replace(this.ctx.settings.wikiFolder + '/', '').replace('.md', '')}|${aliasMatch.title}]]`;
@@ -243,14 +246,21 @@ tags: [${stubType === 'entity' ? 'other' : 'term'}]
         ? targetName.split('/').pop()!
         : targetName;
       const lowerTarget = targetBasename.toLowerCase();
+      const targetSlug = slugify(targetBasename).toLowerCase();
       // Case-insensitive match — macOS file system is case-insensitive by
       // default, so "Thinking" and "thinking" refer to the same page.
-      let match = existingPages.find(p => p.title.toLowerCase() === lowerTarget);
+      let match = existingPages.find(p =>
+        p.title.toLowerCase() === lowerTarget ||
+        slugify(p.title).toLowerCase() === targetSlug
+      );
 
       // Also check aliases for case-insensitive match
       if (!match) {
         match = existingPages.find(p =>
-          p.aliases?.some(a => a.toLowerCase() === lowerTarget)
+          p.aliases?.some(a =>
+            a.toLowerCase() === lowerTarget ||
+            slugify(a).toLowerCase() === targetSlug
+          )
         );
       }
 

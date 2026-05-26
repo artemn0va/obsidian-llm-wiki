@@ -20,6 +20,20 @@ import {
 import { applySectionLabels } from './system-prompts';
 import { getExistingWikiPages } from './lint-fixes';
 
+// Truncate mentions to a reasonable token budget for merge/create prompts.
+function truncateMentions(mentions: string[] | undefined, maxChars = 500): string {
+  if (!mentions || mentions.length === 0) return '';
+  let result = '';
+  for (const m of mentions) {
+    if (result.length + m.length > maxChars) {
+      if (result.length > 0) break;
+      return m.substring(0, maxChars);
+    }
+    result += (result ? '\n' : '') + m;
+  }
+  return result;
+}
+
 export class PageFactory {
   constructor(private ctx: EngineContext) {}
 
@@ -263,7 +277,7 @@ export class PageFactory {
       .replace('{{concept_type}}', info.type)
       .replace('{{entity_summary}}', info.summary)
       .replace('{{concept_summary}}', info.summary)
-      .replace('{{mentions}}', info.mentions_in_source?.join('\n') || 'No specific mentions')
+      .replace('{{mentions}}', truncateMentions(info.mentions_in_source) || 'No specific mentions')
       .replace('{{related_entities}}', info.related_entities?.join(', ') || 'No related entities')
       .replace('{{related_concepts}}', info.related_concepts?.join(', ') || 'No related concepts')
       .replace('{{existing_pages}}', await this.buildPagesListForPrompt(extraPagePaths))
@@ -309,7 +323,7 @@ export class PageFactory {
       .replace('{{new_source}}', sourceFile.basename)
       .replace('{{entity_summary}}', info.summary)
       .replace('{{concept_summary}}', info.summary)
-      .replace('{{mentions}}', info.mentions_in_source?.join('\n') || '')
+      .replace('{{mentions}}', truncateMentions(info.mentions_in_source))
       .replace('{{related_entities}}', info.related_entities?.join(', ') || '')
       .replace('{{related_concepts}}', info.related_concepts?.join(', ') || '')
       .replace('{{key_details}}', info.mentions_in_source?.slice(0, 2).join('; ') || '')
@@ -354,7 +368,7 @@ export class PageFactory {
       .replace('{{existing_body}}', existingBody)
       .replace('{{new_source}}', sourceFile.basename)
       .replace('{{entity_summary}}', info.summary)
-      .replace('{{mentions}}', info.mentions_in_source?.join('\n') || '')
+      .replace('{{mentions}}', truncateMentions(info.mentions_in_source))
       .replace('{{key_details}}', info.mentions_in_source?.slice(0, 2).join('; ') || '');
 
     const finalPrompt = applySectionLabels(prompt, this.ctx.settings);

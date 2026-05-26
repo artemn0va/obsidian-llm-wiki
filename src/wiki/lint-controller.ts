@@ -20,6 +20,109 @@ export interface LintContext {
   onAnalyzeSchema: () => void;
 }
 
+// Build a set of all known link targets across the vault for dead link detection.
+function buildKnownTargets(allVaultFiles: TFile[]): { known: Set<string>; knownLower: Set<string> } {
+  const known = new Set<string>();
+  const knownLower = new Set<string>();
+  const addTarget = (t: string) => { known.add(t); knownLower.add(t.toLowerCase()); };
+  for (const file of allVaultFiles) {
+    const nameWithoutExt = file.basename.replace('.md', '');
+    addTarget(file.basename);
+    addTarget(nameWithoutExt);
+    const relPath = file.path.replace('.md', '');
+    addTarget(relPath);
+    addTarget(file.path);
+    const parts = relPath.split('/');
+    for (let i = 1; i < parts.length; i++) {
+      const subPath = parts.slice(i).join('/');
+      addTarget(subPath);
+      addTarget(subPath + '.md');
+    }
+  }
+  return { known, knownLower };
+}
+
+// Detect pages with missing aliases (entities & concepts only).
+function detectAliasDeficiency(
+  wikiFiles: TFile[],
+  pageMap: Map<string, { path: string; content: string; basename: string }>
+): Array<{ path: string; content: string; basename: string }> {
+  const result: Array<{ path: string; content: string; basename: string }> = [];
+  for (const file of wikiFiles) {
+    if (file.path.includes('/entities/') || file.path.includes('/concepts/')) {
+      const info = pageMap.get(file.path);
+      if (info) {
+        const fmMatch = info.content.match(/^---\n([\s\S]*?)\n---/);
+        if (fmMatch && !fmMatch[1].includes('aliases:')) {
+          result.push(info);
+        }
+      }
+    }
+  }
+  return result;
+}
+
+// Scan wiki pages for dead links ([[wikilinks]] pointing to non-existent targets).
+function scanDeadLinks(
+  pageMap: Map<string, { path: string; content: string; basename: string }>,
+  knownTargets: Set<string>,
+  knownTargetsLower: Set<string>,
+  wikiFolder: string
+): Array<{ source: string; target: string }> {
+  const deadLinks: Array<{ source: string; target: string }> = [];
+  const linkRegex = /\[\[([^\]|#]+)(?:[|#][^\]]+)?\]\]/g;
+  for (const { path, content } of pageMap.values()) {
+    let match: RegExpExecArray | null;
+    while ((match = linkRegex.exec(content)) !== null) {
+      const target = match[1].trim();
+      if (!knownTargets.has(target) && !knownTargetsLower.has(target.toLowerCase())) {
+        deadLinks.push({
+          source: path.replace(wikiFolder + '/', '').replace('.md', ''),
+          target
+        });
+      }
+    }
+    linkRegex.lastIndex = 0;
+  }
+  return deadLinks;
+}
+
+// Detect orphan pages (no incoming links from any wiki page, alias-aware).
+function scanOrphans(
+  pageMap: Map<string, { path: string; content: string; basename: string }>,
+  wikiFolder: string
+): string[] {
+  const incomingLinks = new Map<string, string[]>();
+  const linkRegex = /\[\[([^\]|#]+)(?:[|#][^\]]+)?\]\]/g;
+  for (const { path, content } of pageMap.values()) {
+    const sourceRel = path.replace(wikiFolder + '/', '').replace('.md', '');
+    let match: RegExpExecArray | null;
+    while ((match = linkRegex.exec(content)) !== null) {
+      const target = match[1].trim();
+      if (!incomingLinks.has(target)) incomingLinks.set(target, []);
+      incomingLinks.get(target)!.push(sourceRel);
+    }
+    linkRegex.lastIndex = 0;
+  }
+  const orphans: string[] = [];
+  for (const { path, basename, content } of pageMap.values()) {
+    const fm = parseFrontmatter(content);
+    const aliases = Array.isArray(fm?.aliases) ? fm.aliases : [];
+    const relPath = path.replace(wikiFolder + '/', '').replace('.md', '');
+    const nameWithoutExt = basename.replace('.md', '');
+    const forms = [basename, nameWithoutExt, relPath, ...aliases];
+    const parts = relPath.split('/');
+    for (let i = 1; i < parts.length; i++) {
+      const subPath = parts.slice(i).join('/');
+      forms.push(subPath);
+      forms.push(subPath + '.md');
+    }
+    const hasIncoming = forms.some(f => incomingLinks.has(f) || incomingLinks.has(f.toLowerCase()));
+    if (!hasIncoming) orphans.push(path);
+  }
+  return orphans;
+}
+
 export async function runLintWiki(ctx: LintContext, signal?: AbortSignal): Promise<void> {
   if (!ctx.llmClient) {
     new Notice(TEXTS[ctx.settings.language].errorNoApiKey);
@@ -47,28 +150,7 @@ export async function runLintWiki(ctx: LintContext, signal?: AbortSignal): Promi
     // ---- 1. Programmatic checks ----
 
     const allVaultFiles = ctx.app.vault.getMarkdownFiles();
-    const knownTargets = new Set<string>();
-    const knownTargetsLower = new Set<string>();
-    for (const file of allVaultFiles) {
-      const nameWithoutExt = file.basename.replace('.md', '');
-      const addTarget = (t: string) => {
-        knownTargets.add(t);
-        knownTargetsLower.add(t.toLowerCase());
-      };
-      addTarget(file.basename);
-      addTarget(nameWithoutExt);
-
-      const relPath = file.path.replace('.md', '');
-      addTarget(relPath);
-      addTarget(file.path);
-
-      const parts = relPath.split('/');
-      for (let i = 1; i < parts.length; i++) {
-        const subPath = parts.slice(i).join('/');
-        addTarget(subPath);
-        addTarget(subPath + '.md');
-      }
-    }
+    const { known: knownTargets, knownLower: knownTargetsLower } = buildKnownTargets(allVaultFiles);
 
     const t = TEXTS[ctx.settings.language];
     const pageMap = new Map<string, { path: string; content: string; basename: string }>();
@@ -129,19 +211,8 @@ export async function runLintWiki(ctx: LintContext, signal?: AbortSignal): Promi
       console.debug(`lintWiki: total ${doubleNestFixes} double-nested link(s) fixed`);
     }
 
-    // ---- 1. Alias deficiency check (runs first — enables better duplicate detection) ----
-    const aliasDeficientPages: Array<{ path: string; content: string; basename: string }> = [];
-    for (const file of wikiFiles) {
-      if (file.path.includes('/entities/') || file.path.includes('/concepts/')) {
-        const info = pageMap.get(file.path);
-        if (info) {
-          const fmMatch = info.content.match(/^---\n([\s\S]*?)\n---/);
-          if (fmMatch && !fmMatch[1].includes('aliases:')) {
-            aliasDeficientPages.push(info);
-          }
-        }
-      }
-    }
+    // ---- 1. Alias deficiency check ----
+    const aliasDeficientPages = detectAliasDeficiency(wikiFiles, pageMap);
     console.debug(`lintWiki: ${aliasDeficientPages.length} entity/concept pages missing aliases`);
 
     // ---- 2. Duplicate detection (Layer 1 programmatic candidates + Layer 3 LLM verification) ----
@@ -290,31 +361,13 @@ export async function runLintWiki(ctx: LintContext, signal?: AbortSignal): Promi
       }
     }
 
-    // Dead links (now after duplicate detection to show root cause relationship)
+    // Dead links
     stageNotice.setMessage(t.lintScanningLinks);
     console.debug('lintWiki: scanning dead links');
-    const deadLinks: Array<{ source: string; target: string }> = [];
-    const linkRegex = /\[\[([^\]|#]+)(?:[|#][^\]]+)?\]\]/g;
-    let scanCount = 0;
-    for (const { path, content } of pageMap.values()) {
-      let match: RegExpExecArray | null;
-      while ((match = linkRegex.exec(content)) !== null) {
-        const target = match[1].trim();
-        if (!knownTargets.has(target) && !knownTargetsLower.has(target.toLowerCase())) {
-          deadLinks.push({
-            source: path.replace(ctx.settings.wikiFolder + '/', '').replace('.md', ''),
-            target
-          });
-        }
-      }
-      linkRegex.lastIndex = 0;
-      scanCount++;
-      if (scanCount % 10 === 0 || scanCount === totalPages) {
-        stageNotice.setMessage(t.lintScanningLinksProgress
-          .replace('{current}', String(scanCount))
-          .replace('{total}', String(totalPages)));
-      }
-    }
+    const deadLinks = scanDeadLinks(pageMap, knownTargets, knownTargetsLower, ctx.settings.wikiFolder);
+    stageNotice.setMessage(t.lintScanningLinksProgress
+      .replace('{current}', String(totalPages))
+      .replace('{total}', String(totalPages)));
 
     // Empty pages (exclude duplicate source pages — they will be merged/deleted)
     const duplicatePaths = new Set<string>();
@@ -333,37 +386,8 @@ export async function runLintWiki(ctx: LintContext, signal?: AbortSignal): Promi
       }
     }
 
-    // Orphan pages (alias-aware: also check if aliases have incoming links)
-    const incomingLinks = new Map<string, string[]>();
-    for (const { path, content } of pageMap.values()) {
-      const sourceRel = path.replace(ctx.settings.wikiFolder + '/', '').replace('.md', '');
-      let match: RegExpExecArray | null;
-      while ((match = linkRegex.exec(content)) !== null) {
-        const target = match[1].trim();
-        if (!incomingLinks.has(target)) incomingLinks.set(target, []);
-        incomingLinks.get(target)!.push(sourceRel);
-      }
-      linkRegex.lastIndex = 0;
-    }
-    const orphans: string[] = [];
-    for (const { path, basename, content } of pageMap.values()) {
-      const fm = parseFrontmatter(content);
-      const aliases = Array.isArray(fm?.aliases) ? fm.aliases : [];
-
-      const relPath = path.replace(ctx.settings.wikiFolder + '/', '').replace('.md', '');
-      const nameWithoutExt = basename.replace('.md', '');
-      const forms = [basename, nameWithoutExt, relPath, ...aliases];
-      const parts = relPath.split('/');
-      for (let i = 1; i < parts.length; i++) {
-        const subPath = parts.slice(i).join('/');
-        forms.push(subPath);
-        forms.push(subPath + '.md');
-      }
-      const hasIncoming = forms.some(f => incomingLinks.has(f) || incomingLinks.has(f.toLowerCase()));
-      if (!hasIncoming) {
-        orphans.push(path);
-      }
-    }
+    // Orphan pages
+    const orphans = scanOrphans(pageMap, ctx.settings.wikiFolder);
 
     // ---- 2. Build programmatic findings report ----
 

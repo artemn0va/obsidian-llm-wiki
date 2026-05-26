@@ -338,6 +338,28 @@ Déposez des notes, il extrait les personnes, concepts et théories, puis génè
 **Configuration minimale ?**
 Obsidian v1.6.6+, bureau (Windows/macOS/Linux), une clé API d'un provider LLM. Ollama fonctionne en local sans clé API.
 
+**Pourquoi les fonctions ne sont-elles pas disponibles après installation ? (v1.11.0)**
+Paramètres → Karpathy LLM Wiki → choisir un fournisseur → entrer la clé API → Fetch Models → sélectionner un modèle → Test Connection. L'indicateur vert "LLM Ready" déverrouille toutes les fonctions.
+
+**Comment annuler une ingestion/Lint en cours ? (v1.11.0)**
+Cliquer sur la barre de statut ou Ctrl+P → "Cancel current ingestion". Arrêt propre à la fin du lot en cours.
+
+**Crochets doubles [[[[...]]]] dans log.md — comment corriger ?**
+Lancer Lint Wiki — détecte et corrige automatiquement tous les liens doublement imbriqués (v1.11.0+).
+
+
+I.
+
+**Pourquoi les fonctions ne sont-elles pas disponibles après installation ? (v1.11.0)**
+Paramètres → Karpathy LLM Wiki → choisir un fournisseur → entrer la clé API → Fetch Models → sélectionner un modèle → Test Connection. L'indicateur vert "LLM Ready" déverrouille toutes les fonctions.
+
+**Comment annuler une ingestion/Lint en cours ? (v1.11.0)**
+Cliquer sur la barre de statut ou Ctrl+P → "Cancel current ingestion". Arrêt propre à la fin du lot en cours.
+
+**Crochets doubles [[[[...]]]] dans log.md — comment corriger ?**
+Lancer Lint Wiki — détecte et corrige automatiquement tous les liens doublement imbriqués (v1.11.0+).
+
+
 **Quel modèle choisir ?**
 Voir [Recommandations de modèles](#-recommandations-de-modèles) ci-dessus. Les modèles à long contexte sont recommandés — plus votre Wiki est grand, plus le LLM a besoin de contexte.
 

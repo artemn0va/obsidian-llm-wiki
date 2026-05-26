@@ -381,6 +381,30 @@ Upgrade to v1.7.17+ — Lint now yields to Obsidian's UI thread every 50 pages, 
 
 ### 🔍 Troubleshooting
 
+**Why can't I use ingest/lint/query after installing? (v1.11.0)**
+The plugin now requires a successful connection test before core features unlock. Go to **Settings → Karpathy LLM Wiki** → pick a provider → enter your API key → click **Fetch Models** → select a model → click **Test Connection**. Once you see the green "LLM Ready" indicator, all features are available. This prevents silent failures from misconfigured providers.
+
+**How do I cancel a running ingestion or lint? (v1.11.0)**
+Click the status bar text during an operation (it shows "Ingesting... click to cancel"), or use `Ctrl+P` → "Cancel current ingestion". The operation stops cleanly at the next batch boundary, preserving all completed work.
+
+**How do I quickly ingest the file I'm currently editing? (v1.11.0)**
+Click the `sticker` icon in the left ribbon bar, or use `Ctrl+P` → "Ingest current file". This skips the file picker and directly ingests the active editor tab.
+
+**What's new in v1.11.0?**
+See the [CHANGELOG](CHANGELOG.md) for full details. Highlights: guided LLM setup with connection test, cancel running operations, one-click ingest from ribbon, double-nested link auto-fix, 529 overload retry, and 8 closed GitHub issues.
+
+**I see `[[[[entities/Foo|Foo]]]]` double brackets in my log.md — how do I fix this?**
+This was a bug (#37) in versions before v1.11.0. Run **Lint Wiki** — the scanner now automatically detects and fixes all double-nested wiki-links across your entire wiki directory (including log.md) with zero LLM cost. No manual cleanup needed.
+
+**Why am I getting "Overloaded" errors that don't retry?**
+Versions before v1.11.0 didn't recognize Anthropic's 529 overload error as retryable. Fixed in v1.11.0 — overload errors are now automatically retried with exponential backoff across all providers.
+
+**Why was a duplicate stub created when the page already exists in entities/ or concepts/?**
+Pre-v1.11.0 stub creation only matched exact titles. If "Machine Learning" existed as a concept but a broken link pointed to `entities/Machine-Learning`, a duplicate stub was created. v1.11.0 adds slug-based matching — different formatting of the same name now resolves to the existing page.
+
+**Why does the extraction now skip citation authors and study names?**
+v1.11.0 changed extraction criteria from "what appears in the text?" to "what deserves a wiki page?" — bibliographic references are now recognized as evidence containers rather than wiki-worthy entities. Their findings are extracted as concepts instead.
+
 **Query can't find pages I know exist?**
 Three common causes: (1) Index is stale → **Regenerate index**. (2) Missing aliases → **Complete Aliases**. (3) Try different phrasing — LLM does semantic matching, not keyword search.
 

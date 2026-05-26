@@ -336,6 +336,28 @@ ui/                 # 사용자 인터페이스
 **최소 요구사항은?**
 Obsidian v1.6.6+, 데스크톱(Windows/macOS/Linux), LLM Provider API Key. Ollama는 로컬에서 작동하며 API Key가 필요 없습니다.
 
+**설치 후 기능을 사용할 수 없는 이유는? (v1.11.0)**
+설정 → Karpathy LLM Wiki → 제공자 선택 → API 키 입력 → Fetch Models → 모델 선택 → Test Connection. 녹색 "LLM Ready" 표시가 나타나면 사용 가능합니다.
+
+**실행 중인 수집/Lint를 취소하려면? (v1.11.0)**
+상태 표시줄 클릭 또는 Ctrl+P → "Cancel current ingestion". 현재 배치 완료 후 안전하게 중지됩니다.
+
+**log.md의 이중 괄호 [[[[...]]]]를 수정하려면?**
+Lint Wiki를 실행하면 자동 감지 및 수정됩니다 (v1.11.0+).
+
+
+다.
+
+**설치 후 기능을 사용할 수 없는 이유는? (v1.11.0)**
+설정 → Karpathy LLM Wiki → 제공자 선택 → API 키 입력 → Fetch Models → 모델 선택 → Test Connection. 녹색 "LLM Ready" 표시가 나타나면 사용 가능합니다.
+
+**실행 중인 수집/Lint를 취소하려면? (v1.11.0)**
+상태 표시줄 클릭 또는 Ctrl+P → "Cancel current ingestion". 현재 배치 완료 후 안전하게 중지됩니다.
+
+**log.md의 이중 괄호 [[[[...]]]]를 수정하려면?**
+Lint Wiki를 실행하면 자동 감지 및 수정됩니다 (v1.11.0+).
+
+
 **어떤 모델을 선택해야 하나요?**
 위의 [모델 권장 사항](#-모델-권장-사항)을 참조하세요. 긴 컨텍스트 모델을 권장합니다 — Wiki가 클수록 LLM은 더 많은 컨텍스트가 필요합니다.
 

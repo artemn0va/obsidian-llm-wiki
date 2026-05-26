@@ -338,6 +338,28 @@ Coloque notas, ele extrai pessoas, conceitos e teorias, e gera uma Wiki intercon
 **Requisitos mínimos?**
 Obsidian v1.6.6+, desktop (Windows/macOS/Linux), uma API key de um LLM provider. Ollama funciona localmente sem API key.
 
+**Por que não consigo usar as funções após instalar? (v1.11.0)**
+Configurações → Karpathy LLM Wiki → escolher provedor → inserir API Key → Fetch Models → selecionar modelo → Test Connection. O indicador verde "LLM Ready" desbloqueia todas as funções.
+
+**Como cancelar uma ingestão/Lint em execução? (v1.11.0)**
+Clique na barra de status ou Ctrl+P → "Cancel current ingestion". Para limpo ao final do lote atual.
+
+**Colchetes duplos [[[[...]]]] no log.md — como corrigir?**
+Execute Lint Wiki — detecta e corrige automaticamente todos os links aninhados duplos (v1.11.0+).
+
+
+y.
+
+**Por que não consigo usar as funções após instalar? (v1.11.0)**
+Configurações → Karpathy LLM Wiki → escolher provedor → inserir API Key → Fetch Models → selecionar modelo → Test Connection. O indicador verde "LLM Ready" desbloqueia todas as funções.
+
+**Como cancelar uma ingestão/Lint em execução? (v1.11.0)**
+Clique na barra de status ou Ctrl+P → "Cancel current ingestion". Para limpo ao final do lote atual.
+
+**Colchetes duplos [[[[...]]]] no log.md — como corrigir?**
+Execute Lint Wiki — detecta e corrige automaticamente todos os links aninhados duplos (v1.11.0+).
+
+
 **Qual modelo escolher?**
 Veja [Recomendações de modelos](#-recomendações-de-modelos) acima. Modelos de contexto longo são recomendados — quanto maior sua Wiki, mais contexto o LLM precisa.
 

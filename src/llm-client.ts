@@ -245,8 +245,10 @@ export class AnthropicCompatibleClient implements LLMClient {
 }
 export class AnthropicClient implements LLMClient {
   private client: Anthropic;
+  private apiKey: string;
 
   constructor(apiKey: string, baseUrl?: string) {
+    this.apiKey = apiKey;
     this.client = new Anthropic({
       apiKey,
       ...(baseUrl ? { baseURL: baseUrl } : {})
@@ -352,13 +354,17 @@ export class AnthropicClient implements LLMClient {
     return fullResponse;
   }
 
-  listModels(): Promise<string[]> {
-    // Anthropic SDK v0.24.x has no models.list(); return curated defaults
-    return Promise.resolve([
-      'claude-sonnet-4-6',
-      'claude-opus-4-7',
-      'claude-haiku-4-5-20251001'
-    ]);
+  async listModels(): Promise<string[]> {
+    const response = await requestUrl({
+      url: 'https://api.anthropic.com/v1/models',
+      headers: {
+        'x-api-key': this.apiKey,
+        'Anthropic-Version': '2023-06-01'
+      }
+    });
+    const data = response.json as { data?: Array<{ id: string }> };
+    if (!data.data?.length) return [];
+    return data.data.map(m => m.id).filter(id => !id.includes(':') && !id.includes('/')).sort();
   }
 }
 

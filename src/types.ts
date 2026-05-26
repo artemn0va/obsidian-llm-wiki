@@ -60,7 +60,7 @@ export interface ProviderConfig {
   nameEn: string; // English provider name
   nameZh: string; // Chinese provider name
   baseUrl: string;
-  defaultModel: string;
+  defaultModel?: string; // deprecated — kept for backward compat, not used for new installs
   apiKeyPlaceholder: string;
   apiKeyPlaceholderEn?: string; // English placeholder
   apiKeyPlaceholderZh?: string; // Chinese placeholder
@@ -107,6 +107,9 @@ export interface LLMWikiSettings {
 
   // Query dedup
   lastOfferedQueryHash?: string;
+
+  // LLM readiness — must pass Test Connection before core features are available
+  llmReady: boolean;
 }
 
 export interface QueryHistoryMessage {
@@ -395,4 +398,7 @@ export const DEFAULT_SETTINGS: LLMWikiSettings = {
 
   // Query dedup
   lastOfferedQueryHash: '',
+
+  // LLM readiness
+  llmReady: false,
 };

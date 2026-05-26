@@ -28,6 +28,8 @@ export const KO_TEXTS = {
     // Status
     statusTitle: 'LLM 클라이언트 상태',
     statusInitialized: '초기화됨',
+    statusReady: 'LLM 준비 완료',
+    statusNotReady: 'LLM 미구성 — 위 설정을 완료하고 연결 테스트를 통과하세요',
     statusNotInitialized: '초기화되지 않음',
     currentProvider: '현재 Provider',
 
@@ -95,6 +97,7 @@ export const KO_TEXTS = {
 
     // Errors
     errorNoApiKey: 'API 키를 먼저 설정하세요',
+    llmNotReady: 'LLM이 구성되지 않았습니다. 설정 → Karpathy LLM Wiki에서 제공자를 구성하고 모델을 가져온 후 연결 테스트를 통과하세요.',
     errorFetchFailed: '실패: {}',
 
     // Query Settings

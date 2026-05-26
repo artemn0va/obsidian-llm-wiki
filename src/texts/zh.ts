@@ -28,6 +28,8 @@ export const ZH_TEXTS = {
     // 状态
     statusTitle: 'LLM Client 状态',
     statusInitialized: '已初始化',
+    statusReady: 'LLM 已就绪',
+    statusNotReady: 'LLM 未配置 — 请完成上方设置并通过连接测试',
     statusNotInitialized: '未初始化',
     currentProvider: '当前提供商',
 
@@ -95,6 +97,7 @@ export const ZH_TEXTS = {
 
     // 错误
     errorNoApiKey: '请先配置 API Key',
+    llmNotReady: 'LLM 尚未配置。请前往 设置 → Karpathy LLM Wiki 完成 Provider 配置、获取模型列表并通过连接测试。',
     errorFetchFailed: '获取失败：{}',
 
     // Query 设置

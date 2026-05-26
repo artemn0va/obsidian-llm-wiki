@@ -28,6 +28,8 @@ export const DE_TEXTS = {
     // Status
     statusTitle: 'LLM-Client-Status',
     statusInitialized: 'Initialisiert',
+    statusReady: 'LLM bereit',
+    statusNotReady: 'LLM nicht konfiguriert — Einrichtung oben abschließen und Verbindungstest bestehen',
     statusNotInitialized: 'Nicht initialisiert',
     currentProvider: 'Aktueller Anbieter',
 
@@ -95,6 +97,7 @@ export const DE_TEXTS = {
 
     // Errors
     errorNoApiKey: 'Bitte zunächst API-Schlüssel konfigurieren',
+    llmNotReady: 'LLM ist nicht konfiguriert. Gehen Sie zu Einstellungen → Karpathy LLM Wiki, um Ihren Anbieter zu konfigurieren und den Verbindungstest zu bestehen.',
     errorFetchFailed: 'Fehlgeschlagen: {}',
 
     // Query Settings

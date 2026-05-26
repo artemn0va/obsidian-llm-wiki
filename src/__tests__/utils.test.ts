@@ -610,6 +610,7 @@ describe('getGranularityInstruction', () => {
     enableSchema: true, autoWatchSources: false, autoWatchMode: 'notify',
     autoWatchDebounceMs: 5000, watchedFolders: [], periodicLint: 'off',
     startupCheck: false, pageGenerationConcurrency: 3, batchDelayMs: 500,
+    llmReady: false,
   };
 
   it('injects concrete entity and concept limits for custom mode', () => {
@@ -653,6 +654,7 @@ describe('getGranularityFixLimits', () => {
     enableSchema: true, autoWatchSources: false, autoWatchMode: 'notify',
     autoWatchDebounceMs: 5000, watchedFolders: [], periodicLint: 'off',
     startupCheck: false, pageGenerationConcurrency: 3, batchDelayMs: 500,
+    llmReady: false,
   };
 
   it('returns user-defined limits for custom mode', () => {

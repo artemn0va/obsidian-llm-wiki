@@ -28,6 +28,8 @@ export const JA_TEXTS = {
     // Status
     statusTitle: 'LLM Client の状態',
     statusInitialized: '初期化済み',
+    statusReady: 'LLM 準備完了',
+    statusNotReady: 'LLM 未設定 — 上記の設定と接続テストを完了してください',
     statusNotInitialized: '未初期化',
     currentProvider: '現在のプロバイダー',
 
@@ -95,6 +97,7 @@ export const JA_TEXTS = {
 
     // Errors
     errorNoApiKey: 'まずAPI Keyを設定してください',
+    llmNotReady: 'LLMが設定されていません。設定 → Karpathy LLM Wiki でプロバイダーを設定し、モデルを取得して接続テストに合格してください。',
     errorFetchFailed: '失敗：{}',
 
     // Query Settings

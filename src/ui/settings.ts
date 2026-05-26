@@ -143,9 +143,10 @@ export class LLMWikiSettingTab extends PluginSettingTab {
         dropdown.setValue(this.tempSettings.provider);
         dropdown.onChange((value) => {
           this.tempSettings.provider = value;
+          this.tempSettings.llmReady = false;
           const config = PREDEFINED_PROVIDERS[value];
           if (config) {
-            this.tempSettings.model = config.defaultModel;
+            this.tempSettings.model = config.defaultModel || '';
             if (value !== 'custom') this.tempSettings.baseUrl = config.baseUrl;
           }
           this.display();
@@ -160,7 +161,7 @@ export class LLMWikiSettingTab extends PluginSettingTab {
         .addText(text => {
           text.setPlaceholder(this.getText('apiKeyPlaceholder'))
             .setValue(this.tempSettings.apiKey)
-            .onChange((value) => { this.tempSettings.apiKey = value; });
+            .onChange((value) => { this.tempSettings.apiKey = value; this.tempSettings.llmReady = false; });
           text.inputEl.type = 'password';
         });
     } else {
@@ -179,7 +180,7 @@ export class LLMWikiSettingTab extends PluginSettingTab {
         .addText(text => text
           .setPlaceholder(providerConfig?.baseUrl || 'https://api.example.com/v1')
           .setValue(this.tempSettings.baseUrl)
-          .onChange((value) => { this.tempSettings.baseUrl = value; }));
+          .onChange((value) => { this.tempSettings.baseUrl = value; this.tempSettings.llmReady = false; }));
     }
 
     // Model section
@@ -288,7 +289,7 @@ export class LLMWikiSettingTab extends PluginSettingTab {
         .setName(this.getText('modelName'))
         .setDesc(this.tempSettings.availableModels?.length
           ? this.getText('modelDescCustom')
-          : providerConfig ? this.getText('modelDescRecommended').replace('{}', providerConfig.defaultModel) : this.getText('modelDescManual'))
+          : providerConfig ? this.getText('modelDescRecommended').replace('{}', providerConfig.defaultModel || '') : this.getText('modelDescManual'))
         .addText(text => text
           .setPlaceholder(providerConfig?.defaultModel || 'model-name')
           .setValue(this.tempSettings.model)
@@ -316,12 +317,21 @@ export class LLMWikiSettingTab extends PluginSettingTab {
           this.plugin.settings = testSettings;
           this.plugin.initializeLLMClient();
           const result = await this.plugin.testLLMConnection();
+          this.tempSettings.llmReady = result.success;
           button.setButtonText(this.getText('testButton'));
           button.setDisabled(false);
+          this.display();
           new Notice(result.message, result.success ? 5000 : 8000);
         }));
 
-    // Status
+    // Status — connection readiness
+    const readyStatus = this.tempSettings.llmReady
+      ? '✅ ' + (this.getText('statusReady') || 'Ready')
+      : '⚠️ ' + (this.getText('statusNotReady') || 'Not configured — please complete setup above');
+    containerEl.createEl('p', {
+      text: readyStatus,
+      attr: { style: `margin: 12px 0; font-weight: 500; color: ${this.tempSettings.llmReady ? 'var(--color-green)' : 'var(--color-orange)'}` }
+    });
     const clientStatus = this.plugin.llmClient ? this.getText('statusInitialized') : this.getText('statusNotInitialized');
     const currentProvider = providerConfig
       ? (this.tempSettings.language === 'en' ? providerConfig.nameEn : providerConfig.nameZh) : 'Custom';

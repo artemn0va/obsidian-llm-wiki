@@ -203,6 +203,15 @@ export default class LLMWikiPlugin extends Plugin {
       this.settings.watchedFolders = [];
       console.debug('loadSettings: watchedFolders was not an array, reset to []');
     }
+
+    // Migrate existing users: if they already have a working config, trust it
+    if (savedData && !('llmReady' in savedData)) {
+      const hasConfig = savedData.provider && (savedData.apiKey?.trim() || savedData.provider === 'ollama') && savedData.model;
+      this.settings.llmReady = !!hasConfig;
+      if (hasConfig) {
+        console.debug('loadSettings: existing user with config detected, llmReady = true');
+      }
+    }
   }
 
   async saveSettings() {
@@ -292,6 +301,7 @@ export default class LLMWikiPlugin extends Plugin {
   }
 
   selectSourceToIngest() {
+    if (!this.requireLLMReady()) return;
     if (!this.llmClient) {
       new Notice(TEXTS[this.settings.language].errorNoApiKey);
       return;
@@ -308,6 +318,7 @@ export default class LLMWikiPlugin extends Plugin {
   }
 
   ingestActiveFile() {
+    if (!this.requireLLMReady()) return;
     if (!this.llmClient) {
       new Notice(TEXTS[this.settings.language].errorNoApiKey);
       return;
@@ -334,6 +345,7 @@ export default class LLMWikiPlugin extends Plugin {
   }
 
   selectFolderToIngest() {
+    if (!this.requireLLMReady()) return;
     if (!this.llmClient) {
       new Notice(TEXTS[this.settings.language].errorNoApiKey);
       return;
@@ -456,6 +468,7 @@ export default class LLMWikiPlugin extends Plugin {
   // ==================== Query ====================
 
   queryWiki() {
+    if (!this.requireLLMReady()) return;
     if (!this.llmClient) {
       new Notice(TEXTS[this.settings.language].errorNoApiKey);
       return;
@@ -467,6 +480,7 @@ export default class LLMWikiPlugin extends Plugin {
   // ==================== Lint ====================
 
   async lintWiki() {
+    if (!this.requireLLMReady()) return;
     const signal = this.wikiEngine.startLintOperation();
     try {
       await runLintWiki({
@@ -484,6 +498,7 @@ export default class LLMWikiPlugin extends Plugin {
   // ==================== Schema ====================
 
   async suggestSchemaUpdate() {
+    if (!this.requireLLMReady()) return;
     if (!this.llmClient) {
       new Notice(TEXTS[this.settings.language].errorNoApiKey);
       return;
@@ -527,6 +542,8 @@ export default class LLMWikiPlugin extends Plugin {
       });
 
       console.debug('Test response:', testResponse);
+      this.settings.llmReady = true;
+      await this.saveSettings();
       const providerName = (PREDEFINED_PROVIDERS[this.settings.provider]?.nameEn || this.settings.provider);
 
       return {
@@ -535,11 +552,20 @@ export default class LLMWikiPlugin extends Plugin {
       };
     } catch (error) {
       console.error('Connection test failed:', error);
+      this.settings.llmReady = false;
+      await this.saveSettings();
       const errorMsg = error instanceof Error ? error.message : String(error);
       return {
         success: false,
         message: `❌ ${t.testConnectionFailed || 'Connection failed'}: ${errorMsg || t.errorUnknown || 'Unknown error'}`
       };
     }
+  }
+
+  private requireLLMReady(): boolean {
+    if (this.settings.llmReady) return true;
+    const t = TEXTS[this.settings.language] || TEXTS.en;
+    new Notice((t as unknown as Record<string, string>).llmNotReady || 'LLM is not configured. Please go to Settings → Karpathy LLM Wiki to configure your provider and pass the connection test.', 8000);
+    return false;
   }
 }

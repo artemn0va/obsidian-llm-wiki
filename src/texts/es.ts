@@ -28,6 +28,8 @@ export const ES_TEXTS = {
     // Status
     statusTitle: 'Estado del cliente LLM',
     statusInitialized: 'Inicializado',
+    statusReady: 'LLM listo',
+    statusNotReady: 'LLM no configurado — complete la configuración y pase la prueba de conexión',
     statusNotInitialized: 'No inicializado',
     currentProvider: 'Proveedor actual',
 
@@ -95,6 +97,7 @@ export const ES_TEXTS = {
 
     // Errors
     errorNoApiKey: 'Configura primero la API Key',
+    llmNotReady: 'LLM no está configurado. Vaya a Configuración → Karpathy LLM Wiki para configurar su proveedor y pasar la prueba de conexión.',
     errorFetchFailed: 'Error: {}',
 
     // Query Settings

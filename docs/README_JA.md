@@ -97,6 +97,7 @@ LLM-Wikiはこれを逆転させます。あなたが手作業でグラフを構
 | **🔍 Wikiに問い合わせ** | `Cmd+P` → "Wikiに問い合わせ" — 質問し、`[[wiki-links]]`付きのストリーミング回答を取得 |
 | **🛠️ WikiのLint** | `Cmd+P` → "WikiのLint" — 重複検出、dead links、orphans、空ページ、不足エイリアスの健全性スキャン |
 | **📋 インデックスの再生成** | `Cmd+P` → "インデックスの再生成" — `wiki/index.md`をエイリアス情報付きで再構築 |
+| **⏹️ 操作キャンセル** | `Cmd+P` → "Cancel current ingestion" またはステータスバークリック — バッチ境界で安全に停止し、完了済みの作業を保持 |
 | **💡 スキーマ更新の提案** | `Cmd+P` → "スキーマ更新の提案" — LLMがWikiを分析しスキーマ改善を提案 |
 
 同じSourceを再ingestすると、Entity/Conceptページは増分更新（新情報がmerge）。Summaryページはregenerateされる。
@@ -168,7 +169,7 @@ Settings → **Ingestion Acceleration**:
 ### 🌐 LLM & Language
 
 - **🔌 Multi-Provider Support** — Anthropic、Anthropic Compatible（Coding Plan）、Gemini、OpenAI、DeepSeek、Kimi、GLM、OpenRouter、Ollama、custom endpoint
-- **🔄 5xx Auto Retry** — 全clientsでHTTP 5xx/429エラー時exponential backoff retry（max 2）
+- **🔄 5xx Auto Retry** — 全clientsでHTTP 5xx/429/529/529エラー時exponential backoff retry（max 2）
 - **📋 Dynamic Model List** — Provider APIからreal-time fetch
 - **🌐 Wiki Output Language** — Interface独立の8言語（English/Chinese/Japanese/Korean/German/French/Spanish/Portuguese）、custom inputサポート
 - **🌍 Full UI Internationalization** — プラグインUIが8言語対応（EN/ZH/JA/KO/DE/FR/ES/PT）、269+ UIフィールド完全翻訳、自然なローカル表現
@@ -193,6 +194,7 @@ Settings → **Ingestion Acceleration**:
 | **🔍 Wikiに問い合わせ** | ストリーミング出力と`[[wiki-links]]`を伴う対話式Q&A |
 | **🛠️ WikiのLint** | 包括的健康スキャン：重複、dead links、empty pages、orphans、missing aliases、矛盾 |
 | **📋 インデックスの再生成** | `wiki/index.md`を手動で再構築 |
+| **⏹️ 操作キャンセル** | `Cmd+P` → "Cancel current ingestion" またはステータスバークリック — バッチ境界で安全に停止し、完了済みの作業を保持 |
 | **💡 スキーマ更新の提案** | LLMがWikiを分析しSchema改善を提案 |
 
 ---

@@ -98,6 +98,7 @@ Dieses Projekt entwickelt sich rasch — neue Funktionen, Fehlerbehebungen und V
 | **🛠️ Wiki prüfen** | `Cmd+P` → "Wiki prüfen" — Gesundheits-Scan: Duplikate, tote Links, verwaiste Seiten, leere Seiten, fehlende Aliase |
 | **📋 Index neu generieren** | `Cmd+P` → "Index neu generieren" — `wiki/index.md` mit aktuellen Seiten und Aliasen neu aufbauen |
 | **💡 Schema-Aktualisierungen vorschlagen** | `Cmd+P` → "Schema-Aktualisierungen vorschlagen" — LLM analysiert Wiki und schlägt Schema-Verbesserungen vor |
+| **⏹️ Vorgang abbrechen** | `Cmd+P` → "Cancel current ingestion" oder Statusleisten-Klick — sicheres Stoppen an Batch-Grenzen |
 
 Re-Ingesting derselben Source führt zu inkrementellen Updates auf Entity/Concept-Seiten (neue Info wird gemerged). Summary-Seiten werden regeneriert.
 
@@ -168,7 +169,7 @@ Settings → **Ingestion Acceleration**:
 ### 🌐 LLM & Language
 
 - **🔌 Multi-Provider Support** — Anthropic, Anthropic Compatible, Gemini, OpenAI, DeepSeek, Kimi, GLM, OpenRouter, Ollama, Custom Endpoint
-- **🔄 5xx Auto Retry** — Alle Clients wiederholen bei HTTP 5xx/429-Fehlern mit Exponential Backoff (max. 2)
+- **🔄 5xx Auto Retry** — Alle Clients wiederholen bei HTTP 5xx/429/529/529-Fehlern mit Exponential Backoff (max. 2)
 - **📋 Dynamic Model List** — Echtzeit-Fetch von Provider-API
 - **🌐 Wiki Output Language** — Interface-unabhängige 8 Sprachen (Englisch/Chinesisch/Japanisch/Koreanisch/Deutsch/Französisch/Spanisch/Portugiesisch), Custom Input unterstützt
 - **🌍 Fullständige UI-Internationalisierung** — Plugin UI unterstützt 8 Sprachen (EN/ZH/JA/KO/DE/FR/ES/PT), 269+ UI-Felder vollständig übersetzt, natürliche lokale Ausdrücke

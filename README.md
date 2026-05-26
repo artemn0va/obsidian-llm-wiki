@@ -157,6 +157,8 @@ Settings → **Ingestion Acceleration**:
 - **🔍 Lint Health Scan** — Detects duplicates, dead links, empty pages, orphans, missing aliases, and contradictions in one comprehensive report
 - **🎯 Semantic-Tier Duplicate Detection** — Tier 1 (direct name matches: cross-language, abbreviations, high-similarity titles) always verified; Tier 2 (indirect signals: shared links, moderate similarity) fills token budget
 - **⚡ Smart Fix All** — Causality-ordered batch fix: duplicates merged → dead links resolved → orphans linked → empty pages expanded
+- **🔗 Double-Nested Link Auto-Fix** — Lint automatically detects and fixes `[[[[...]]]]` formatting errors across all wiki files, zero LLM cost
+- **⏹️ Cancel Operations** — Cancel ongoing ingestion or lint via status bar click or command palette, with clean partial-result preservation
 - **🏷️ Alias Completion** — One-click parallel batch generation of missing aliases, improving future duplicate detection
 - **🔄 Auto-Maintenance** — Multi-folder file watcher, periodic lint, startup health check (all optional)
 - **⚠️ Contradiction State Machine** — `detected → review_ok → resolved` (AI fix) or `detected → pending_fix` (manual)
@@ -170,7 +172,7 @@ Settings → **Ingestion Acceleration**:
 ### 🌐 LLM & Language
 
 - **🔌 Multi-Provider** — Anthropic, Anthropic Compatible (Coding Plan), Gemini, OpenAI, DeepSeek, Kimi, GLM, OpenRouter, Ollama, custom endpoints
-- **🔄 5xx Retry** — Automatic exponential backoff retry (max 2) on HTTP 5xx/429 errors across all clients
+- **🔄 5xx/429/Overload Retry** — Automatic exponential backoff retry (max 2) on HTTP 5xx/429/529 overload errors across all clients, with status-aware error diagnostics
 - **📋 Dynamic Model List** — Real-time fetching from provider APIs
 - **🌐 Wiki Output Language** — 8 languages independent of UI (EN/ZH/JA/KO/DE/FR/ES/PT), with custom input
 - **🌍 Full UI Internationalization** — Plugin UI supports 8 languages (EN/ZH/JA/KO/DE/FR/ES/PT), 269+ UI fields fully translated with natural local expressions
@@ -181,6 +183,7 @@ Settings → **Ingestion Acceleration**:
 
 - **⚡ Parallel Page Generation** — Configurable 1–5 concurrent pages, default 3 (parallel), 2–3× faster for large sources, error isolation per page
 - **📚 Iterative Batch Extraction** — Adaptive batch sizing eliminates max_tokens bottleneck for long documents
+- **⏹️ Batch-Level Cancellation** — Cancel long-running operations at batch boundaries, preserving completed work with immediate user feedback
 - **🏛️ Three-Layer Architecture** — `sources/` (read-only) → `wiki/` (LLM-generated) → `schema/` (co-evolved config)
 - **🧩 Modular Codebase** — 13 focused modules in `src/`
 

@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.3] - 2026-05-26
+
+### Added
+- **Lint cancel support**: Cancel ongoing lint operations via status bar click or command palette. Checks at batch boundaries (page reads, LLM duplicate verification, LLM analysis) ensure clean cancellation with partial results preserved. Cancellation Notice provides immediate feedback to the user.
+- **Double-nested wiki-link auto-fix**: Lint now automatically detects and fixes `[[[[entities/Foo|Foo]]]]` double-nesting patterns in all wiki directory files (including `log.md`). Programmatic fix with zero LLM cost. Fixes historical damage from #37. +5 unit tests (106 total).
+
+### Fixed
+- **529 "Overloaded" not retried** (Issue #41): Anthropic serving infrastructure overload errors returned with message "Overloaded", which didn't match any retry regex pattern. Now catches both `status 529` (status codes embedded in error messages) and `overload` (regex safety net). Affected all client classes (`AnthropicCompatibleClient`, `AnthropicClient`, `OpenAICompatibleClient`).
+- **Double-nested wiki-links in log.md** (Issue #37): Three-layer defense — (1) prompt clarifies `related_pages` must output plain names, not wiki-link format; (2) `source-analyzer.ts` strips `[[...]]` syntax from LLM output as post-processing safety net; (3) `updateRelatedPage` returns `boolean`, only recording pages actually found and updated. Fixes secondary bug where silently-skipped pages were reported as "updated."
+- **Opposite-directory stub creation** (Issue #40): Stub creation safety nets (both LLM path and deterministic fallback) now check slug-equivalence via `slugify()` in addition to exact title/alias matching. Prevents duplicate stubs when a page exists in the opposite directory under a different format (e.g. "Machine Learning" vs "Machine-Learning").
+- **Cancellation UX feedback**: When user cancels ingestion, immediate Notice toast and progress indicator update confirm the action with a descriptive message instead of leaving the previous progress text unchanged.
+
+### Changed
+- **PageFactory refactoring**: 8 entity/concept methods (2 public + 6 private) unified into 4 generic private methods via `createOrUpdatePage(info, pageType, ...)`. Code reduced from 563 to 424 lines (-25%). Public API unchanged — zero call-site modifications across 6 callers.
+- **Extraction prompt improved** (Issue #34): Extraction criteria changed from document-centric ("importance in the text") to graph-centric ("wiki-link test"). Bibliographic references (author citations, study/trial names) explicitly excluded — the prompt guides LLM to extract their findings as concepts instead of the citation as an entity.
+
 ## [1.10.2] - 2026-05-20
 
 ### Fixed

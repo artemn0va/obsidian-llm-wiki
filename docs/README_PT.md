@@ -99,6 +99,7 @@ Este projeto evolui rapidamente — novos recursos, correções de bugs e melhor
 | **🔍 Consultar Wiki** | `Cmd+P` → "Consultar Wiki" — faça perguntas, obtenha respostas em streaming com `[[wiki-links]]` |
 | **🛠️ Verificar Wiki** | `Cmd+P` → "Verificar Wiki" — verificação de saúde: duplicados, links quebrados, páginas órfãs, páginas vazias, aliases ausentes |
 | **📋 Regenerar índice** | `Cmd+P` → "Regenerar índice" — reconstruir `wiki/index.md` com páginas atuais e aliases |
+| **⏹️ Cancelar operação** | `Cmd+P` → "Cancel current ingestion" ou clique na barra de status — parada segura nos limites do lote |
 | **💡 Sugerir atualizações de Schema** | `Cmd+P` → "Sugerir atualizações de Schema" — o LLM analisa a Wiki e propõe melhorias no Schema |
 
 Re-ingerir a mesma source faz atualizações incrementais em Entity/Concept pages (nova informação mesclada). Summary pages são regeneradas.
@@ -170,7 +171,7 @@ Settings → **Ingestion Acceleration**:
 ### 🌐 LLM e Idioma
 
 - **🔌 Multi-Provider** — Anthropic, Anthropic Compatible (Coding Plan), Gemini, OpenAI, DeepSeek, Kimi, GLM, OpenRouter, Ollama, endpoints custom
-- **🔄 5xx Retry** — Tentativa automática de exponential backoff (máx. 2) em erros HTTP 5xx/429 em todos os clientes
+- **🔄 5xx Retry** — Tentativa automática de exponential backoff (máx. 2) em erros HTTP 5xx/429/529/529 em todos os clientes
 - **📋 Lista Dinâmica de Modelos** — Busca em tempo real das APIs dos providers
 - **🌐 Idioma de Saída Wiki** — 8 idiomas independentes da UI (EN/ZH/JA/KO/DE/FR/ES/PT), com entrada customizada
 - **🌍 Internacionalização completa da UI** — Interface do plugin em 8 idiomas (EN/ZH/JA/KO/DE/FR/ES/PT), 269+ campos UI totalmente traduzidos, expressões locais naturais
@@ -195,6 +196,7 @@ Settings → **Ingestion Acceleration**:
 | **🔍 Consultar Wiki** | Q&A conversacional sobre sua Wiki, respostas em streaming com `[[wiki-links]]` |
 | **🛠️ Verificar Wiki** | Verificação completa de saúde: duplicados, dead links, páginas vazias, órfãos, aliases ausentes, contradições |
 | **📋 Regenerar índice** | Reconstrua manualmente `wiki/index.md` |
+| **⏹️ Cancelar operação** | `Cmd+P` → "Cancel current ingestion" ou clique na barra de status — parada segura nos limites do lote |
 | **💡 Sugerir atualizações de Schema** | LLM analisa a Wiki e propõe melhorias no Schema |
 
 ---

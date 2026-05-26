@@ -99,6 +99,7 @@ Este proyecto evoluciona rápidamente — nuevas funciones, correcciones de erro
 | **🔍 Consultar wiki** | `Cmd+P` → "Consultar wiki" — haz preguntas, obtén respuestas en streaming con `[[wiki-links]]` |
 | **🛠️ Verificar wiki** | `Cmd+P` → "Verificar wiki" — escaneo de salud: duplicados, enlaces rotos, páginas huérfanas, páginas vacías, alias faltantes |
 | **📋 Regenerar índice** | `Cmd+P` → "Regenerar índice" — reconstruir `wiki/index.md` con páginas actuales y alias |
+| **⏹️ Cancelar operación** | `Cmd+P` → "Cancel current ingestion" o clic en barra de estado — parada segura en límites de lote |
 | **💡 Sugerir actualizaciones del esquema** | `Cmd+P` → "Sugerir actualizaciones del esquema" — el LLM analiza la Wiki y propone mejoras al esquema |
 
 Re-ingesting la misma source realiza actualizaciones incrementales en entity/concept pages (información nueva fusionada). Las summary pages se regeneran.
@@ -170,7 +171,7 @@ Configuración → **Ingestion Acceleration**:
 ### 🌐 LLM & Idioma
 
 - **🔌 Multi-Provider** — Anthropic, Anthropic Compatible (Coding Plan), Gemini, OpenAI, DeepSeek, Kimi, GLM, OpenRouter, Ollama, custom endpoints
-- **🔄 5xx Retry** — Reintento automático de backoff exponencial (máx 2) en errores HTTP 5xx/429 en todos los clientes
+- **🔄 5xx Retry** — Reintento automático de backoff exponencial (máx 2) en errores HTTP 5xx/429/529/529 en todos los clientes
 - **📋 Dynamic Model List** — Fetching en tiempo real desde APIs de provider
 - **🌐 Wiki Output Language** — 8 idiomas independientes de la UI (EN/ZH/JA/KO/DE/FR/ES/PT), con input personalizado
 - **🌍 Internacionalización completa de UI** — Interfaz del plugin en 8 idiomas (EN/ZH/JA/KO/DE/FR/ES/PT), 269+ campos UI totalmente traducidos, expresiones locales naturales
@@ -195,6 +196,7 @@ Configuración → **Ingestion Acceleration**:
 | **🔍 Consultar wiki** | Q&A conversacional sobre tu Wiki, respuestas en streaming con `[[wiki-links]]` |
 | **🛠️ Verificar wiki** | Escaneo completo de salud: duplicados, dead links, empty pages, orphans, aliases faltantes, contradicciones |
 | **📋 Regenerar índice** | Reconstruye manualmente `wiki/index.md` |
+| **⏹️ Cancelar operación** | `Cmd+P` → "Cancel current ingestion" o clic en barra de estado — parada segura en límites de lote |
 | **💡 Sugerir actualizaciones del esquema** | El LLM analiza el Wiki y propone mejoras al schema |
 
 ---

@@ -99,6 +99,7 @@ Ce projet évolue rapidement — de nouvelles fonctionnalités, corrections de b
 | **🔍 Interroger le wiki** | `Cmd+P` → « Interroger le wiki » — posez des questions, obtenez des réponses en streaming avec `[[wiki-links]]` |
 | **🛠️ Vérifier le wiki** | `Cmd+P` → « Vérifier le wiki » — scan de santé : doublons, liens morts, pages orphelines, pages vides, alias manquants |
 | **📋 Régénérer l'index** | `Cmd+P` → « Régénérer l'index » — reconstruire `wiki/index.md` avec les pages actuelles et les alias |
+| **⏹️ Annuler opération** | `Cmd+P` → "Cancel current ingestion" ou clic barre de statut — arrêt propre aux limites de lot |
 | **💡 Suggérer des mises à jour du schéma** | `Cmd+P` → « Suggérer des mises à jour du schéma » — le LLM analyse le Wiki et propose des améliorations du schéma |
 
 La ré-ingestion d'une même source effectue des mises à jour incrémentales sur les pages Entity/Concept (fusion des nouvelles informations). Les pages de résumé sont régénérées.
@@ -170,7 +171,7 @@ Paramètres → **Ingestion Acceleration** :
 ### 🌐 LLM et langue
 
 - **🔌 Multi-Provider** — Anthropic, Anthropic Compatible (Coding Plan), Gemini, OpenAI, DeepSeek, Kimi, GLM, OpenRouter, Ollama, endpoints personnalisés
-- **🔄 5xx Retry** — Retry automatique avec backoff exponentiel (max 2) sur les erreurs HTTP 5xx/429 pour tous les clients
+- **🔄 5xx Retry** — Retry automatique avec backoff exponentiel (max 2) sur les erreurs HTTP 5xx/429/529/529 pour tous les clients
 - **📋 Dynamic Model List** — Récupération en temps réel depuis les APIs des providers
 - **🌐 Wiki Output Language** — 8 langues indépendantes de l'UI (EN/ZH/JA/KO/DE/FR/ES/PT), avec entrée personnalisée
 - **🌍 Internationalisation complète de l'UI** — Interface du plugin en 8 langues (EN/ZH/JA/KO/DE/FR/ES/PT), 269+ champs UI entièrement traduits, expressions locales naturelles
@@ -195,6 +196,7 @@ Paramètres → **Ingestion Acceleration** :
 | **🔍 Interroger le wiki** | Q&R conversationnel sur votre Wiki, réponses en streaming avec `[[Wiki-links]]` |
 | **🛠️ Vérifier le wiki** | Analyse complète de santé : doublons, liens morts, pages vides, orphelines, alias manquants, contradictions |
 | **📋 Régénérer l'index** | Reconstruire manuellement `wiki/index.md` |
+| **⏹️ Annuler opération** | `Cmd+P` → "Cancel current ingestion" ou clic barre de statut — arrêt propre aux limites de lot |
 | **💡 Suggérer des mises à jour du schéma** | Le LLM analyse le Wiki et propose des améliorations de Schema |
 
 ---

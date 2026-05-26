@@ -1,40 +1,42 @@
 # LLM Wiki Plugin Project Development Standards
 
-**Last Updated:** 2026-05-20
+**Last Updated:** 2026-05-26
 
 ---
 
-## Current Phase: v1.10.2 — Custom Granularity Consistency Fix
+## Current Phase: v1.10.3 — Robustness & UX Improvements
+
+### Completed (v1.10.3)
+- ✅ **Issue #41 — 529 "Overloaded" not retried**: Error messages now embed HTTP status codes across all client classes. All retry regex patterns include `overload` keyword. Affected `AnthropicCompatibleClient`, `AnthropicClient`, `OpenAICompatibleClient`.
+- ✅ **Issue #37 — Double-nested wiki-links in log.md**: Three-layer defense: (1) prompt forces plain names for `related_pages`, (2) source-analyzer strips `[[...]]` syntax as post-processing, (3) `updateRelatedPage` returns `boolean` — pages not actually found are no longer reported as "updated."
+- ✅ **Issue #43 — Cancel ingestion mid-run**: `AbortController` with checkpoints at each batch boundary. Status bar item (clickable) + command palette (`Cancel current ingestion`). Folder ingestion loop breaks on cancellation. Immediate Notice feedback on cancel request.
+- ✅ **Issue #40 — Opposite-directory stub creation**: Stub safety nets (LLM path + deterministic fallback) now check slug-equivalence via `slugify()`, preventing duplicate stubs when pages exist under different formatting in the opposite directory.
+- ✅ **Issue #34 — Extraction prompt rewrite**: Graph-centric ("wiki-link test") replaces document-centric criteria. Bibliographic references explicitly excluded. Entity Recognition Guide updated for person/product types.
+- ✅ **PageFactory refactoring** (ROADMAP P1): 8 entity/concept methods unified into 4 generic methods. Code reduced 563→424 lines (-25%). Public API unchanged.
+- ✅ **Lint double-nested link auto-fix**: Lint now programmatically detects and fixes `[[[[...]]]]` patterns across all wiki directory files. +5 unit tests.
+- ✅ **Lint cancel support**: `runLintWiki` accepts `AbortSignal`, checks at batch boundaries (page reads, LLM dedup, LLM analysis). Shared status bar and command with ingest cancel.
+- ✅ **Cancellation UX feedback**: CancelIngestion immediately shows Notice toast + updates progress indicator.
 
 ### Completed (v1.10.2)
-- ✅ **Custom granularity per-type limits fix**: Fixed three inconsistencies where UI presented entity/concept as separate limits but code ignored them. `source-analyzer.ts` now enforces per-type caps instead of merging into a single total. `getGranularityInstruction()` injects concrete numbers into the LLM prompt. `getGranularityFixLimits()` reads user settings instead of hardcoded values. Added 6 unit tests (101 total).
+- ✅ **Custom granularity per-type limits fix**: Three inconsistencies fixed — `source-analyzer.ts` enforces per-type caps, `getGranularityInstruction()` injects concrete numbers, `getGranularityFixLimits()` reads user settings. +6 unit tests.
 
 ### Completed (v1.10.1)
-- ✅ **Issue #32 — Slug normalization missing in resolvePagePath**: Fast path 2 now checks both title AND aliases via normalized slug comparison (case-insensitive), catching space-vs-hyphen variants (`Metabolisches Syndrom` vs `Metabolisches-Syndrom`), alias slug variants, and case differences — all without LLM calls. Added 4 unit tests (96 total).
+- ✅ **Issue #32 — Slug normalization in resolvePagePath**: Fast path 2 checks title + aliases via normalized slug comparison. +4 unit tests.
 
 ### Completed (v1.10.0)
-- ✅ **Issue #30 — Aliases omitted in duplicate detection**: Fixed `analyzeSource()` and `resolveEntityDedup()` to include aliases in existingPagesList, preventing LLM from creating duplicate stub pages for synonym names (e.g., "CoT" vs "思维链")
-- ✅ **Issue #31 — Granularity expansion**: Added Minimal granularity (5 items) + Custom option (user-defined 1-300 limits) with conditional input fields, comprehensive i18n updates across 8 languages
-- ✅ **UX improvements**: All numeric inputs now enforce `type='number'` with HTML5 validation, auto-clamping to valid range with Notice feedback, CSS class-based width control (compliant with Obsidian eslint rules)
-- ✅ **Extraction limits unified**: Fine 100, Standard 50, Coarse 10, Minimal 5, Custom 1-300 (predictable bounds across all granularity levels)
-- ✅ **Description optimization**: Granularity descriptions across 8 languages now include selection guide ("Fine: deep analysis, Standard: daily notes, Coarse: quick overview, Minimal: batch 100+ files, Custom: specialized limits") and cost/time optimization tips
-
-### Recently Completed (v1.9.x)
-- Fixed `renderComponent` → `activeRenderComponent` memory leak in QueryModal
-- Fixed `lintFixer` encapsulation (public proxy method `fixPollutedPage()`)
-- Fixed `testLLMConnection` hardcoded Chinese strings → TEXTS system
-- Fixed related entity/concept page generation: LLM now outputs `[[wiki-link]]` for non-existent pages (Lint can detect dead links)
-- `tsc --noEmit` passes with 0 errors (tsconfig moduleResolution, skipLibCheck, include scope)
+- ✅ **Issue #30/#31 — Aliases + Granularity expansion**: Minimal/Custom options, UX improvements, i18n across 8 languages.
 
 ### P1 — Short-term
-- PageFactory entity/concept method unification (8 pairs → generic)
 - LLM client retry extraction (shared `withRetry`)
 - `createMessageStream` language type consistency
+- `parseJsonResponse` + `mergeFrontmatter` unit tests
 
 ### P2 — Medium-term
-- `parseJsonResponse` + `mergeFrontmatter` unit tests
 - `slugify` debug log reduction (8→2)
 - Residual Chinese comment cleanup
+- Ingest current file (no file picker) + ribbon icon (Issue #44)
+- Anthropic prompt caching via `cache_control: ephemeral` (Issue #38)
+- `mentions_in_source` filtering in merge prompts (Issue #39)
 
 ### Already Evaluated (not doing)
 - `getExistingWikiPages` cache bypass → Solve when it hurts
@@ -68,7 +70,7 @@ src/
 ├── ui/
 │   ├── settings.ts                 # Settings panel
 │   └── modals.ts                   # Lint/Ingest/Query modals
-└── __tests__/                      # Unit tests (vitest, 53 tests)
+└── __tests__/                      # Unit tests (vitest, 106 tests)
 ```
 
 ---

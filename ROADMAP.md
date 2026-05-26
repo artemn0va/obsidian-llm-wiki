@@ -2,49 +2,61 @@
 
 > Feature planning and improvement proposals
 
-**Version:** 1.9.0 | **Updated:** 2026-05-19
+**Version:** 1.10.3 | **Updated:** 2026-05-26
 
 ---
 
 ## Current Status
 
-### Next: v1.9.x — Second Quality Round (Post-B+ Audits)
+### Next: v1.11.0 — Open Issues Resolution
 
-Two independent audits confirmed B+. New plan addressing consensus issues.
-
-**P0 — Immediate (in progress)**
-
-| Action | Effort | Why |
-|--------|--------|-----|
-| Fix `renderComponent` memory leak (query-engine.ts) | 1 line | Component created on wrong property name, never freed |
-| Fix `lintFixer` encapsulation (wiki-engine.ts) | 2 lines | Private property accessed externally |
-| `testLLMConnection` hardcoded Chinese → TEXTS | 10 lines | User-visible, violates i18n |
-| LLM outputs plain text for non-existing related entities → `[[wiki-link]]` | prompt change | `text` not `[[]]`, Lint misses dead links |
-| Ensure `tsc --noEmit` passes | — | Fix source + vitest/vite type errors |
+P1-P3 issues verified against code, ready for implementation.
 
 **P1 — Short-term**
 
 | Action | Effort | Why |
 |--------|--------|-----|
-| PageFactory entity/concept 8-pair method unification | 4h | 16 near-identical methods, highest maintenance debt |
 | LLM client retry extraction (`withRetry`) | 2h | Retry/truncation duplicated across 3 clients |
-| `createMessageStream` language type fix | 1h | Interface vs implementation mismatch |
+| `createMessageStream` language type consistency | 1h | Interface vs implementation mismatch |
+| Ingest current file (+ ribbon icon) (Issue #44) | 2h | Users want one-click ingest, no file picker |
 
 **P2 — Medium-term**
 
 | Action | Effort | Why |
 |--------|--------|-----|
-| `parseJsonResponse` unit tests | 2h | Auditors' #1 test priority |
-| `mergeFrontmatter` unit tests | 1h | Pure function, test-friendly |
+| Anthropic prompt caching via `cache_control: ephemeral` (Issue #38) | 2h | Significant cost savings for repeated system prompts |
+| `mentions_in_source` filtering in merge prompts (Issue #39) | 1h | Merge quality improvement |
+| `parseJsonResponse` + `mergeFrontmatter` unit tests | 3h | Auditors' #1 test priority |
 | `slugify` debug log reduction (8→2) | 30min | High-frequency noise |
+| Residual Chinese comment cleanup | 1h | Codebase language consistency |
+
+**P3 — Nice-to-have**
+
+| Action | Effort | Why |
+|--------|--------|-----|
+| Source title in frontmatter (Issue #36) | 1h | Needs clarification from issue author |
+| Connection failure UX (Issue #42) | 2h | Network error guidance |
 
 **Not doing** (per Python Zen): cache bypass, serial index reads, 760-line method split, YAML parser replacement
 
-### Test Coverage Milestone (v1.9.0)
+### Test Coverage Milestone (v1.10.3)
 
-- **53 unit tests** via vitest: slugify (13), parseFrontmatter (9), detectRateLimitFailures (8), formatRateLimitNotice (2), cleanMarkdownResponse (8), enforceFrontmatterConstraints (13)
-- CI-ready: `pnpm lint && pnpm test && pnpm build`
-- Previously: **F (zero tests)** → Now: **B-** (pure functions covered, integration tests pending)
+- **106 unit tests** via vitest: slugify (13), parseFrontmatter (9), detectRateLimitFailures (8), formatRateLimitNotice (2), cleanMarkdownResponse (8), enforceFrontmatterConstraints (13), parseJsonResponse (14), mergeFrontmatter (9), preserveFrontmatterReviewTag (4), isPageEmpty (5), detectPollutedPages (6), fixDoubleNestedWikiLinks (5), custom granularity (6), slug normalization (4)
+- CI-ready: `pnpm lint && pnpm test && pnpm build && npx tsc --noEmit`
+- Previously: **F (zero tests)** → v1.9.1: **B-** (pure functions) → v1.10.3: **B+** (106 tests)
+
+### Implemented (v1.10.3) — Robustness & UX Improvements
+
+**6 Issues Resolved (#34, #37, #40, #41, #43) + PageFactory Refactoring + Lint Enhancements**
+
+- **#41 — 529 "Overloaded" retry**: Error messages embed HTTP status codes, retry regex includes `overload` keyword across all client classes.
+- **#37 — Double-nested wiki-links**: Three-layer defense (prompt + post-processing + integrity check). `updateRelatedPage` returns `boolean`. Lint auto-fix for historical damage.
+- **#43 — Cancel ingestion mid-run**: `AbortController` + batch checkpoints + status bar + command palette. Folder loop aware. Immediate Notice feedback.
+- **#40 — Opposite-directory stubs**: Slug-equivalence matching in both LLM and deterministic stub safety nets.
+- **#34 — Extraction prompt rewrite**: Graph-centric "wiki-link test" replaces document-centric criteria. Bibliographic references excluded.
+- **PageFactory refactoring**: 8 methods → 4 generic (563→424 lines, -25%).
+- **Lint cancel support**: Shared with ingest cancel infrastructure.
+- **Double-nested link auto-fix**: Programmatic `[[[[...]]]]` detection across all wiki files during lint.
 
 ### Implemented (v1.9.0) — Pollution Defense & Quality Upgrade
 

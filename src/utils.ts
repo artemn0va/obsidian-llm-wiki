@@ -17,7 +17,7 @@ export function slugify(text: string): string {
 // matchExtractedToExisting where thousands of slugify calls would flood the log.
 // Pure slug computation — no debug logs on normal path. Used for batch operations
 // where thousands of silent calls are needed (e.g. matching 2141 existing pages).
-function computeSlug(text: string): string {
+export function computeSlug(text: string): string {
   if (!text || text.trim().length === 0) return 'untitled';
 
   const trimmed = text.trim();

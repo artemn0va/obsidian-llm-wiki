@@ -11,6 +11,7 @@ import {
 import { PROMPTS } from '../prompts';
 import {
   slugify,
+  computeSlug,
   cleanMarkdownResponse,
   parseFrontmatter,
   mergeFrontmatter,
@@ -93,8 +94,8 @@ export class PageFactory {
       // - "deep learning" vs "Deep Learning" (case difference)
       const targetSlug = slug.toLowerCase();
       const slugMatch = sameTypePages.find(p =>
-        slugify(p.title).toLowerCase() === targetSlug ||
-        (p.aliases || []).some(a => slugify(a).toLowerCase() === targetSlug)
+        computeSlug(p.title).toLowerCase() === targetSlug ||
+        (p.aliases || []).some(a => computeSlug(a).toLowerCase() === targetSlug)
       );
       if (slugMatch) {
         await this.appendAliases(slugMatch.path, [name]);

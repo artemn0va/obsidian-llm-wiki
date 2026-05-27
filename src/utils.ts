@@ -10,20 +10,26 @@ export function slugify(text: string): string {
     return 'untitled';
   }
 
+  return computeSlug(text);
+}
+
+// Pure slug computation — no debug logs. Used for batch operations like
+// matchExtractedToExisting where thousands of slugify calls would flood the log.
+// Pure slug computation — no debug logs on normal path. Used for batch operations
+// where thousands of silent calls are needed (e.g. matching 2141 existing pages).
+function computeSlug(text: string): string {
+  if (!text || text.trim().length === 0) return 'untitled';
+
   const trimmed = text.trim();
 
-  // Step 1: Remove ASCII control characters (char code < 32) and filesystem-unsafe symbols
+  // Step 1: Remove ASCII control characters and filesystem-unsafe symbols
   const afterRemoveInvalid = trimmed
     .split('')
     .filter(c => c.charCodeAt(0) >= 32)
     .join('')
     .replace(/[/\\:*?"<>|,()'、，。；：！？（）【】《》]/g, '');
 
-  if (afterRemoveInvalid.length === 0) {
-    console.warn('slugify: empty after removing invalid chars，using fallback name');
-    console.debug('original char codes:', trimmed.split('').map(c => c.charCodeAt(0)));
-    return 'untitled-' + Date.now();
-  }
+  if (afterRemoveInvalid.length === 0) return 'untitled-' + Date.now();
 
   // Step 2: Convert spaces and dots to dashes
   const afterSpaceToDash = afterRemoveInvalid.replace(/[\s.]+/g, '-');
@@ -33,15 +39,8 @@ export function slugify(text: string): string {
 
   // Step 4: Remove leading and trailing dashes
   const finalSlug = afterMergeDash.replace(/^-|-$/g, '').trim();
-  console.debug('final slug:', finalSlug, 'length:', finalSlug.length);
 
-  if (finalSlug.length === 0) {
-    console.warn('slugify: empty final result，using fallback name');
-    console.debug('=== Debug info ===');
-    console.debug('original char codes:', trimmed.split('').map(c => c.charCodeAt(0)));
-    console.debug('processed char codes:', afterRemoveInvalid.split('').map(c => c.charCodeAt(0)));
-    return 'untitled-' + Date.now();
-  }
+  if (finalSlug.length === 0) return 'untitled-' + Date.now();
 
   return finalSlug;
 }
@@ -844,16 +843,16 @@ export function matchExtractedToExisting(
   extractedNames: string[],
   existingPages: Array<{ title: string; aliases?: string[] }>
 ): string[] {
-  // Precompute slug values — existing page titles and aliases don't change
+  // Precompute slug values silently — page titles and aliases don't change
   const pageSlugs = existingPages.map(p => ({
     title: p.title,
-    slug: slugify(p.title).toLowerCase(),
-    aliasSlugs: (p.aliases || []).map(a => slugify(a).toLowerCase()),
+    slug: computeSlug(p.title).toLowerCase(),
+    aliasSlugs: (p.aliases || []).map(a => computeSlug(a).toLowerCase()),
   }));
 
   const matched = new Set<string>();
   for (const name of extractedNames) {
-    const targetSlug = slugify(name).toLowerCase();
+    const targetSlug = computeSlug(name).toLowerCase();
     const match = pageSlugs.find(p =>
       p.slug === targetSlug ||
       p.aliasSlugs.some(a => a === targetSlug)

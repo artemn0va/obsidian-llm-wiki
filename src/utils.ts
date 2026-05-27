@@ -836,3 +836,22 @@ export function localKeywordMatch(query: string, pages: Omit<PageRef, 'score'>[]
   }
   return scored.sort((a, b) => b.score - a.score);
 }
+
+// Match extracted entity/concept names against existing wiki pages using
+// slug + alias matching (same logic as resolvePagePath Fast path 2).
+// Used for programmatic related_pages after extraction.
+export function matchExtractedToExisting(
+  extractedNames: string[],
+  existingPages: Array<{ title: string; aliases?: string[] }>
+): string[] {
+  const matched = new Set<string>();
+  for (const name of extractedNames) {
+    const targetSlug = slugify(name).toLowerCase();
+    const match = existingPages.find(p =>
+      slugify(p.title).toLowerCase() === targetSlug ||
+      (p.aliases || []).some(a => slugify(a).toLowerCase() === targetSlug)
+    );
+    if (match) matched.add(match.title);
+  }
+  return [...matched];
+}

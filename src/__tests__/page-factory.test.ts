@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { truncateMentions, parseIndexForPages, localKeywordMatch } from '../utils';
+import { truncateMentions, parseIndexForPages, localKeywordMatch, matchExtractedToExisting } from '../utils';
 
 // ── truncateMentions ──────────────────────────────────────────
 
@@ -122,5 +122,47 @@ describe('localKeywordMatch', () => {
   it('sorts by descending score', () => {
     const result = localKeywordMatch('learning', pages);
     expect(result[0].score).toBeGreaterThanOrEqual(result[result.length - 1].score);
+  });
+});
+
+// ── matchExtractedToExisting ───────────────────────────────────
+
+describe('matchExtractedToExisting', () => {
+  const existingPages = [
+    { title: 'Machine Learning', aliases: ['ML', 'supervised learning'] },
+    { title: 'Deep Learning', aliases: ['DL'] },
+    { title: 'Obsidian', aliases: [] },
+  ];
+
+  it('matches by title via slug', () => {
+    const result = matchExtractedToExisting(['Deep Learning'], existingPages);
+    expect(result).toEqual(['Deep Learning']);
+  });
+
+  it('matches by alias', () => {
+    const result = matchExtractedToExisting(['ML'], existingPages);
+    expect(result).toEqual(['Machine Learning']);
+  });
+
+  it ('matches multiple names deduplicating results', () => {
+    const result = matchExtractedToExisting(['ML', 'DL', 'Obsidian'], existingPages);
+    expect(result).toHaveLength(3);
+    expect(result).toContain('Machine Learning');
+    expect(result).toContain('Deep Learning');
+    expect(result).toContain('Obsidian');
+  });
+
+  it('ignores names that match nothing', () => {
+    const result = matchExtractedToExisting(['NonExistent', 'AlsoMissing'], existingPages);
+    expect(result).toEqual([]);
+  });
+
+  it('returns empty when no names provided', () => {
+    expect(matchExtractedToExisting([], existingPages)).toEqual([]);
+  });
+
+  it('handles names with spaces via slug normalization', () => {
+    const result = matchExtractedToExisting(['machine learning'], existingPages);
+    expect(result).toEqual(['Machine Learning']);
   });
 });

@@ -11,7 +11,7 @@ import {
   WIKI_LANGUAGES,
 } from '../types';
 import { PROMPTS } from '../prompts';
-import { parseJsonResponse, slugify } from '../utils';
+import { parseJsonResponse, matchExtractedToExisting } from '../utils';
 import { getExistingWikiPages } from './lint-fixes';
 import { getGranularityInstruction } from './system-prompts';
 
@@ -282,16 +282,7 @@ export class SourceAnalyzer {
     if (allExtractedNames.length > 0) {
       try {
         const existingPages = await getExistingWikiPages(this.ctx.app, this.ctx.settings.wikiFolder);
-        const matched = new Set<string>();
-        for (const name of allExtractedNames) {
-          const targetSlug = slugify(name).toLowerCase();
-          const match = existingPages.find(p =>
-            slugify(p.title).toLowerCase() === targetSlug ||
-            (p.aliases || []).some(a => slugify(a).toLowerCase() === targetSlug)
-          );
-          if (match) matched.add(match.title);
-        }
-        relatedPages = [...matched];
+        relatedPages = matchExtractedToExisting(allExtractedNames, existingPages);
         console.debug('[Related pages] Programmatic matching:', relatedPages.length, 'pages matched');
       } catch (err) {
         console.warn('[Related pages] Programmatic matching failed:', err);

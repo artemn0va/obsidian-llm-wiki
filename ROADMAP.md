@@ -2,7 +2,49 @@
 
 > Feature planning and improvement proposals
 
-**Version:** 1.11.0 | **Updated:** 2026-05-26
+**Version:** 1.12.0 | **Updated:** 2026-05-26
+
+---
+
+## Current Status
+
+### v1.12.0 — Test Infrastructure & Structural Refinement
+
+Two independent third-party audits of v1.11.0 converged on core module test vacuum as the #1 gap. P0 addresses this + structural issues in lint-controller.
+
+**P0 — In Progress**
+
+| Action | Effort | Audit Source |
+|--------|--------|-------------|
+| Production build strip `console.debug` (esbuild `drop`) | 10min | 审计二：213条三版未清理 |
+| Mock infrastructure + `page-factory.ts` core tests | 1周 | 两审计共识：~4500行核心零测试 |
+| `runLintWiki` phase extraction (835→6×~80 lines) | 半天 | 审计二：835行，趋势增长 |
+
+**P1 — Planned**
+
+| Action | Effort | Audit Source |
+|--------|--------|-------------|
+| Query local keyword filter (Layer 1, no vector search) | 1天 | 审计一：60-70%查询零API成本 |
+| Architecture diagram (Mermaid) + debug guide | 2小时 | 审计一：新贡献者入门 |
+
+**P2 — Backlog**
+
+| Action | Effort |
+|--------|--------|
+| Good First Issue tagging | 10min |
+| esbuild upgrade (dev-only vulnerability fix) | 10min |
+
+### Evaluated & Rejected (v1.12.0)
+
+| Proposal | Reason |
+|----------|--------|
+| Hexagonal Architecture (Port-Adapter) | Over-engineering for Obsidian plugin context |
+| Vector search (Ollama embeddings) | Requires infrastructure <1% of users have |
+| Hash-bucket dedup (O(n²)→O(n log n)) | No user-reported perf issue; solve when it hurts |
+| page-factory try/catch 补全 | Exceptions bubble to centralized handler by design |
+| API URL validation | Obsidian's requestUrl already validates |
+
+### Implemented (v1.11.0) — Full Issue Resolution & UX Hardening
 
 ---
 

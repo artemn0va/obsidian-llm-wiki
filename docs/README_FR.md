@@ -16,34 +16,32 @@
 
 ## 📑 Contents
 
-- [💡 Présentation](#présentation)
-- [⚡ Pourquoi Obsidian + LLM-Wiki ?](#pourquoi-obsidian-llm-wiki)
-- [🚀 Démarrage rapide](#démarrage-rapide)
-  - [📦 Installation](#installation)
-  - [🔄 Mettre à jour le plugin](#mettre-à-jour-le-plugin)
-  - [🔑 Configuration d'un Provider LLM](#configuration-dun-provider-llm)
-  - [🎮 Utilisation](#utilisation)
-  - [⚠️ Mise à niveau depuis une version antérieure ?](#mise-à-niveau-depuis-une-version-antérieure)
-- [✨ Fonctionnalités](#fonctionnalités)
-  - [📊 Qualité des connaissances](#qualité-des-connaissances)
-  - [🛠️ Maintenance](#maintenance)
-  - [💬 Query et feedback](#query-et-feedback)
-  - [🌐 LLM et langue](#llm-et-langue)
-  - [🏗️ Architecture et performance](#architecture-et-performance)
-- [⌨️ Commandes](#commandes)
-- [📖 Exemple](#exemple)
-- [🤖 Guide de sélection de modèle](#guide-de-sélection-de-modèle)
-- [🏗️ Architecture](#architecture)
-- [❓ FAQ](#faq)
-  - [💡 Général](#général)
-  - [🏷️ Alias & Doublons](#alias-doublons)
-  - [⚡ Performance & Contrôle des coûts](#performance-contrôle-des-coûts)
-  - [🧹 Maintenance](#maintenance)
-  - [🔍 Dépannage](#dépannage)
-- [📜 Licence](#licence)
-- [🙏 Remerciements](#remerciements)
-
-
+- [💡 Présentation](#-présentation)
+- [⚡ Pourquoi Obsidian + LLM-Wiki ?](#-pourquoi-obsidian--llm-wiki-)
+- [🚀 Démarrage rapide](#-démarrage-rapide)
+  - [📦 Installation](#-installation)
+  - [🔄 Mettre à jour le plugin](#-mettre-à-jour-le-plugin)
+  - [🔑 Configuration d'un Provider LLM](#-configuration-dun-provider-llm)
+  - [🎮 Utilisation](#-utilisation)
+  - [⚠️ Mise à niveau depuis une version antérieure ?](#️-mise-à-niveau-depuis-une-version-antérieure-)
+- [✨ Fonctionnalités](#-fonctionnalités)
+  - [📊 Qualité des connaissances](#-qualité-des-connaissances)
+  - [🛠️ Maintenance](#️-maintenance)
+  - [💬 Query et feedback](#-query-et-feedback)
+  - [🌐 LLM et langue](#-llm-et-langue)
+  - [🏗️ Architecture et performance](#️-architecture-et-performance)
+- [⌨️ Commandes](#️-commandes)
+- [📖 Exemple](#-exemple)
+- [🤖 Guide de sélection de modèle](#-guide-de-sélection-de-modèle)
+- [🏗️ Architecture](#️-architecture)
+- [❓ FAQ](#-faq)
+  - [💡 Général](#-général)
+  - [🏷️ Alias & Doublons](#️-alias--doublons)
+  - [⚡ Performance & Contrôle des coûts](#-performance--contrôle-des-coûts)
+  - [🧹 Maintenance](#-maintenance)
+  - [🔍 Dépannage](#-dépannage)
+- [📜 Licence](#-licence)
+- [🙏 Remerciements](#-remerciements)
 ## 💡 Présentation
 
 Vous écrivez. L'IA organise. Vous interrogez. Rien de plus.
@@ -241,10 +239,10 @@ Paramètres → **Ingestion Acceleration** :
 **Entrée :** `sources/machine-learning.md`
 
 ```markdown
-# Machine Learning
+### Machine Learning
 Machine learning uses algorithms to learn from data.
 
-## Types
+### Types
 - Supervised learning
 - Unsupervised learning
 - Reinforcement learning
@@ -262,24 +260,24 @@ tags: [method]
 aliases: ["监督学习", "Supervised Learning"]
 ---
 
-# Supervised Learning
+### Supervised Learning
 
-## Basic Information
+### Basic Information
 - Type: method
 - Source: [[sources/machine-learning]]
 
-## Description
+### Description
 Supervised learning is a machine learning paradigm where models learn
 from labeled training data to make predictions on unseen data...
 
-## Related Concepts
+### Related Concepts
 - [[concepts/Machine-Learning|Machine Learning]]
 - [[concepts/Unsupervised-Learning|Unsupervised Learning]]
 
-## Related Entities
+### Related Entities
 - [[entities/Arthur-Samuel|Arthur Samuel]]
 
-## Mentions in Source
+### Mentions in Source
 - "Supervised learning uses labeled data to train predictive models..."
 ```
 

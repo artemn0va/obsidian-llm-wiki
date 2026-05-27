@@ -16,41 +16,39 @@
 
 ## 📑 Contents
 
-- [💡 Über LLM Wiki](#über-llm-wiki)
-- [⚡ Warum Obsidian + LLM Wiki?](#warum-obsidian-llm-wiki)
-- [🚀 Schnellstart](#schnellstart)
-  - [📦 Installation](#installation)
-  - [🔄 Plugin aktualisieren](#plugin-aktualisieren)
-  - [🔑 LLM Provider konfigurieren](#llm-provider-konfigurieren)
-  - [🎮 Nutzung](#nutzung)
-  - [⚠️ Upgrade von einer älteren Version?](#upgrade-von-einer-älteren-version)
-- [✨ Funktionen](#funktionen)
-  - [📊 Knowledge Quality](#knowledge-quality)
-  - [🛠️ Maintenance](#maintenance)
-  - [💬 Query & Feedback](#query-feedback)
-  - [🌐 LLM & Language](#llm-language)
-  - [🏗️ Architecture & Performance](#architecture-performance)
-- [⌨️ Befehle](#befehle)
-- [📖 Beispiel](#beispiel)
-- [🤖 Modellempfehlungen](#modellempfehlungen)
-- [🏗️ Architektur](#architektur)
-- [❓ FAQ](#faq)
-  - [💡 Allgemein](#allgemein)
-  - [🏷️ Warum zeigt Lint bei fast all meinen Seiten "fehlende Aliases" an?](#warum-zeigt-lint-bei-fast-all-meinen-seiten-fehlende-aliases-an)
-  - [🔄 Warum sehe ich doppelte Seiten mit ähnlichen Namen (z. B. "CoT" und "Chain-of-Thought")?](#warum-sehe-ich-doppelte-seiten-mit-ähnlichen-namen-z-b-cot-und-chain-of-thought)
-  - [⚡ Wie kann ich die Ingestion für große Quelldateien beschleunigen?](#wie-kann-ich-die-ingestion-für-große-quelldateien-beschleunigen)
-  - [🧊 Das Plugin friert ein, wenn ich Lint auf einem großen Wiki ausführe. Was ist los?](#das-plugin-friert-ein-wenn-ich-lint-auf-einem-großen-wiki-ausführe-was-ist-los)
-  - [✏️ Kann ich Wiki-Seiten manuell bearbeiten?](#kann-ich-wiki-seiten-manuell-bearbeiten)
-  - [🦙 Wie verwende ich lokale Modelle mit Ollama?](#wie-verwende-ich-lokale-modelle-mit-ollama)
-  - [🗣️ Was ist der Unterschied zwischen UI-Sprache und Wiki Output Language?](#was-ist-der-unterschied-zwischen-ui-sprache-und-wiki-output-language)
-  - [🔍 Warum findet Query keine Seiten, von denen ich weiß, dass sie existieren?](#warum-findet-query-keine-seiten-von-denen-ich-weiß-dass-sie-existieren)
-  - [🛠️ Was macht "Smart Fix All" und in welcher Reihenfolge?](#was-macht-smart-fix-all-und-in-welcher-reihenfolge)
-  - [💰 Wie vermeide ich unerwartete API-Kosten?](#wie-vermeide-ich-unerwartete-api-kosten)
-  - [📦 Wie führe ich ein Upgrade durch, ohne meine Wiki-Daten zu verlieren?](#wie-führe-ich-ein-upgrade-durch-ohne-meine-wiki-daten-zu-verlieren)
-- [📜 License](#license)
-- [🙏 Danksagungen](#danksagungen)
-
-
+- [💡 Über LLM Wiki](#-Über-llm-wiki)
+- [⚡ Warum Obsidian + LLM Wiki?](#-warum-obsidian--llm-wiki)
+- [🚀 Schnellstart](#-schnellstart)
+  - [📦 Installation](#-installation)
+  - [🔄 Plugin aktualisieren](#-plugin-aktualisieren)
+  - [🔑 LLM Provider konfigurieren](#-llm-provider-konfigurieren)
+  - [🎮 Nutzung](#-nutzung)
+  - [⚠️ Upgrade von einer älteren Version?](#️-upgrade-von-einer-älteren-version)
+- [✨ Funktionen](#-funktionen)
+  - [📊 Knowledge Quality](#-knowledge-quality)
+  - [🛠️ Maintenance](#️-maintenance)
+  - [💬 Query & Feedback](#-query--feedback)
+  - [🌐 LLM & Language](#-llm--language)
+  - [🏗️ Architecture & Performance](#️-architecture--performance)
+- [⌨️ Befehle](#️-befehle)
+- [📖 Beispiel](#-beispiel)
+- [🤖 Modellempfehlungen](#-modellempfehlungen)
+- [🏗️ Architektur](#️-architektur)
+- [❓ FAQ](#-faq)
+  - [💡 Allgemein](#-allgemein)
+  - [🏷️ Warum zeigt Lint bei fast all meinen Seiten "fehlende Aliases" an?](#️-warum-zeigt-lint-bei-fast-all-meinen-seiten-fehlende-aliases-an)
+  - [🔄 Warum sehe ich doppelte Seiten mit ähnlichen Namen (z. B. "CoT" und "Chain-of-Thought")?](#-warum-sehe-ich-doppelte-seiten-mit-ähnlichen-namen-z-b-cot-und-chain-of-thought)
+  - [⚡ Wie kann ich die Ingestion für große Quelldateien beschleunigen?](#-wie-kann-ich-die-ingestion-für-große-quelldateien-beschleunigen)
+  - [🧊 Das Plugin friert ein, wenn ich Lint auf einem großen Wiki ausführe. Was ist los?](#-das-plugin-friert-ein-wenn-ich-lint-auf-einem-großen-wiki-ausführe-was-ist-los)
+  - [✏️ Kann ich Wiki-Seiten manuell bearbeiten?](#️-kann-ich-wiki-seiten-manuell-bearbeiten)
+  - [🦙 Wie verwende ich lokale Modelle mit Ollama?](#-wie-verwende-ich-lokale-modelle-mit-ollama)
+  - [🗣️ Was ist der Unterschied zwischen UI-Sprache und Wiki Output Language?](#️-was-ist-der-unterschied-zwischen-ui-sprache-und-wiki-output-language)
+  - [🔍 Warum findet Query keine Seiten, von denen ich weiß, dass sie existieren?](#-warum-findet-query-keine-seiten-von-denen-ich-weiß-dass-sie-existieren)
+  - [🛠️ Was macht "Smart Fix All" und in welcher Reihenfolge?](#️-was-macht-smart-fix-all-und-in-welcher-reihenfolge)
+  - [💰 Wie vermeide ich unerwartete API-Kosten?](#-wie-vermeide-ich-unerwartete-api-kosten)
+  - [📦 Wie führe ich ein Upgrade durch, ohne meine Wiki-Daten zu verlieren?](#-wie-führe-ich-ein-upgrade-durch-ohne-meine-wiki-daten-zu-verlieren)
+- [📜 License](#-license)
+- [🙏 Danksagungen](#-danksagungen)
 ## 💡 Über LLM Wiki
 
 Notizen schreiben. KI organisiert. Fragen stellen. Das ist alles.
@@ -245,10 +243,10 @@ Settings → **Ingestion Acceleration**:
 **Input:** `sources/machine-learning.md`
 
 ```markdown
-# Machine Learning
+### Machine Learning
 Machine learning uses algorithms to learn from data.
 
-## Types
+### Types
 - Supervised learning
 - Unsupervised learning
 - Reinforcement learning
@@ -266,25 +264,25 @@ tags: [method]
 aliases: ["监督学习", "Supervised Learning"]
 ---
 
-# Supervised Learning
+### Supervised Learning
 
-## Basisinformationen
+### Basisinformationen
 - Typ: method
 - Quelle: [[sources/machine-learning]]
 
-## Beschreibung
+### Beschreibung
 Supervised Learning (überwachtes Lernen) ist ein Machine-Learning-Paradigma,
 bei dem Modelle aus gelabelten Trainingsdaten lernen, um Vorhersagen für
 neue Daten zu treffen...
 
-## Verwandte Konzepte
+### Verwandte Konzepte
 - [[concepts/Machine-Learning|Machine Learning]]
 - [[concepts/Unsupervised-Learning|Unsupervised Learning]]
 
-## Verwandte Entities
+### Verwandte Entities
 - [[entities/Arthur-Samuel|Arthur Samuel]]
 
-## Erwähnungen in der Quelle
+### Erwähnungen in der Quelle
 - "Supervised learning uses labeled data to train predictive models..."
 ```
 

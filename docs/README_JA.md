@@ -16,35 +16,32 @@
 
 ## 📑 Contents
 
-- [💡 LLM-Wikiとは？](#llm-wikiとは)
-- [⚡ Obsidian + LLM-Wikiを選ぶ理由](#obsidian-llm-wikiを選ぶ理由)
-- [🚀 クイックスタート](#クイックスタート)
-  - [📦 インストール](#インストール)
-  - [🔄 プラグインの更新](#プラグインの更新)
-  - [🔑 LLM Providerを設定](#llm-providerを設定)
-  - [🎮 使用方法](#使用方法)
-  - [⚠️ 旧バージョンからアップグレードする場合](#旧バージョンからアップグレードする場合)
-- [✨ 特徴](#特徴)
-  - [📊 Knowledge Quality](#knowledge-quality)
-  - [🛠️ Maintenance](#maintenance)
-  - [💬 Query & Feedback](#query-feedback)
-  - [🌐 LLM & Language](#llm-language)
-  - [🏗️ Architecture & Performance](#architecture-performance)
-- [⌨️ コマンド](#コマンド)
-- [📖 例](#例)
-- [ソース内の記述](#ソース内の記述)
-- [🤖 Model推奨](#model推奨)
-- [🏗️ アーキテクチャ](#アーキテクチャ)
-- [❓ FAQ](#faq)
-  - [💡 一般](#一般)
-  - [🏷️ エイリアスと重複](#エイリアスと重複)
-  - [⚡ パフォーマンスとコスト管理](#パフォーマンスとコスト管理)
-  - [🧹 メンテナンス](#メンテナンス)
-  - [🔍 トラブルシューティング](#トラブルシューティング)
-- [📜 ライセンス](#ライセンス)
-- [🙏 謝辞](#謝辞)
-
-
+- [💡 LLM-Wikiとは？](#-llm-wikiとは)
+- [⚡ Obsidian + LLM-Wikiを選ぶ理由](#-obsidian--llm-wikiを選ぶ理由)
+- [🚀 クイックスタート](#-クイックスタート)
+  - [📦 インストール](#-インストール)
+  - [🔄 プラグインの更新](#-プラグインの更新)
+  - [🔑 LLM Providerを設定](#-llm-providerを設定)
+  - [🎮 使用方法](#-使用方法)
+  - [⚠️ 旧バージョンからアップグレードする場合](#️-旧バージョンからアップグレードする場合)
+- [✨ 特徴](#-特徴)
+  - [📊 Knowledge Quality](#-knowledge-quality)
+  - [🛠️ Maintenance](#️-maintenance)
+  - [💬 Query & Feedback](#-query--feedback)
+  - [🌐 LLM & Language](#-llm--language)
+  - [🏗️ Architecture & Performance](#️-architecture--performance)
+- [⌨️ コマンド](#️-コマンド)
+- [📖 例](#-例)
+- [🤖 Model推奨](#-model推奨)
+- [🏗️ アーキテクチャ](#️-アーキテクチャ)
+- [❓ FAQ](#-faq)
+  - [💡 一般](#-一般)
+  - [🏷️ エイリアスと重複](#️-エイリアスと重複)
+  - [⚡ パフォーマンスとコスト管理](#-パフォーマンスとコスト管理)
+  - [🧹 メンテナンス](#-メンテナンス)
+  - [🔍 トラブルシューティング](#-トラブルシューティング)
+- [📜 ライセンス](#-ライセンス)
+- [🙏 謝辞](#-謝辞)
 ## 💡 LLM-Wikiとは？
 
 書くのはあなた。整理するのはAI。質問するだけ。それがすべて。
@@ -240,10 +237,10 @@ Settings → **Ingestion Acceleration**:
 **入力:** `sources/machine-learning.md`
 
 ```markdown
-# Machine Learning
+### Machine Learning
 Machine learning uses algorithms to learn from data.
 
-## Types
+### Types
 - Supervised learning
 - Unsupervised learning
 - Reinforcement learning
@@ -261,24 +258,24 @@ tags: [method]
 aliases: ["监督学习", "Supervised Learning"]
 ---
 
-# Supervised Learning
+### Supervised Learning
 
-## 基本情報
+### 基本情報
 - タイプ: method
 - ソース: [[sources/machine-learning]]
 
-## 説明
+### 説明
 Supervised learning（教師あり学習）は、ラベル付き訓練データから学習し、
 未知のデータに対して予測を行う機械学習パラダイムです...
 
-## 関連概念
+### 関連概念
 - [[concepts/Machine-Learning|Machine Learning]]
 - [[concepts/Unsupervised-Learning|Unsupervised Learning]]
 
-## 関連Entity
+### 関連Entity
 - [[entities/Arthur-Samuel|Arthur Samuel]]
 
-## ソース内の記述
+### ソース内の記述
 - "Supervised learning uses labeled data to train predictive models..."
 ```
 

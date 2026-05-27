@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "node esbuild.config.mjs",
     "build": "node esbuild.config.mjs production",
+    "build:dev": "node esbuild.config.mjs dev",
     "lint": "eslint src/ --max-warnings=0",
     "test": "vitest run",
     "test:watch": "vitest"
@@ -27,7 +28,7 @@
     "@types/node": "^16.11.6",
     "@typescript-eslint/eslint-plugin": "^8.59.1",
     "@typescript-eslint/parser": "^8.59.1",
-    "esbuild": "0.17.3",
+    "esbuild": "0.28.0",
     "eslint": "^10.2.1",
     "eslint-plugin-obsidianmd": "^0.3.0",
     "obsidian": "latest",
@@ -39,6 +40,8 @@
     "@anthropic-ai/sdk": "^0.24.0"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["esbuild"]
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
   }
 }

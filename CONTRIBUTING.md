@@ -97,6 +97,33 @@ This plugin follows [Karpathy's LLM Wiki vision](https://gist.github.com/karpath
 - **Three-layer architecture** — Sources (read-only) → Wiki (LLM-generated) → Schema (co-evolved)
 - **Incremental accumulation** — wiki is persistent, not one-shot
 
+### Architecture Overview
+
+```mermaid
+graph TD
+    User -->|Cmd+P| main.ts
+    main.ts -->|ingest| WikiEngine
+    main.ts -->|query| QueryEngine
+    main.ts -->|lint| lint-controller
+
+    WikiEngine -->|analyze| SourceAnalyzer
+    WikiEngine -->|CRUD + merge| PageFactory
+    WikiEngine -->|write| Vault
+
+    QueryEngine -->|local match| localKeywordMatch["localKeywordMatch (Layer 1)"]
+    QueryEngine -->|LLM select| selectRelevantPagesWithLLM["selectRelevantPagesWithLLM (Layer 3)"]
+    QueryEngine -->|read| Vault
+
+    lint-controller -->|dead links| scanDeadLinks
+    lint-controller -->|orphans| scanOrphans
+    lint-controller -->|duplicates| generateDuplicateCandidates
+    lint-controller -->|fixes| fix-runners["fix-runners.ts"]
+
+    SourceAnalyzer -->|iterative batch| LLMClient
+    PageFactory -->|page generation| LLMClient
+    QueryEngine -->|selection + answer| LLMClient
+```
+
 ## Pull Request Process
 
 1. Run `pnpm lint && pnpm test && npx tsc --noEmit && pnpm build` — all must pass

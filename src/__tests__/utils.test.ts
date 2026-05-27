@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { slugify, parseFrontmatter, detectRateLimitFailures, formatRateLimitNotice, cleanMarkdownResponse, enforceFrontmatterConstraints, parseJsonResponse, mergeFrontmatter, preserveFrontmatterReviewTag } from '../utils';
+import { slugify, parseFrontmatter, detectRateLimitFailures, formatRateLimitNotice, cleanMarkdownResponse, enforceFrontmatterConstraints, parseJsonResponse, mergeFrontmatter, preserveFrontmatterReviewTag, extractBody } from '../utils';
 import { getGranularityInstruction, getGranularityFixLimits } from '../wiki/system-prompts';
 import { LLMWikiSettings } from '../types';
 
@@ -599,6 +599,23 @@ describe('preserveFrontmatterReviewTag', () => {
     const orig = '---\ntype: entity\nreviewed: true\n---\n\nBody';
     const newC = '# Just markdown\nNo frontmatter';
     expect(preserveFrontmatterReviewTag(orig, newC)).toBe(newC);
+  });
+});
+
+describe('extractBody', () => {
+  it('returns content without frontmatter', () => {
+    const content = '---\ntype: entity\n---\n\n# Body text';
+    expect(extractBody(content)).toBe('# Body text');
+  });
+
+  it('returns content as-is when no frontmatter exists', () => {
+    const content = '# Just a heading\nSome content';
+    expect(extractBody(content)).toBe(content);
+  });
+
+  it('trims whitespace after frontmatter', () => {
+    const content = '---\ntype: entity\n---\n\n  Body with spaces  \n';
+    expect(extractBody(content)).toBe('Body with spaces');
   });
 });
 

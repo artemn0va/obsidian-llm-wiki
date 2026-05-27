@@ -782,3 +782,57 @@ export function formatRateLimitNotice(
   return `Rate limit hit — ${info.count} operation(s) failed${namesHint ? ': ' + namesHint + moreHint : ''}. ` +
     `Lower concurrency to ${info.suggestedConcurrency} or increase batch delay to ${info.suggestedDelay}ms in Settings → Wiki Configuration.`;
 }
+
+// Truncate mentions to a reasonable token budget for merge/create prompts.
+export function truncateMentions(mentions: string[] | undefined, maxChars = 500): string {
+  if (!mentions || mentions.length === 0) return '';
+  let result = '';
+  for (const m of mentions) {
+    if (result.length + m.length > maxChars) {
+      if (result.length > 0) break;
+      return m.substring(0, maxChars);
+    }
+    result += (result ? '\n' : '') + m;
+  }
+  return result;
+}
+
+// ── Index parsing & local keyword matching ─────────────────────
+
+interface PageRef {
+  path: string;
+  title: string;
+  aliases: string[];
+  score: number;
+}
+
+export function parseIndexForPages(indexContent: string): Omit<PageRef, 'score'>[] {
+  const pages: Omit<PageRef, 'score'>[] = [];
+  const lineRegex = /- \[\[([^\]|]+)(?:\|[^\]]+)?\]\]\s*(?:`aliases:\s*([^`]+)`)?/g;
+  let match: RegExpExecArray | null;
+  while ((match = lineRegex.exec(indexContent)) !== null) {
+    const path = match[1];
+    const aliasStr = match[2] || '';
+    const title = path.split('/').pop() || path;
+    const aliases = aliasStr.split(',').map(a => a.trim()).filter(Boolean);
+    pages.push({ path, title, aliases });
+  }
+  return pages;
+}
+
+export function localKeywordMatch(query: string, pages: Omit<PageRef, 'score'>[]): PageRef[] {
+  const keywords = query.toLowerCase().split(/\s+/).filter(k => k.length > 0);
+  const scored: PageRef[] = [];
+  for (const page of pages) {
+    let score = 0;
+    const titleLower = page.title.toLowerCase();
+    for (const kw of keywords) {
+      if (titleLower.includes(kw)) score += 3;
+      for (const alias of page.aliases) {
+        if (alias.toLowerCase().includes(kw)) score += 2;
+      }
+    }
+    if (score > 0) scored.push({ ...page, score });
+  }
+  return scored.sort((a, b) => b.score - a.score);
+}

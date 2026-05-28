@@ -245,9 +245,6 @@ export class QueryModal extends Modal {
     this.plugin.settings.queryHistory = this.history.messages;
     void this.plugin.saveSettings();
 
-    // Evaluate conversation value for potential Wiki save
-    void this.evaluateAndSuggestSave();
-
     contentEl.empty();
   }
 

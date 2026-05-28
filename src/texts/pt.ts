@@ -322,9 +322,11 @@ export const PT_TEXTS = {
     cmdCancelIngestion: 'Cancelar ingestão atual',
     cmdIngestActiveFile: 'Ingerir arquivo atual',
     noActiveFile: 'Nenhum arquivo aberto',
+    mdOnlyFile: 'Apenas arquivos Markdown podem ser ingeridos',
 
     // Ingestion status bar
     ingestionStatusBar: 'Ingerindo... clique para cancelar',
+    lintStatusBar: 'Verificando... clique para cancelar',
     ingestionCancelling: 'Cancelando — irá parar após o lote atual',
     ingestionCancelled: 'Ingestão cancelada',
 

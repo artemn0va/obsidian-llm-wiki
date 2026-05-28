@@ -54,6 +54,8 @@ export class WikiEngine {
   wasCancelled = false;
   private onIngestionStart: (() => void) | null = null;
   private onIngestionEnd: (() => void) | null = null;
+  private onLintStart: (() => void) | null = null;
+  private onLintEnd: (() => void) | null = null;
   private pagesCache: Array<{path: string; title: string; wikiLink: string; aliases?: string[]}> | null = null;
   private pagesCacheTime = 0;
   private readonly PAGES_CACHE_TTL_MS = 5000;
@@ -129,6 +131,11 @@ export class WikiEngine {
     this.onIngestionEnd = onEnd;
   }
 
+  setLintCallbacks(onStart: (() => void) | null, onEnd: (() => void) | null): void {
+    this.onLintStart = onStart;
+    this.onLintEnd = onEnd;
+  }
+
   cancelIngestion(): void {
     if (this.abortController) {
       this.abortController.abort();
@@ -147,7 +154,7 @@ export class WikiEngine {
 
   startLintOperation(): AbortSignal {
     this.lintAbortController = new AbortController();
-    this.onIngestionStart?.();
+    this.onLintStart?.();
     return this.lintAbortController.signal;
   }
 
@@ -155,7 +162,8 @@ export class WikiEngine {
     if (this.lintAbortController) {
       this.lintAbortController.abort();
       const t = TEXTS[this.settings.language] || TEXTS.en;
-      const msg = (t as unknown as Record<string, string>).ingestionCancelling
+      const msg = (t as unknown as Record<string, string>).lintCancelling
+        || (t as unknown as Record<string, string>).ingestionCancelling
         || 'Cancelling — will stop after current batch completes';
       new Notice(msg, 6000);
       console.debug('Lint cancellation requested');
@@ -168,7 +176,7 @@ export class WikiEngine {
 
   endLintOperation(): void {
     this.lintAbortController = null;
-    this.onIngestionEnd?.();
+    this.onLintEnd?.();
   }
 
   private checkCancelled(): void {

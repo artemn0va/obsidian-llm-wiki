@@ -178,6 +178,22 @@ export default class LLMWikiPlugin extends Plugin {
       }
     );
 
+    this.wikiEngine.setLintCallbacks(
+      () => {
+        const texts = TEXTS[this.settings.language] || TEXTS.en;
+        const label = (texts as unknown as Record<string, string>).lintStatusBar || 'Linting... click to cancel';
+        if (this.ingestStatusBar) {
+          this.ingestStatusBar.setText(label);
+          this.ingestStatusBar.removeClass('llm-wiki-status-bar-hidden');
+        }
+      },
+      () => {
+        if (this.ingestStatusBar) {
+          this.ingestStatusBar.addClass('llm-wiki-status-bar-hidden');
+        }
+      }
+    );
+
     this.addSettingTab(new LLMWikiSettingTab(this.app, this));
 
     console.debug('LLM Wiki Plugin loaded - Karpathy implementation');
@@ -332,7 +348,8 @@ export default class LLMWikiPlugin extends Plugin {
     }
 
     if (activeFile.extension !== 'md') {
-      new Notice('Only Markdown files can be ingested', 5000);
+      const texts = TEXTS[this.settings.language];
+      new Notice((texts as unknown as Record<string, string>).mdOnlyFile || 'Only Markdown files can be ingested', 5000);
       return;
     }
 

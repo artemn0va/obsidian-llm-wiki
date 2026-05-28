@@ -323,9 +323,11 @@ export const ZH_TEXTS = {
     cmdCancelIngestion: '取消当前提取',
     cmdIngestActiveFile: '摄入当前文件',
     noActiveFile: '当前没有打开的文件',
+    mdOnlyFile: '仅支持摄入 Markdown 文件',
 
     // Ingestion status bar
     ingestionStatusBar: '提取中... 点击取消',
+    lintStatusBar: '维护中... 点击取消',
     ingestionCancelling: '正在取消 — 当前批次完成后将停止',
     ingestionCancelled: '提取已取消',
 

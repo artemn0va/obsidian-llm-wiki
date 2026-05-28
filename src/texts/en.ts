@@ -325,9 +325,11 @@ export const EN_TEXTS = {
     cmdCancelIngestion: 'Cancel current ingestion',
     cmdIngestActiveFile: 'Ingest current file',
     noActiveFile: 'No file is currently open',
+    mdOnlyFile: 'Only Markdown files can be ingested',
 
     // Ingestion status bar
     ingestionStatusBar: 'Ingesting... click to cancel',
+    lintStatusBar: 'Linting... click to cancel',
     ingestionCancelling: 'Cancelling — will stop after current batch completes',
     ingestionCancelled: 'Ingestion cancelled',
 

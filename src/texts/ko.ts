@@ -323,9 +323,11 @@ export const KO_TEXTS = {
     cmdCancelIngestion: '현재 수집 취소',
     cmdIngestActiveFile: '현재 파일 수집',
     noActiveFile: '열려 있는 파일이 없습니다',
+    mdOnlyFile: 'Markdown 파일만 수집할 수 있습니다',
 
     // Ingestion status bar
     ingestionStatusBar: '수집 중... 클릭하여 취소',
+    lintStatusBar: '점검 중... 클릭하여 취소',
     ingestionCancelling: '취소 중 — 현재 배치 완료 후 중지됩니다',
     ingestionCancelled: '수집이 취소되었습니다',
 

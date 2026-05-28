@@ -322,9 +322,11 @@ export const JA_TEXTS = {
     cmdCancelIngestion: '現在の取り込みをキャンセル',
     cmdIngestActiveFile: '現在のファイルを取り込む',
     noActiveFile: '現在開いているファイルはありません',
+    mdOnlyFile: 'Markdownファイルのみ取り込み可能です',
 
     // Ingestion status bar
     ingestionStatusBar: '取り込み中... クリックでキャンセル',
+    lintStatusBar: 'チェック中... クリックでキャンセル',
     ingestionCancelling: 'キャンセル中 — 現在のバッチ完了後に停止します',
     ingestionCancelled: '取り込みがキャンセルされました',
 

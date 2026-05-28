@@ -31,7 +31,7 @@
   - [💬 Query & Feedback](#-query--feedback)
   - [🌐 LLM & Language](#-llm--language)
   - [🏗️ Architecture & Performance](#️-architecture--performance)
-- [🔒 Privacy & Security](#privacy--security)
+  - [🔒 Privacy & Security](#-privacy--security)
 - [⌨️ Commands](#️-commands)
 - [📖 Example](#-example)
 - [🤖 Model Selection Guide](#-model-selection-guide)
@@ -42,7 +42,7 @@
   - [⚡ Performance & Cost](#-performance--cost)
   - [🧹 Maintenance](#-maintenance)
   - [🔍 Troubleshooting](#-troubleshooting)
-- [🔒 Transparency & Compliance](#transparency--compliance)
+- [🔒 Transparency & Compliance](#-transparency--compliance)
 - [📜 License](#-license)
 - [🙏 Acknowledgments](#-acknowledgments)
 ---
@@ -497,16 +497,15 @@ The plugin never modifies your source files. Backup `wiki/` → update plugin �
 
 This plugin is listed on the Obsidian Community Plugin Market and undergoes automated review for security and permissions.
 
-**Network access** is used only to communicate with the LLM provider you configure — no other network calls are made. At no point is your data sent to any server controlled by the plugin author.
+**The plugin has no backend, no server infrastructure, and no data collection of any kind.** It is purely local software running inside Obsidian. The plugin cannot and does not collect, store, or transmit your data to any server — because no such server exists.
+
+**Network access** is used only to communicate with the LLM provider you configure — no other network calls are made. This is entirely under your control: you choose the provider, you enter the API key, you decide where your data goes.
 
 **File system access** (vault enumeration) is required to build and maintain the wiki: reading your source notes, generating pages, scanning for dead links, and detecting duplicate pages. The plugin never modifies your source files — only files under the wiki folder.
 
 **Clipboard access** is used exclusively by the "Copy" button in the Query modal, and only when you click it.
 
 If you prefer complete data locality, use a local LLM provider such as Ollama or LM Studio. With a local provider, your data never leaves your machine.
-
----
-
 ## 📜 License
 
 MIT License — see [LICENSE](LICENSE).

@@ -31,8 +31,8 @@
   - [💬 Consulta e Feedback](#-consulta-e-feedback)
   - [🌐 LLM e Idioma](#-llm-e-idioma)
   - [🏗️ Arquitetura e Desempenho](#️-arquitetura-e-desempenho)
-- - [🔒 Privacy & Security](#privacy--security)
-[⌨️ Comandos](#️-comandos)
+  - [🔒 Privacidade e segurança](#-privacidade-e-segurança)
+- [⌨️ Comandos](#️-comandos)
 - [📖 Exemplo](#-exemplo)
 - [🤖 Guia de Seleção de Modelo](#-guia-de-seleção-de-modelo)
 - [🏗️ Arquitetura](#️-arquitetura)
@@ -42,8 +42,8 @@
   - [⚡ Performance e Controle de custos](#-performance-e-controle-de-custos)
   - [🧹 Manutenção](#-manutenção)
   - [🔍 Solução de Problemas](#-solução-de-problemas)
-- - [🔒 Transparency & Compliance](#transparency--compliance)
-[📜 Licença](#-licença)
+  - [🔒 Transparência e conformidade](#-transparência-e-conformidade)
+- [📜 Licença](#-licença)
 - [🙏 Agradecimentos](#-agradecimentos)
 ## 💡 O que é LLM-Wiki?
 
@@ -241,12 +241,12 @@ Esta é uma **atualização de desempenho crítica para produção**. O processo
 - **🏛️ Arquitetura de Três Camadas** — `sources/` (read-only) → `wiki/` (gerado por LLM) → `schema/` (config co-evoluída)
 - **🧩 Código Modular** — 13 módulos focados em `src/`
 
-### 🔒 Privacy & Security
+### 🔒 Privacidade e segurança
 
-- **No backend, no telemetry.** The plugin runs entirely inside Obsidian — there is no external server, no analytics, and no data collection of any kind. Your notes never leave your vault unless you explicitly configure an LLM provider.
-- **Your data stays local by default.** The plugin does not store, cache, or transmit your content anywhere beyond the LLM API you choose. Only the text you send for ingestion or query leaves your device — and only to the provider you configured.
-- **Full local mode with Ollama, LM Studio, or local providers.** For complete data sovereignty, use a locally-running LLM. Your notes are processed entirely on your machine — nothing touches the internet.
-- **Minimal permissions.** Vault file access is required for wiki management (reading notes, generating pages, detecting dead links). Network access is used exclusively for LLM API calls to your chosen provider. Clipboard access is limited to the "Copy" button in the Query modal — only when you click it.
+- **Sem backend, sem telemetria.** O plugin é executado inteiramente dentro do Obsidian — não há servidor externo, análise ou coleta de dados de qualquer tipo. Suas notas nunca saem do seu cofre, a menos que você configure explicitamente um provedor LLM.
+- **Seus dados permanecem locais por padrão.** O plugin não armazena, armazena em cache ou transmite seu conteúdo para qualquer lugar além da API LLM que você escolher. Apenas o texto que você envia para ingestão ou consulta sai do seu dispositivo — e apenas para o provedor que você configurou.
+- **Modo totalmente local com Ollama, LM Studio ou provedores locais.** Para total soberania de dados, use um LLM executado localmente. Suas notas são processadas inteiramente na sua máquina — nada toca a Internet.
+- **Permissões mínimas.** O acesso aos arquivos do cofre é necessário para a gestão do wiki (ler notas, gerar páginas, detetar links mortos). O acesso à rede é usado exclusivamente para chamadas da API LLM ao provedor que você escolheu. O acesso à área de transferência limita-se ao botão "Copiar" no modal de Consulta — apenas quando você clica nele.
 
 ---
 
@@ -484,21 +484,19 @@ O plugin nunca modifica seus arquivos fonte. Faça backup de `wiki/` → atualiz
 
 ---
 
-## 🔒 Transparency & Compliance
+## 🔒 Transparência e conformidade
 
-This plugin is listed on the Obsidian Community Plugin Market and undergoes automated review for security and permissions.
+Este plugin está listado no Mercado de Plugins Comunitários do Obsidian e passa por revisão automatizada de segurança e permissões.
 
-**Network access** is used only to communicate with the LLM provider you configure — no other network calls are made. At no point is your data sent to any server controlled by the plugin author.
+**O plugin não tem backend, nem infraestrutura de servidor, nem qualquer tipo de recolha de dados.** É software puramente local executado dentro do Obsidian. O plugin não pode e não recolhe, armazena ou transmite os seus dados para nenhum servidor — porque tal servidor não existe.
 
-**File system access** (vault enumeration) is required to build and maintain the wiki: reading your source notes, generating pages, scanning for dead links, and detecting duplicate pages. The plugin never modifies your source files — only files under the wiki folder.
+**O acesso à rede** é usado apenas para comunicar com o provedor LLM que você configurar — nenhuma outra chamada de rede é feita. Isto está totalmente sob o seu controlo: você escolhe o provedor, você insere a chave API, você decide para onde vão os seus dados.
 
-**Clipboard access** is used exclusively by the "Copy" button in the Query modal, and only when you click it.
+**O acesso ao sistema de arquivos** (enumeração do cofre) é necessário para construir e manter o wiki: ler as suas notas de origem, gerar páginas, varrer links mortos e detetar páginas duplicadas. O plugin nunca modifica os seus arquivos de origem — apenas os arquivos dentro da pasta wiki.
 
-If you prefer complete data locality, use a local LLM provider such as Ollama or LM Studio. With a local provider, your data never leaves your machine.
+**O acesso à área de transferência** é usado exclusivamente pelo botão "Copiar" no modal de Consulta, e apenas quando clica nele.
 
----
-
-
+Se preferir total localidade de dados, use um provedor LLM local como Ollama ou LM Studio. Com um provedor local, os seus dados nunca saem da sua máquina.
 ## 📜 Licença
 
 Licença MIT — veja [LICENSE](LICENSE).

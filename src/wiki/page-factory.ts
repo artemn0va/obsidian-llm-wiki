@@ -22,6 +22,17 @@ import {
 import { applySectionLabels } from './system-prompts';
 import { getExistingWikiPages } from './lint-fixes';
 
+// Wrap errors with entity/concept context for better diagnostics
+function contextualizeError(error: unknown, name: string, pageType: string): Error {
+  const msg = error instanceof Error ? error.message : String(error);
+  return new Error(`Failed to create ${pageType} page "${name}": ${msg}`);
+}
+
+function mergeError(error: unknown, name: string, pageType: string): Error {
+  const msg = error instanceof Error ? error.message : String(error);
+  return new Error(`Failed to merge ${pageType} page "${name}": ${msg}`);
+}
+
 export class PageFactory {
   constructor(private ctx: EngineContext) {}
 
@@ -256,7 +267,8 @@ export class PageFactory {
     const client = this.ctx.getClient();
     if (!client) throw new Error('LLM client not initialized');
 
-    const generatePrompt = pageType === 'entity' ? PROMPTS.generateEntityPage : PROMPTS.generateConceptPage;
+    try {
+      const generatePrompt = pageType === 'entity' ? PROMPTS.generateEntityPage : PROMPTS.generateConceptPage;
 
     const prompt = generatePrompt
       .replace('{{entity_name}}', info.name)
@@ -287,6 +299,9 @@ export class PageFactory {
     const enforcedContent = enforceFrontmatterConstraints(cleanedContent, pageType);
     await this.ctx.createOrUpdateFile(path, enforcedContent);
     return path;
+    } catch (error) {
+      throw contextualizeError(error, info.name, pageType);
+    }
   }
 
   private async mergePage(
@@ -300,8 +315,9 @@ export class PageFactory {
     const client = this.ctx.getClient();
     if (!client) throw new Error('LLM client not initialized');
 
-    // 1. Programmatic frontmatter merge
-    const { frontmatter, body: existingBody } = mergeFrontmatter(existingContent, sourceFile.path);
+    try {
+      // 1. Programmatic frontmatter merge
+      const { frontmatter, body: existingBody } = mergeFrontmatter(existingContent, sourceFile.path);
 
     // 2. LLM intelligent body merge
     const mergePrompt = pageType === 'entity' ? PROMPTS.mergeEntityPage : PROMPTS.mergeConceptPage;
@@ -337,6 +353,9 @@ export class PageFactory {
     const finalContent = `${frontmatter}\n\n${cleanedBody}`;
     await this.ctx.createOrUpdateFile(path, finalContent);
     return path;
+    } catch (error) {
+      throw mergeError(error, info.name, pageType);
+    }
   }
 
   private async appendToReviewedPage(
@@ -348,8 +367,9 @@ export class PageFactory {
     const client = this.ctx.getClient();
     if (!client) throw new Error('LLM client not initialized');
 
-    // 1. Programmatic frontmatter merge
-    const { frontmatter, body: existingBody } = mergeFrontmatter(existingContent, sourceFile.path);
+    try {
+      // 1. Programmatic frontmatter merge
+      const { frontmatter, body: existingBody } = mergeFrontmatter(existingContent, sourceFile.path);
 
     // 2. Minimal LLM check for genuinely new content
     const prompt = PROMPTS.appendToReviewedPage
@@ -379,6 +399,10 @@ export class PageFactory {
     const finalContent = `${frontmatter}\n\n${cleanedContent}`;
     await this.ctx.createOrUpdateFile(path, finalContent);
     return path;
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to update reviewed page "${info.name}": ${msg}`);
+    }
   }
 
   async updateRelatedPage(pageName: string, analysis: SourceAnalysis, sourceFile: TFile | { path: string; basename: string }): Promise<boolean> {

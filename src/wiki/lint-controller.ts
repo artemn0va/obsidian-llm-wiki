@@ -182,28 +182,31 @@ export async function runLintWiki(ctx: LintContext, signal?: AbortSignal): Promi
     stageNotice.setMessage(t.lintScanningLinks);
     let doubleNestFixes = 0;
     for (const [path, info] of pageMap) {
-      const { fixed, content } = fixDoubleNestedWikiLinks(info.content);
-      if (fixed > 0) {
-        doubleNestFixes += fixed;
-        info.content = content;
-        const abstractFile = ctx.app.vault.getAbstractFileByPath(path);
-        if (abstractFile instanceof TFile) {
-          await ctx.app.vault.modify(abstractFile, content);
-        }
-        console.debug(`lintWiki: fixed ${fixed} double-nested link(s) in ${path}`);
+      const abstractFile = ctx.app.vault.getAbstractFileByPath(path);
+      if (abstractFile instanceof TFile) {
+        await ctx.app.vault.process(abstractFile, (data) => {
+          const { fixed, content } = fixDoubleNestedWikiLinks(data);
+          if (fixed > 0) {
+            doubleNestFixes += fixed;
+            info.content = content;
+            console.debug(`lintWiki: fixed ${fixed} double-nested link(s) in ${path}`);
+          }
+          return data; // return unchanged if no fixes needed
+        });
       }
     }
     // Also scan log.md (excluded from wikiFiles filter)
     const logPath = `${ctx.settings.wikiFolder}/log.md`;
     const logFile = ctx.app.vault.getAbstractFileByPath(logPath);
     if (logFile instanceof TFile) {
-      const logContent = await ctx.app.vault.read(logFile);
-      const { fixed, content } = fixDoubleNestedWikiLinks(logContent);
-      if (fixed > 0) {
-        doubleNestFixes += fixed;
-        await ctx.app.vault.modify(logFile, content);
-        console.debug(`lintWiki: fixed ${fixed} double-nested link(s) in log.md`);
-      }
+      await ctx.app.vault.process(logFile, (data) => {
+        const { fixed, content } = fixDoubleNestedWikiLinks(data);
+        if (fixed > 0) {
+          doubleNestFixes += fixed;
+          console.debug(`lintWiki: fixed ${fixed} double-nested link(s) in log.md`);
+        }
+        return fixed > 0 ? content : data;
+      });
     }
     if (doubleNestFixes > 0) {
       console.debug(`lintWiki: total ${doubleNestFixes} double-nested link(s) fixed`);

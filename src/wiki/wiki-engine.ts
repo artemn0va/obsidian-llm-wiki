@@ -2,7 +2,7 @@
 // Orchestrates sub-modules: SourceAnalyzer, PageFactory, ConversationIngestor,
 // LintFixer, ContradictionManager, and system-prompts.
 
-import { App, TFile, TFolder, Notice } from 'obsidian';
+import { App, TFile, TFolder, Notice, normalizePath } from 'obsidian';
 import {
   LLMWikiSettings,
   LLMClient,
@@ -251,10 +251,10 @@ export class WikiEngine {
 
       const plannedPaths: string[] = [];
       for (const entity of analysis.entities) {
-        plannedPaths.push(`${this.settings.wikiFolder}/entities/${slugify(entity.name)}.md`);
+        plannedPaths.push(normalizePath(`${this.settings.wikiFolder}/entities/${slugify(entity.name)}.md`));
       }
       for (const concept of analysis.concepts) {
-        plannedPaths.push(`${this.settings.wikiFolder}/concepts/${slugify(concept.name)}.md`);
+        plannedPaths.push(normalizePath(`${this.settings.wikiFolder}/concepts/${slugify(concept.name)}.md`));
       }
 
       this.onProgress?.(`[${step}/${totalSteps}] Creating summary...`);
@@ -578,10 +578,10 @@ export class WikiEngine {
 
   async ensureWikiStructure() {
     const folders = [
-      this.settings.wikiFolder,
-      `${this.settings.wikiFolder}/entities`,
-      `${this.settings.wikiFolder}/concepts`,
-      `${this.settings.wikiFolder}/sources`
+      normalizePath(this.settings.wikiFolder),
+      normalizePath(`${this.settings.wikiFolder}/entities`),
+      normalizePath(`${this.settings.wikiFolder}/concepts`),
+      normalizePath(`${this.settings.wikiFolder}/sources`)
     ];
 
     for (const folder of folders) {
@@ -598,7 +598,7 @@ export class WikiEngine {
 
   async createSummaryPage(file: TFile, analysis: SourceAnalysis, plannedPaths: string[] = []): Promise<string> {
     const slug = slugify(file.basename);
-    const path = `${this.settings.wikiFolder}/sources/${slug}.md`;
+    const path = normalizePath(`${this.settings.wikiFolder}/sources/${slug}.md`);
     const content = await this.app.vault.read(file);
 
     const createdPagesList = plannedPaths.length > 0
@@ -680,7 +680,7 @@ export class WikiEngine {
         const file = this.app.vault.getAbstractFileByPath(path);
         if (file instanceof TFile) {
           console.debug(`Attempt ${attempt + 1}: File exists, updating:`, path);
-          await this.app.vault.modify(file, content);
+          await this.app.vault.process(file, () => content);
           console.debug('Update success:', path);
           this.onFileWrite?.(path);
           this.pagesCache = null;
@@ -708,8 +708,8 @@ export class WikiEngine {
             resolved = allFiles.find(f => f.path.normalize() === normalized) || null;
             if (resolved) console.debug('Retry found file via full scan:', path);
           }
-          if (resolved) {
-            await this.app.vault.modify(resolved, content);
+          if (resolved instanceof TFile) {
+            await this.app.vault.process(resolved, () => content);
             console.debug('Update succeeded after file resolution:', path);
             this.onFileWrite?.(path);
             this.pagesCache = null;
@@ -736,7 +736,7 @@ export class WikiEngine {
       if (file) console.debug('createOrUpdateFile: resolved via full scan:', path);
     }
     if (file) {
-      await this.app.vault.modify(file, content);
+      await this.app.vault.process(file, () => content);
       console.debug('Final update succeeded:', path);
       this.onFileWrite?.(path);
       this.pagesCache = null;
@@ -886,7 +886,7 @@ export class WikiEngine {
     const totalPages = entities.length + concepts.length + sources.length;
 
     if (totalPages === 0) {
-      const indexPath = `${this.settings.wikiFolder}/index.md`;
+      const indexPath = normalizePath(`${this.settings.wikiFolder}/index.md`);
       await this.createOrUpdateFile(indexPath, `# Wiki Index\n\n> No pages yet. Ingest sources to populate the Wiki.\n`);
       return;
     }
@@ -930,7 +930,7 @@ export class WikiEngine {
       indexContent += `- [[sources/${file.basename}|${file.basename}]]${aliasStr}\n`;
     }
 
-    const indexPath = `${this.settings.wikiFolder}/index.md`;
+    const indexPath = normalizePath(`${this.settings.wikiFolder}/index.md`);
     await this.createOrUpdateFile(indexPath, indexContent);
   }
 

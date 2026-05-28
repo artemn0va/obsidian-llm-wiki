@@ -27,7 +27,7 @@ export function computeSlug(text: string): string {
     .split('')
     .filter(c => c.charCodeAt(0) >= 32)
     .join('')
-    .replace(/[/\\:*?"<>|,()'、，。；：！？（）【】《》]/g, '');
+    .replace(/[/\\:*?"<>|,()'!?、，。；：！？（）【】《》]/g, '');
 
   if (afterRemoveInvalid.length === 0) return 'untitled-' + Date.now();
 

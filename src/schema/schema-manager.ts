@@ -273,7 +273,7 @@ ${body}`;
     const existing = this.app.vault.getAbstractFileByPath(path);
 
     if (existing instanceof TFile) {
-      await this.app.vault.modify(existing, content);
+      await this.app.vault.process(existing, () => content);
     } else {
       await this.app.vault.create(path, content);
     }
@@ -367,8 +367,7 @@ ${suggestion.suggestions}
 `;
 
     if (existing instanceof TFile) {
-      const current = await this.app.vault.read(existing);
-      await this.app.vault.modify(existing, current + '\n' + entry);
+      await this.app.vault.process(existing, (current) => current + '\n' + entry);
     } else {
       const header = `# Schema Suggestions\n\n> Suggestions for improving your Wiki Schema. Review and decide whether to apply them to \`schema/config.md\`.\n\n---\n\n`;
       await this.app.vault.create(path, header + entry);

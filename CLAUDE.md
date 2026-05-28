@@ -118,11 +118,13 @@ src/
 
 ## 🛡️ Three-No Principle
 
-Every change must satisfy all three before being considered complete:
+Every change must satisfy all three before being considered complete. **Automated checks alone are not sufficient** — each item requires explicit manual verification against the modified code.
 
-1. **No Side Effects**: Changes must not affect behavior outside their intended scope. Refactored code must produce identical output. New features must not alter existing workflows.
-2. **No Breaking Changes**: No API signature changes without call-site updates. No config format changes. No file format changes. Existing users must not need to reconfigure.
-3. **No Test Errors or Warnings**: `pnpm lint` must produce 0 errors and 0 warnings. `pnpm test` must pass all tests (0 failures). `npx tsc --noEmit` must produce 0 errors.
+1. **No Side Effects — required manual review**: Changes must not affect behavior outside their intended scope. Refactored code must produce identical output. New features must not alter existing workflows.
+   - **Manual check**: Read every call-site of the modified function. Trace data flow through all consumers. Verify no other module depends on the previous behavior. Check that error propagation paths remain intact.
+2. **No Breaking Changes — required manual review**: No API signature changes without call-site updates. No config format changes. No file format changes. Existing users must not need to reconfigure.
+   - **Manual check**: Compare old and new function signatures. Check settings schema for added/removed fields. Verify saved `data.json` from previous versions still loads correctly.
+3. **No Test Errors or Warnings — automated gates**: `pnpm lint` must produce 0 errors and 0 warnings. `pnpm test` must pass all tests (0 failures). `npx tsc --noEmit` must produce 0 errors. `pnpm build` must exit cleanly.
 
 Verification gates:
 ```

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { slugify, parseFrontmatter, detectRateLimitFailures, formatRateLimitNotice, cleanMarkdownResponse, enforceFrontmatterConstraints, parseJsonResponse, mergeFrontmatter, preserveFrontmatterReviewTag, extractBody } from '../utils';
+import { slugify, computeSlug, parseFrontmatter, detectRateLimitFailures, formatRateLimitNotice, cleanMarkdownResponse, enforceFrontmatterConstraints, parseJsonResponse, mergeFrontmatter, preserveFrontmatterReviewTag, extractBody } from '../utils';
 import { getGranularityInstruction, getGranularityFixLimits } from '../wiki/system-prompts';
 import { LLMWikiSettings } from '../types';
 
@@ -104,6 +104,23 @@ describe('slugify', () => {
     const targetSlug3 = slugify('unrelated term').toLowerCase();
     const aliasMatch3 = aliases.some(a => slugify(a).toLowerCase() === targetSlug3);
     expect(aliasMatch3).toBe(false);
+  });
+});
+
+describe('computeSlug', () => {
+  it('produces same result as slugify', () => {
+    const inputs = ['Hello World', 'Machine-Learning', 'Test/Path'];
+    for (const input of inputs) {
+      expect(computeSlug(input)).toBe(slugify(input));
+    }
+  });
+
+  it('returns untitled for empty input', () => {
+    expect(computeSlug('')).toBe('untitled');
+  });
+
+  it('removes special characters and normalizes spaces', () => {
+    expect(computeSlug('hello?world!')).toBe('helloworld');
   });
 });
 

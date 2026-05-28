@@ -167,7 +167,7 @@ export class LLMWikiSettingTab extends PluginSettingTab {
     } else {
       containerEl.createEl('p', {
         text: this.getText('ollamaHint'),
-        attr: { style: 'color: #666; margin: 10px 0; font-size: 13px;' }
+        cls: 'llm-wiki-ollama-hint'
       });
     }
 
@@ -330,14 +330,14 @@ export class LLMWikiSettingTab extends PluginSettingTab {
       : '⚠️ ' + (this.getText('statusNotReady') || 'Not configured — please complete setup above');
     containerEl.createEl('p', {
       text: readyStatus,
-      attr: { style: `margin: 12px 0; font-weight: 500; color: ${this.tempSettings.llmReady ? 'var(--color-green)' : 'var(--color-orange)'}` }
+      cls: `llm-wiki-connection-status ${this.tempSettings.llmReady ? 'llm-wiki-status-ready' : 'llm-wiki-status-notready'}`
     });
     const clientStatus = this.plugin.llmClient ? this.getText('statusInitialized') : this.getText('statusNotInitialized');
     const currentProvider = providerConfig
       ? (this.tempSettings.language === 'en' ? providerConfig.nameEn : providerConfig.nameZh) : 'Custom';
     containerEl.createEl('p', {
       text: `${this.getText('statusTitle')}: ${clientStatus} | ${this.getText('currentProvider')}: ${currentProvider}`,
-      attr: { style: 'margin: 16px 0 8px; font-size: 13px; color: #666;' }
+      cls: 'llm-wiki-plugin-info'
     });
 
     // ==========================================
@@ -535,12 +535,12 @@ export class LLMWikiSettingTab extends PluginSettingTab {
     new Setting(containerEl).setName(this.getText('autoMaintainSection')).setHeading();
 
     const betaDiv = containerEl.createDiv({
-      attr: { style: 'background: #e8f0fe; border: 1px solid #4285f4; border-radius: 6px; padding: 8px 14px; margin-bottom: 12px; font-size: 12px; line-height: 1.5; color: #174ea6; font-weight: 500;' }
+      cls: 'llm-wiki-blue-infobox'
     });
     betaDiv.setText('🧪 ' + this.getText('autoMaintainBetaBadge'));
 
     const warningDiv = containerEl.createDiv({
-      attr: { style: 'background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 10px 14px; margin-bottom: 16px; font-size: 13px; line-height: 1.5; color: #664d03;' }
+      cls: 'llm-wiki-yellow-infobox'
     });
     warningDiv.setText(this.getText('autoMaintainCostWarning'));
 
@@ -573,7 +573,7 @@ export class LLMWikiSettingTab extends PluginSettingTab {
       if (this.tempSettings.watchedFolders.length === 0) {
         containerEl.createEl('p', {
           text: this.getText('noWatchedFoldersHint'),
-          attr: { style: 'color: #888; font-size: 13px; margin: 0 0 8px 0;' }
+          cls: 'llm-wiki-section-hint'
         });
       }
 

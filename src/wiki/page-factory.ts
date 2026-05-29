@@ -7,6 +7,7 @@ import {
   EntityInfo,
   ConceptInfo,
   SourceAnalysis,
+  PageCreationResult,
 } from '../types';
 import { PROMPTS } from '../prompts';
 import {
@@ -73,13 +74,13 @@ export class PageFactory {
 
   // Determine the actual file path for a new entity/concept, using slug-based
   // matching first and falling back to LLM semantic resolution.
-  // Returns null when a cross-type collision is detected (same name exists in the
-  // opposite folder) — callers must skip page creation in that case.
+  // Returns { path: null, collision: {...} } when a cross-type collision is detected
+  // (same name exists in the opposite folder) — callers must skip page creation.
   private async resolvePagePath(
     name: string,
     pageType: 'entity' | 'concept',
     summary: string
-  ): Promise<string | null> {
+  ): Promise<PageCreationResult> {
     const folder = pageType === 'entity' ? 'entities' : 'concepts';
     const otherFolder = pageType === 'entity' ? 'concepts' : 'entities';
     const slug = slugify(name);
@@ -87,7 +88,7 @@ export class PageFactory {
 
     // Fast path: exact slug match (same type folder)
     const existing = await this.ctx.tryReadFile(slugPath);
-    if (existing !== null) return slugPath;
+    if (existing !== null) return { path: slugPath };
 
     // Fast path 2 + Slow path: share sameTypePages across slug-match and LLM resolution
     try {
@@ -113,7 +114,7 @@ export class PageFactory {
       );
       if (slugMatch) {
         await this.appendAliases(slugMatch.path, [name]);
-        return slugMatch.path;
+        return { path: slugMatch.path };
       }
 
       // Cross-type collision check: if the same name already exists in the opposite
@@ -124,7 +125,15 @@ export class PageFactory {
       if (otherExact !== null) {
         console.debug(`Cross-type collision: "${name}" already exists in /${otherFolder}/, skipping duplicate`);
         await this.appendAliases(otherSlugPath, [name]);
-        return null;
+        return {
+          path: null,
+          collision: {
+            name,
+            sourceType: pageType,
+            targetType: otherFolder === 'entities' ? 'entity' : 'concept',
+            targetPath: otherSlugPath
+          }
+        };
       }
       const otherMatch = otherTypePages.find(p =>
         computeSlug(p.title).toLowerCase() === targetSlug ||
@@ -133,10 +142,18 @@ export class PageFactory {
       if (otherMatch) {
         console.debug(`Cross-type collision (normalized): "${name}" matched ${otherMatch.path}, skipping duplicate`);
         await this.appendAliases(otherMatch.path, [name]);
-        return null;
+        return {
+          path: null,
+          collision: {
+            name,
+            sourceType: pageType,
+            targetType: otherFolder === 'entities' ? 'entity' : 'concept',
+            targetPath: otherMatch.path
+          }
+        };
       }
 
-      if (sameTypePages.length === 0) return slugPath;
+      if (sameTypePages.length === 0) return { path: slugPath };
 
       const pagesList = sameTypePages
         .map(p => {
@@ -148,7 +165,7 @@ export class PageFactory {
         .join('\n');
 
       const client = this.ctx.getClient();
-      if (!client) return slugPath;
+      if (!client) return { path: slugPath };
 
       const prompt = PROMPTS.resolveEntityDedup
         .replace('{{entity_name}}', name)
@@ -174,13 +191,13 @@ export class PageFactory {
         console.debug(`Entity resolution: "${name}" matched existing page "${result.path}"`);
         // Append the new name as an alias to the existing page to prevent future duplicates
         await this.appendAliases(result.path, [name]);
-        return result.path;
+        return { path: result.path };
       }
     } catch (error) {
       console.debug(`Entity resolution for "${name}" failed, using slug path:`, error);
     }
 
-    return slugPath;
+    return { path: slugPath };
   }
 
   async buildPagesListForPrompt(includePaths: string[] = []): Promise<string> {
@@ -231,7 +248,7 @@ export class PageFactory {
     _analysis: SourceAnalysis,
     sourceFile: TFile | { path: string; basename: string },
     extraPagePaths: string[] = []
-  ): Promise<string | null> {
+  ): Promise<PageCreationResult> {
     return this.createOrUpdatePage(entity, 'entity', sourceFile, extraPagePaths);
   }
 
@@ -240,7 +257,7 @@ export class PageFactory {
     _analysis: SourceAnalysis,
     sourceFile: TFile | { path: string; basename: string },
     extraPagePaths: string[] = []
-  ): Promise<string | null> {
+  ): Promise<PageCreationResult> {
     return this.createOrUpdatePage(concept, 'concept', sourceFile, extraPagePaths);
   }
 
@@ -251,37 +268,42 @@ export class PageFactory {
     pageType: 'entity' | 'concept',
     sourceFile: TFile | { path: string; basename: string },
     extraPagePaths: string[] = []
-  ): Promise<string | null> {
+  ): Promise<PageCreationResult> {
     if (!info.name || info.name.trim().length === 0) {
       console.warn(`${pageType} name is empty, skipping creation`);
-      return null;
+      return { path: null };
     }
 
     console.debug(`=== Creating/Updating ${pageType} page ===`);
     console.debug('name:', info.name);
     console.debug('type:', info.type);
 
-    const path = await this.resolvePagePath(info.name, pageType, info.summary);
-    if (path === null) {
-      console.debug(`Skipping ${pageType} "${info.name}": cross-type duplicate exists`);
-      return null;
+    const result = await this.resolvePagePath(info.name, pageType, info.summary);
+    if (result.path === null) {
+      if (result.collision) {
+        console.debug(`Skipping ${pageType} "${info.name}": cross-type duplicate exists in ${result.collision.targetType}`);
+      }
+      return result;
     }
-    console.debug('Resolved path:', path);
+    console.debug('Resolved path:', result.path);
 
-    const existingContent = await this.ctx.tryReadFile(path);
+    const existingContent = await this.ctx.tryReadFile(result.path);
 
     if (!existingContent) {
-      return this.createNewPage(info, pageType, sourceFile, extraPagePaths, path);
+      const createdPath = await this.createNewPage(info, pageType, sourceFile, extraPagePaths, result.path);
+      return { path: createdPath };
     }
 
     const isReviewed = parseFrontmatter(existingContent)?.reviewed === true;
 
     if (isReviewed) {
-      console.debug(`${pageType} page has reviewed: true, using minimal append mode:`, path);
-      return this.appendToReviewedPage(info, sourceFile, existingContent, path);
+      console.debug(`${pageType} page has reviewed: true, using minimal append mode:`, result.path);
+      const updatedPath = await this.appendToReviewedPage(info, sourceFile, existingContent, result.path);
+      return { path: updatedPath };
     }
 
-    return this.mergePage(info, pageType, sourceFile, existingContent, extraPagePaths, path);
+    const mergedPath = await this.mergePage(info, pageType, sourceFile, existingContent, extraPagePaths, result.path);
+    return { path: mergedPath };
   }
 
   private async createNewPage(

@@ -329,6 +329,7 @@ export const DE_TEXTS = {
     lintStatusBar: 'Prüfung läuft... zum Abbrechen klicken',
     ingestionCancelling: 'Wird abgebrochen — Stopp nach aktuellem Batch',
     ingestionCancelled: 'Aufnahme abgebrochen',
+    crossTypeCollisionNotice: '{count} Einträge als Cross-Type-Alias zusammengeführt (Entity ↔ Concept Duplikate verhindert)',
 
     // Lint Report
     lintReportTitle: 'Wiki-Prüfbericht',

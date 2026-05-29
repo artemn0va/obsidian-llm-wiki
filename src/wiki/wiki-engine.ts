@@ -237,6 +237,7 @@ export class WikiEngine {
     this.onProgress?.(`Analyzing: ${file.basename}`);
 
     const failedItems: Array<{ type: 'entity' | 'concept'; name: string; reason: string }> = [];
+    const collisions: Array<{ name: string; sourceType: 'entity' | 'concept'; targetType: 'entity' | 'concept'; targetPath: string }> = [];
     let analysis: SourceAnalysis | null = null;
 
     try {
@@ -316,11 +317,15 @@ export class WikiEngine {
             if (task.type === 'entity') {
               const entity = analysis!.entities[task.index];
               try {
-                const entityPage = await this.pageFactory.createOrUpdateEntityPage(entity, analysis!, file);
-                if (entityPage) {
-                  analysis!.created_pages.push(entityPage);
+                const entityResult = await this.pageFactory.createOrUpdateEntityPage(entity, analysis!, file);
+                if (entityResult.path) {
+                  analysis!.created_pages.push(entityResult.path);
                 }
-                return { success: true as const, name: entity.name, type: 'entity' as const };
+                if (entityResult.collision) {
+                  collisions.push(entityResult.collision);
+                  console.debug(`Entity "${entity.name}" → collision with ${entityResult.collision.targetType}`);
+                }
+                return { success: true as const, name: entity.name, type: 'entity' as const, collision: entityResult.collision };
               } catch (error) {
                 const reason = error instanceof Error ? error.message : String(error);
                 console.error(`Entity "${entity.name}" failed:`, reason);
@@ -329,11 +334,14 @@ export class WikiEngine {
                 // Retry once
                 try {
                   await this.apiDelay(2000);
-                  const retryPage = await this.pageFactory.createOrUpdateEntityPage(entity, analysis!, file);
-                  if (retryPage) {
-                    analysis!.created_pages.push(retryPage);
+                  const retryResult = await this.pageFactory.createOrUpdateEntityPage(entity, analysis!, file);
+                  if (retryResult.path) {
+                    analysis!.created_pages.push(retryResult.path);
                     console.debug(`Entity "${entity.name}" recovered on retry`);
                     failedItems.pop();
+                  }
+                  if (retryResult.collision) {
+                    collisions.push(retryResult.collision);
                   }
                 } catch {
                   console.error(`Entity "${entity.name}" retry also failed`);
@@ -343,11 +351,15 @@ export class WikiEngine {
             } else {
               const concept = analysis!.concepts[task.index];
               try {
-                const conceptPage = await this.pageFactory.createOrUpdateConceptPage(concept, analysis!, file);
-                if (conceptPage) {
-                  analysis!.created_pages.push(conceptPage);
+                const conceptResult = await this.pageFactory.createOrUpdateConceptPage(concept, analysis!, file);
+                if (conceptResult.path) {
+                  analysis!.created_pages.push(conceptResult.path);
                 }
-                return { success: true as const, name: concept.name, type: 'concept' as const };
+                if (conceptResult.collision) {
+                  collisions.push(conceptResult.collision);
+                  console.debug(`Concept "${concept.name}" → collision with ${conceptResult.collision.targetType}`);
+                }
+                return { success: true as const, name: concept.name, type: 'concept' as const, collision: conceptResult.collision };
               } catch (error) {
                 const reason = error instanceof Error ? error.message : String(error);
                 console.error(`Concept "${concept.name}" failed:`, reason);
@@ -356,11 +368,14 @@ export class WikiEngine {
                 // Retry once
                 try {
                   await this.apiDelay(2000);
-                  const retryPage = await this.pageFactory.createOrUpdateConceptPage(concept, analysis!, file);
-                  if (retryPage) {
-                    analysis!.created_pages.push(retryPage);
+                  const retryResult = await this.pageFactory.createOrUpdateConceptPage(concept, analysis!, file);
+                  if (retryResult.path) {
+                    analysis!.created_pages.push(retryResult.path);
                     console.debug(`Concept "${concept.name}" recovered on retry`);
                     failedItems.pop();
+                  }
+                  if (retryResult.collision) {
+                    collisions.push(retryResult.collision);
                   }
                 } catch {
                   console.error(`Concept "${concept.name}" retry also failed`);
@@ -511,7 +526,7 @@ export class WikiEngine {
       const totalTime = Date.now() - totalStartTime;
 
       console.debug('=== Ingestion complete ===');
-      console.debug(`Ingestion complete [${modeLabel}]: Created ${created} pages (${entitiesCreated} entities + ${conceptsCreated} concepts), Updated ${updated} pages`);
+      console.debug(`Ingestion complete [${modeLabel}]: Created ${created} pages (${entitiesCreated} entities + ${conceptsCreated} concepts), Updated ${updated} pages, ${collisions.length} cross-type collisions`);
       console.debug(`[Total time] ${totalTime}ms (${Math.round(totalTime/1000)}s)`);
       console.debug('[Phase breakdown]:');
       console.debug(`  - Source analysis: ${analysisTime}ms`);
@@ -521,6 +536,14 @@ export class WikiEngine {
       console.debug(`  - Contradiction recording: ${contradictionTime}ms`);
       console.debug(`  - Index & log: ${indexTime}ms`);
 
+      // Show collision notice if any occurred
+      if (collisions.length > 0) {
+        const t = TEXTS[this.settings.language] || TEXTS.en;
+        const collisionNotice = (t as unknown as Record<string, string>).crossTypeCollisionNotice ||
+          `${collisions.length} items merged as cross-type aliases (entity ↔ concept duplicates prevented)`;
+        new Notice(collisionNotice.replace('{count}', String(collisions.length)), 5000);
+      }
+
       this.onDone?.({
         sourceFile: file.path,
         createdPages: analysis.created_pages,
@@ -528,6 +551,7 @@ export class WikiEngine {
         entitiesCreated,
         conceptsCreated,
         failedItems,
+        collisions,
         contradictionsFound: analysis.contradictions.length,
         success: true,
         elapsedSeconds: Math.round(totalTime / 1000)
@@ -548,6 +572,7 @@ export class WikiEngine {
           entitiesCreated: createdPages.filter(p => p.includes('/entities/')).length,
           conceptsCreated: createdPages.filter(p => p.includes('/concepts/')).length,
           failedItems,
+          collisions,
           contradictionsFound: analysis?.contradictions?.length || 0,
           success: false,
           cancelled: true,
@@ -568,6 +593,7 @@ export class WikiEngine {
         entitiesCreated: createdPages.filter(p => p.includes('/entities/')).length,
         conceptsCreated: createdPages.filter(p => p.includes('/concepts/')).length,
         failedItems,
+        collisions,
         contradictionsFound: analysis?.contradictions?.length || 0,
         success: false,
         errorMessage: errorMsg,

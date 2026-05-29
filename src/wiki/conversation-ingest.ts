@@ -84,6 +84,7 @@ export class ConversationIngestor {
             entitiesCreated: 0,
             conceptsCreated: 0,
             failedItems: [],
+            collisions: [],
             contradictionsFound: 0,
             success: true,
             errorMessage: 'Knowledge already exists in Wiki',
@@ -224,14 +225,18 @@ CRITICAL RULES:
     parsed.created_pages.push(summaryPath);
 
     const failedItems: Array<{ type: 'entity' | 'concept'; name: string; reason: string }> = [];
+    const collisions: Array<{ name: string; sourceType: 'entity' | 'concept'; targetType: 'entity' | 'concept'; targetPath: string }> = [];
 
     for (const entity of parsed.entities) {
       await this.orch.apiDelay();
       this.ctx.onProgress?.(`Saving entity: ${entity.name}`);
       try {
-        const entityPage = await this.pageFactory.createOrUpdateEntityPage(entity, parsed, { path: summaryPath, basename: semanticSlug }, convPlannedPaths);
-        if (entityPage) {
-          parsed.created_pages.push(entityPage);
+        const entityResult = await this.pageFactory.createOrUpdateEntityPage(entity, parsed, { path: summaryPath, basename: semanticSlug }, convPlannedPaths);
+        if (entityResult.path) {
+          parsed.created_pages.push(entityResult.path);
+        }
+        if (entityResult.collision) {
+          collisions.push(entityResult.collision);
         }
       } catch (error) {
         const reason = error instanceof Error ? error.message : String(error);
@@ -244,9 +249,12 @@ CRITICAL RULES:
       await this.orch.apiDelay();
       this.ctx.onProgress?.(`Saving concept: ${concept.name}`);
       try {
-        const conceptPage = await this.pageFactory.createOrUpdateConceptPage(concept, parsed, { path: summaryPath, basename: semanticSlug }, convPlannedPaths);
-        if (conceptPage) {
-          parsed.created_pages.push(conceptPage);
+        const conceptResult = await this.pageFactory.createOrUpdateConceptPage(concept, parsed, { path: summaryPath, basename: semanticSlug }, convPlannedPaths);
+        if (conceptResult.path) {
+          parsed.created_pages.push(conceptResult.path);
+        }
+        if (conceptResult.collision) {
+          collisions.push(conceptResult.collision);
         }
       } catch (error) {
         const reason = error instanceof Error ? error.message : String(error);
@@ -270,6 +278,7 @@ CRITICAL RULES:
       entitiesCreated,
       conceptsCreated,
       failedItems,
+      collisions,
       contradictionsFound: parsed.contradictions?.length || 0,
       success: true,
       elapsedSeconds: Math.round((Date.now() - startTime) / 1000),

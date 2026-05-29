@@ -332,6 +332,7 @@ export const EN_TEXTS = {
     lintStatusBar: 'Linting... click to cancel',
     ingestionCancelling: 'Cancelling — will stop after current batch completes',
     ingestionCancelled: 'Ingestion cancelled',
+    crossTypeCollisionNotice: '{count} items merged as cross-type aliases (entity ↔ concept duplicates prevented)',
 
     // Lint Report
     lintReportTitle: 'Wiki lint report',

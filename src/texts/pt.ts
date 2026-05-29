@@ -329,6 +329,7 @@ export const PT_TEXTS = {
     lintStatusBar: 'Verificando... clique para cancelar',
     ingestionCancelling: 'Cancelando — irá parar após o lote atual',
     ingestionCancelled: 'Ingestão cancelada',
+    crossTypeCollisionNotice: '{count} elementos fundidos como alias cross-type (duplicatas entidade ↔ conceito evitadas)',
 
     // Lint Report
     lintReportTitle: 'Relatório de verificação da Wiki',

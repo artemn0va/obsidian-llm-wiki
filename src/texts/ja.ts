@@ -329,6 +329,7 @@ export const JA_TEXTS = {
     lintStatusBar: 'チェック中... クリックでキャンセル',
     ingestionCancelling: 'キャンセル中 — 現在のバッチ完了後に停止します',
     ingestionCancelled: '取り込みがキャンセルされました',
+    crossTypeCollisionNotice: '{count}件がクロスタイプ別名として統合（エンティティ ↔ コンセプト重複を防止）',
 
     // Lint Report
     lintReportTitle: 'Wiki Lintレポート',

@@ -455,6 +455,7 @@ export default class LLMWikiPlugin extends Plugin {
         const totalContradictions = reports.reduce((sum, r) => sum + r.contradictionsFound, 0);
         const totalElapsed = reports.reduce((sum, r) => sum + (r.elapsedSeconds || 0), 0);
         const allFailedItems = reports.flatMap(r => r.failedItems);
+        const allCollisions = reports.flatMap(r => r.collisions || []);
         const allSuccess = reports.every(r => r.success);
 
         const aggregated: IngestReport = {
@@ -464,6 +465,7 @@ export default class LLMWikiPlugin extends Plugin {
           entitiesCreated: totalEntities,
           conceptsCreated: totalConcepts,
           failedItems: allFailedItems,
+          collisions: allCollisions,
           contradictionsFound: totalContradictions,
           success: allSuccess,
           elapsedSeconds: totalElapsed,

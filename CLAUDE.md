@@ -167,6 +167,8 @@ git checkout main && git pull origin main
 
 ## Tag & Release workflow
 
+**Use `/obsidian-plugin-release` skill for complete release preparation.**
+
 Tags are pushed AFTER the PR is merged to main:
 ```bash
 # Ensure you're on the latest main with the merged commit
@@ -175,6 +177,12 @@ git tag -a X.Y.Z -m "X.Y.Z"
 git push origin X.Y.Z
 # GitHub Actions creates the draft release automatically
 ```
+
+**Before version bump commit**, verify ALL items in skill's Pre-Release Checklist:
+- All 8 READMEs' "What's New" section REPLACED (not appended)
+- TOC links match actual heading text exactly
+- CHANGELOG.md entry added
+- Lockfiles regenerated (pnpm + npm official registry)
 
 ---
 

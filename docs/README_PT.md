@@ -24,7 +24,7 @@
   - [🔑 Configurar um LLM Provider](#-configurar-um-llm-provider)
   - [🎮 Uso](#-uso)
   - [⚠️ Atualizando de uma Versão Anterior?](#️-atualizando-de-uma-versão-anterior)
-- [⚡ Novidades na v1.12.0](#-novidades-na-v1120)
+- [⚡ Novidades na v1.12.5](#-novidades-na-v1125)
 - [✨ Funcionalidades](#-funcionalidades)
   - [📊 Qualidade do Conhecimento](#-qualidade-do-conhecimento)
   - [🛠️ Manutenção](#️-manutenção)
@@ -179,24 +179,23 @@ Settings → **Ingestion Acceleration**:
 ---
 ---
 
-## ⚡ Novidades na v1.12.0
+## ⚡ Novidades na v1.12.5
 
-Esta é uma **atualização de desempenho crítica para produção**. O processo de extração por ingestão foi fundamentalmente redesenhado — a lista de páginas não é mais incluída em cada chamada LLM. A extração agora escala independentemente do tamanho do Wiki.
+Esta versão foca na **prevenção de duplicados cross-type**. Quando a mesma entity/concept era classificada diferente em sessões de ingestão distintas, duplicados apareciam em ambas pastas `entities/` e `concepts/` — o novo conteúdo era silenciosamente descartado. Isso está corrigido.
 
 **Melhorias principais:**
 
-- **A ingestão é ~80% mais rápida.** Um arquivo curto que antes levava 30–90 segundos agora é concluído em 5–15 segundos. Quanto maior o Wiki, mais significativa a diferença.
-- **Qualidade de extração significativamente melhorada.** Sem a lista massiva de páginas confundindo o LLM, a extração é mais limpa e não alucina entidades de outras páginas do Wiki.
-- **O tamanho do Wiki não afeta mais a velocidade de ingestão individual.** Um Wiki de 10.000 páginas processa cada arquivo na mesma velocidade de um de 500 páginas. Pronto para produção em larga escala.
-- **Controle inteligente de lotes.** Artigos curtos são concluídos em 1–2 rodadas. A barra de progresso mostra a contagem de lotes e resultados acumulados.
-- **Correspondência determinista de páginas relacionadas.** A correspondência cruzada usa algoritmo programático de slug+alias em vez de adivinhação do LLM — mais confiável e sem custo adicional.
+- **Detecção de duplicados cross-folder.** Quando uma página já existe na pasta oposta (ex: `concepts/foo.md` existe ao extrair entity "Foo"), o novo conteúdo é fusionado nessa página existente em vez de criar um duplicado. Não mais perda silenciosa de informação.
+- **Duplicados históricos conectados.** Fast path 1 exact-match agora também verifica a pasta oposta. Se existe um duplicado histórico (ambas pastas tinham a mesma página antes deste release), um alias é adicionado automaticamente e um aviso é logado.
+- **Relatório de colisões no modal de ingestão.** O relatório batch de ingestão agora mostra todas as colisões cross-type (fusionados como aliases) — antes esta info só era agregada mas não exibida.
+- **i18n type-safe.** Helper `getText()` elimina unsafe type casts no codebase. Chaves de tradução faltantes agora são detectáveis em tempo de compilação.
+- **173 testes unitários (+8).** Cobertura completa para a nova lógica cross-type e o helper i18n.
 
-**Atualizando de uma versão anterior?** Execute **Lint Wiki** uma vez após a atualização para corrigir automaticamente problemas históricos. Sua configuração existente é preservada.
+**Atualizando de uma versão anterior?** Execute **Lint Wiki** uma vez após a atualização para corrigir automaticamente duplicados cross-type históricos. Sua configuração existente é preservada.
 
 **Recomendamos fortemente que todos os usuários atualizem para esta versão.**
 
 ---
-
 
 ## ✨ Funcionalidades
 

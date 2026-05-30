@@ -24,7 +24,7 @@
   - [🔑 Configuration d'un Provider LLM](#-configuration-dun-provider-llm)
   - [🎮 Utilisation](#-utilisation)
   - [⚠️ Mise à niveau depuis une version antérieure ?](#️-mise-à-niveau-depuis-une-version-antérieure-)
-- [⚡ Quoi de neuf dans la v1.12.0](#-quoi-de-neuf-dans-la-v1120)
+- [⚡ Quoi de neuf dans la v1.12.5](#-quoi-de-neuf-dans-la-v1125)
 - [✨ Fonctionnalités](#-fonctionnalités)
   - [📊 Qualité des connaissances](#-qualité-des-connaissances)
   - [🛠️ Maintenance](#️-maintenance)
@@ -179,24 +179,23 @@ Paramètres → **Ingestion Acceleration** :
 ---
 ---
 
-## ⚡ Quoi de neuf dans la v1.12.0
+## ⚡ Quoi de neuf dans la v1.12.5
 
-Il s'agit d'une **mise à jour de performance critique pour la production**. Le processus d'extraction d'ingestion a été fondamentalement repensé — la liste des pages n'est plus intégrée dans chaque appel LLM. L'extraction s'adapte indépendamment de la taille du Wiki.
+Cette version se concentre sur la **prévention des doublons cross-type**. Quand une même entity/concept était classifiée différemment selon les sessions d'ingestion, des doublons apparaissaient dans les deux dossiers `entities/` et `concepts/` — le nouveau contenu était silencieusement ignoré. Ce problème est maintenant corrigé.
 
 **Améliorations clés :**
 
-- **L'ingestion est ~80% plus rapide.** Un fichier court qui prenait 30–90 secondes se termine maintenant en 5–15 secondes. Plus le Wiki est grand, plus la différence est marquée.
-- **Qualité d'extraction nettement améliorée.** Sans la liste massive de pages perturbant le LLM, les extractions sont plus précises et n'hallucinent plus d'entités à partir d'autres pages Wiki.
-- **La taille du Wiki ne ralentit plus l'ingestion de fichiers individuels.** Un Wiki de 10 000 pages traite chaque fichier à la même vitesse qu'un Wiki de 500 pages. Prêt pour la production à grande échelle.
-- **Contrôle intelligent des lots.** Les articles courts se terminent en 1–2 tours. L'affichage de progression affiche le nombre de lots et les résultats cumulés.
-- **Correspondance déterministe des pages liées.** La mise en correspondance utilise désormais un algorithme de slug+alias programmatique au lieu de deviner avec le LLM — plus fiable et sans coût supplémentaire.
+- **Détection des doublons cross-folder.** Quand une page existe déjà dans le dossier opposé (ex: `concepts/foo.md` existe lors de l'extraction de l'entity "Foo"), le nouveau contenu est fusionné dans cette page existante au lieu de créer un doublon. Pas plus de perte d'information silencieuse.
+- **Doublons historiques reliés.** Fast path 1 exact-match vérifie maintenant aussi le dossier opposé. Si un doublon historique existe (les deux dossiers avaient la même page avant cette version), un alias est automatiquement ajouté et un warning est logué.
+- **Rapport de collision dans le modal d'ingestion.** Le rapport batch d'ingestion affiche maintenant toutes les collisions cross-type (fusionnées comme aliases) — auparavant cette info était seulement agrégée mais jamais affichée.
+- **i18n type-safe.** Helper `getText()` élimine les unsafe type casts dans le codebase. Les clés de traduction manquantes sont maintenant détectables à la compilation.
+- **173 tests unitaires (+8).** Couverture complète pour la nouvelle logique cross-type et le helper i18n.
 
-**Mise à niveau depuis une version antérieure ?** Exécutez **Lint Wiki** une fois après la mise à niveau pour corriger automatiquement les problèmes historiques. Votre configuration existante est préservée.
+**Mise à niveau depuis une version antérieure ?** Exécutez **Lint Wiki** une fois après la mise à niveau pour corriger automatiquement les doublons cross-type historiques. Votre configuration existante est préservée.
 
 **Nous recommandons vivement à tous les utilisateurs de mettre à jour vers cette version.**
 
 ---
-
 
 ## ✨ Fonctionnalités
 

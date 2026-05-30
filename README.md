@@ -24,7 +24,7 @@
   - [🔑 Configure an LLM Provider](#-configure-an-llm-provider)
   - [🎮 Usage](#-usage)
   - [⚠️ Upgrading from an Older Version?](#️-upgrading-from-an-older-version)
-- [⚡ What's New in v1.12.0](#-whats-new-in-v1120)
+- [⚡ What's New in v1.12.5](#-whats-new-in-v1125)
 - [✨ Features](#-features)
   - [📊 Knowledge Quality](#-knowledge-quality)
   - [🛠️ Maintenance](#️-maintenance)
@@ -181,19 +181,19 @@ Settings → **Ingestion Acceleration**:
 
 ---
 
-## ⚡ What's New in v1.12.0
+## ⚡ What's New in v1.12.5
 
-This is a **production-critical performance release**. Ingestion extraction has been fundamentally rearchitected — the wiki page list is no longer embedded in every LLM prompt. Extraction now scales independently of wiki size.
+This release focuses on **cross-type duplicate prevention**. When the same entity/concept is classified differently across ingestion sessions, duplicate pages would previously appear in both `entities/` and `concepts/` folders — with new content silently discarded. This is now fixed.
 
 **Key Improvements:**
 
-- **Ingestion is ~80% faster.** A short source that took 30–90 seconds before now completes in 5–15 seconds. The speedup grows with wiki size — the larger your wiki, the more dramatic the difference.
-- **Extraction quality significantly improved.** Without the massive page list distracting the LLM, extraction is cleaner, more focused on the actual source content, and no longer hallucinates entities from other wiki pages.
-- **Wiki size no longer slows down individual file ingestion.** A 10,000-page wiki processes each file at the same speed as a 500-page wiki. The plugin is now ready for large-scale production use.
-- **Smarter batch control.** Short articles complete in 1–2 extraction rounds instead of being forced through many iterations. Progress display now shows batch counts and cumulative results.
-- **Deterministic related-page matching.** Cross-referencing between new extractions and existing pages now uses programmatic slug + alias matching instead of LLM guessing — more reliable and zero additional cost.
+- **Cross-folder duplicate detection.** When a page already exists in the opposite folder (e.g., `concepts/foo.md` exists while extracting entity "Foo"), the new content is merged into that existing page instead of creating a duplicate. No more silent information loss.
+- **Historical duplicates bridged.** Fast path 1 exact-match now also checks the opposite folder. If a historical duplicate exists (both folders had the same page before this release), an alias is automatically added and a warning is logged.
+- **Collision reporting in ingestion modal.** The batch report now displays all cross-type collisions that were merged as aliases — previously this info was aggregated but never shown.
+- **Type-safe i18n.** Added `getText()` helper to eliminate unsafe type casts across the codebase. Missing translation keys are now caught at compile time.
+- **173 unit tests (+8 since v1.12.4).** Comprehensive coverage for the new cross-type logic and i18n helper.
 
-**Upgrading from an older version?** Just run **Lint Wiki** once after upgrading to auto-fix any historical issues. Your existing configuration is preserved — no reconfiguration needed.
+**Upgrading from an older version?** Just run **Lint Wiki** once after upgrading to auto-fix any historical cross-type duplicates. Your existing configuration is preserved — no reconfiguration needed.
 
 **We strongly recommend all users upgrade to this version.**
 

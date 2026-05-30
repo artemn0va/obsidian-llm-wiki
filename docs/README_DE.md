@@ -24,7 +24,7 @@
   - [🔑 LLM Provider konfigurieren](#-llm-provider-konfigurieren)
   - [🎮 Nutzung](#-nutzung)
   - [⚠️ Upgrade von einer älteren Version?](#️-upgrade-von-einer-älteren-version)
-- [⚡ Was ist neu in v1.12.0](#-was-ist-neu-in-v1120)
+- [⚡ Was ist neu in v1.12.5](#-was-ist-neu-in-v1125)
 - [✨ Funktionen](#-funktionen)
   - [📊 Knowledge Quality](#-knowledge-quality)
   - [🛠️ Maintenance](#️-maintenance)
@@ -184,24 +184,23 @@ Settings → **Ingestion Acceleration**:
 ---
 ---
 
-## ⚡ Was ist neu in v1.12.0
+## ⚡ Was ist neu in v1.12.5
 
-Dies ist ein **produktionskritisches Performance-Release**. Der Extraktionsprozess wurde grundlegend überarbeitet — die Seitenliste wird nicht mehr in jedem LLM-Prompt eingebettet. Die Extraktion skaliert nun unabhängig von der Wiki-Größe.
+Diese Version konzentriert sich auf **Cross-Type-Duplikat-Verhinderung**. Wenn dieselbe Entity/Concept in unterschiedlichen Ingestion-Sessions unterschiedlich klassifiziert wurde, entstanden früher Duplikate in beiden Ordnern `entities/` und `concepts/` — neue Inhalte wurden dabei stillschweigend verworfen. Das ist jetzt behoben.
 
 **Wichtigste Verbesserungen:**
 
-- **Ingestion ist ~80% schneller.** Eine kurze Quelle, die vorher 30–90 Sekunden dauerte, benötigt jetzt nur noch 5–15 Sekunden. Je größer das Wiki, desto größer der Unterschied.
-- **Extraktionsqualität deutlich verbessert.** Ohne die massive Seitenliste wird das LLM nicht mehr abgelenkt — Extraktionen sind sauberer und halluzinieren keine Entitäten aus anderen Wiki-Seiten.
-- **Wiki-Größe verlangsamt die Aufnahme einzelner Dateien nicht mehr.** Ein 10.000-Seiten-Wiki verarbeitet jede Datei genauso schnell wie ein 500-Seiten-Wiki. Produktionsbereit für große Wikis.
-- **Smarter Batch-Kontrolle.** Kurze Artikel werden in 1–2 Runden abgeschlossen. Fortschrittsanzeige zeigt jetzt Batch-Zähler und kumulierte Ergebnisse.
-- **Deterministische Related-Page-Erkennung.** Kreuzreferenzierung erfolgt programmatisch über Slug+Alias-Matching statt LLM-Vermutung — zuverlässiger und ohne Zusatzkosten.
+- **Cross-Folder-Duplikat-Erkennung.** Wenn eine Seite bereits im anderen Ordner existiert (z.B. `concepts/foo.md` existiert beim Extrahieren von Entity "Foo"), wird der neue Inhalt in diese existierende Seite integriert statt ein Duplikat zu erstellen. Keine stillschweigenden Informationsverluste mehr.
+- **Historische Duplikate überbrückt.** Fast-Path-1-Exakt-Match prüft jetzt auch den anderen Ordner. Wenn ein historisches Duplikat existiert (beide Ordner hatten vor diesem Release dieselbe Seite), wird ein Alias automatisch hinzugefügt und eine Warnung geloggt.
+- **Collision-Bericht im Ingestion-Modal.** Der Batch-Ingestion-Report zeigt jetzt alle Cross-Type-Collisions (als Aliases integriert) — früher wurde diese Info nur aggregiert, aber nicht angezeigt.
+- **Typ-sicheres i18n.** `getText()`-Helper eliminiert unsafe Type-Casts im Codebase. Fehlende Übersetzungs-Keys sind jetzt zur Compile-Time erkennbar.
+- **173 Unit-Tests (+8).** Vollständige Testabdeckung für neue Cross-Type-Logik und i18n-Helper.
 
-**Von einer älteren Version upgraden?** Führen Sie nach dem Upgrade einmal **Lint Wiki** aus, um historische Probleme automatisch zu beheben. Ihre bestehende Konfiguration bleibt erhalten.
+**Von einer älteren Version upgraden?** Führen Sie nach dem Upgrade einmal **Lint Wiki** aus, um historische Cross-Type-Duplikate automatisch zu beheben. Ihre bestehende Konfiguration bleibt erhalten.
 
 **Wir empfehlen dringend allen Nutzern das Upgrade auf diese Version.**
 
 ---
-
 
 ## ✨ Funktionen
 

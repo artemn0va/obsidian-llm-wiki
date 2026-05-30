@@ -24,7 +24,7 @@
   - [🔑 Configure an LLM Provider](#-configure-an-llm-provider)
   - [🎮 Usage](#-usage)
   - [⚠️ Upgrading from an Older Version?](#️-upgrading-from-an-older-version)
-- [⚡ What's New in v1.12.5](#-whats-new-in-v1125)
+- [⚡ What's New in v1.12.6](#-whats-new-in-v1126)
 - [✨ Features](#-features)
   - [📊 Knowledge Quality](#-knowledge-quality)
   - [🛠️ Maintenance](#️-maintenance)
@@ -181,9 +181,11 @@ Settings → **Ingestion Acceleration**:
 
 ---
 
-## ⚡ What's New in v1.12.5
+## ⚡ What's New in v1.12.6
 
 This release focuses on **cross-type duplicate prevention**. When the same entity/concept is classified differently across ingestion sessions, duplicate pages would previously appear in both `entities/` and `concepts/` folders — with new content silently discarded. This is now fixed.
+
+**Build verification reliability (v1.12.6):** CI workflow now uses `npm install` and `npm run build` to exactly match Obsidian verification system. All dependencies are pinned to exact versions for reproducible builds.
 
 **Key Improvements:**
 

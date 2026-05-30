@@ -24,7 +24,7 @@
   - [🔑 Configuration d'un Provider LLM](#-configuration-dun-provider-llm)
   - [🎮 Utilisation](#-utilisation)
   - [⚠️ Mise à niveau depuis une version antérieure ?](#️-mise-à-niveau-depuis-une-version-antérieure-)
-- [⚡ Quoi de neuf dans la v1.12.5](#-quoi-de-neuf-dans-la-v1125)
+- [⚡ Quoi de neuf dans la v1.12.6](#-quoi-de-neuf-dans-la-v1126)
 - [✨ Fonctionnalités](#-fonctionnalités)
   - [📊 Qualité des connaissances](#-qualité-des-connaissances)
   - [🛠️ Maintenance](#️-maintenance)
@@ -179,7 +179,7 @@ Paramètres → **Ingestion Acceleration** :
 ---
 ---
 
-## ⚡ Quoi de neuf dans la v1.12.5
+## ⚡ Quoi de neuf dans la v1.12.6
 
 Cette version se concentre sur la **prévention des doublons cross-type**. Quand une même entity/concept était classifiée différemment selon les sessions d'ingestion, des doublons apparaissaient dans les deux dossiers `entities/` et `concepts/` — le nouveau contenu était silencieusement ignoré. Ce problème est maintenant corrigé.
 

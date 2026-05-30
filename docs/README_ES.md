@@ -24,7 +24,7 @@
   - [🔑 Configurar un Provider de LLM](#-configurar-un-provider-de-llm)
   - [🎮 Uso](#-uso)
   - [⚠️ Actualizando desde una Versión Anterior](#️-actualizando-desde-una-versión-anterior)
-- [⚡ Novedades en v1.12.5](#-novedades-en-v1125)
+- [⚡ Novedades en v1.12.6](#-novedades-en-v1126)
 - [✨ Características](#-características)
   - [📊 Calidad del Conocimiento](#-calidad-del-conocimiento)
   - [🛠️ Mantenimiento](#️-mantenimiento)
@@ -179,7 +179,7 @@ Configuración → **Ingestion Acceleration**:
 ---
 ---
 
-## ⚡ Novedades en v1.12.5
+## ⚡ Novedades en v1.12.6
 
 Esta versión se centra en la **prevención de duplicados cross-type**. Cuando la misma entity/concept se clasificaba diferente en sesiones de ingestión distintas, aparecían duplicados en ambas carpetas `entities/` y `concepts/` — el nuevo contenido se descartaba silenciosamente. Esto está corregido.
 

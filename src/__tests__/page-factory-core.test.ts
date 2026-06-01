@@ -2,6 +2,26 @@ import { describe, it, expect } from 'vitest';
 import { PageFactory } from '../wiki/page-factory';
 import { createMockContext, createMockFile } from './__mocks__/engine-context';
 import { createMockEntity } from './factories';
+import { SourceAnalysis } from '../types';
+
+// Helper: create minimal valid SourceAnalysis for tests
+function createMockAnalysis(
+  overrides: Partial<SourceAnalysis> = {}
+): SourceAnalysis {
+  return {
+    source_file: 'test.md',
+    source_title: 'Test',
+    summary: '',
+    entities: [],
+    concepts: [],
+    contradictions: [],
+    related_pages: [],
+    key_points: [],
+    created_pages: [],
+    updated_pages: [],
+    ...overrides
+  };
+}
 
 describe('PageFactory — Core Paths', () => {
   describe('resolvePagePath — LLM fallback', () => {
@@ -50,10 +70,18 @@ describe('PageFactory — Core Paths', () => {
       const originalGetClient = ctx.getClient;
       ctx.getClient = () => {
         const client = originalGetClient();
+        if (!client) throw new Error('Mock client not initialized');
         return {
-          createMessage: async (...args: unknown[]) => {
+          createMessage: async (params: {
+            model: string;
+            max_tokens: number;
+            system?: string;
+            messages: Array<{ role: 'user' | 'assistant'; content: string }>;
+            response_format?: { type: 'json_object' };
+            cacheBreakpoint?: number;
+          }) => {
             llmCalled = true;
-            return client.createMessage(...args);
+            return client.createMessage(params);
           },
         };
       };
@@ -124,7 +152,7 @@ describe('PageFactory — Core Paths', () => {
 
       await factory.createOrUpdateEntityPage(
         entity,
-        { entities: [], concepts: [], contradictions: [] },
+        createMockAnalysis(),
         createMockFile('sources/doc.md'),
         []
       );
@@ -151,7 +179,7 @@ describe('PageFactory — Core Paths', () => {
 
       await factory.createOrUpdateEntityPage(
         entity,
-        { entities: [], concepts: [], contradictions: [] },
+        createMockAnalysis(),
         createMockFile('sources/doc.md'),
         []
       );
@@ -176,7 +204,7 @@ describe('PageFactory — Core Paths', () => {
 
       await factory.createOrUpdateEntityPage(
         entity,
-        { entities: [], concepts: [], contradictions: [] },
+        createMockAnalysis(),
         createMockFile('sources/doc.md'),
         []
       );
@@ -203,7 +231,7 @@ describe('PageFactory — Core Paths', () => {
 
       await factory.createOrUpdateEntityPage(
         entity,
-        { entities: [], concepts: [], contradictions: [] },
+        createMockAnalysis(),
         createMockFile('sources/doc.md'),
         []
       );
@@ -260,7 +288,7 @@ describe('PageFactory — Core Paths', () => {
 
       const result = await factory.createOrUpdateEntityPage(
         entity,
-        { entities: [], concepts: [], contradictions: [] },
+        createMockAnalysis(),
         createMockFile('sources/doc.md'),
         []
       );
@@ -286,7 +314,7 @@ describe('PageFactory — Core Paths', () => {
 
       await factory.createOrUpdateEntityPage(
         entity,
-        { entities: [], concepts: [], contradictions: [] },
+        createMockAnalysis(),
         createMockFile('sources/doc.md'),
         []
       );

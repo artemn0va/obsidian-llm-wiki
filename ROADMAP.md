@@ -2,11 +2,26 @@
 
 > Feature planning and improvement proposals
 
-**Version:** 1.13.0 | **Updated:** 2026-05-31
+**Version:** 1.14.0 | **Updated:** 2026-06-01
 
 ---
 
 ## Current Status
+
+### Implemented (v1.14.0) — Architecture Quality & Test Infrastructure
+
+Comprehensive test infrastructure expansion addressing third-party model review feedback, core architecture refactoring with pure function extraction, and model compatibility fixes.
+
+**Key changes:**
+- Model compatibility expansion (Issues #64/#65): DeepSeek-R1, QwQ, LM Studio fully supported
+- Test infrastructure expansion: Mock infrastructure (`createMockContext`), 400 tests (+200), test coverage doubled
+- TypeScript type safety complete: All type errors fixed, dual gate verification enforced
+- Dual Gate Verification: ESLint + TypeScript both required, single tool insufficient
+- Core architecture refactoring: 4 pure function modules in `src/core/` (conflict-resolver, dead-link-detector, orphan-matcher, prompt-builders)
+- Constants centralization: `src/constants.ts` 192 lines, WIKI_SUBFOLDERS, notice durations, token budgets activated
+- Query engine stability: Page content capped at 3000 tokens, prevents overflow
+- Documentation upgrades: TDD Standard, Development Protocol, ROADMAP architecture quality plan
+- Code quality: 2576 lines added, 503 removed, 44 files changed, zero breaking changes
 
 ### Implemented (v1.13.0) — Quality & Infrastructure
 

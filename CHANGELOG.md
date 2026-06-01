@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.14.0] - 2026-06-01
+
+### Added
+- **Model compatibility expansion**: DeepSeek-R1, QwQ (reasoning models), and LM Studio now fully supported. Think token stripping (Issue #64) removes ` Schweizer
+
+<think>`/`<thinking>` blocks from reasoning model outputs. LM Studio compatibility fix (Issue #65) removes unsupported `response_format: json_object` parameter.
+
+- **Test infrastructure expansion**: Mock infrastructure (`createMockContext`, `createMockFile`) enables unit testing of core engine modules without Obsidian runtime. Total tests increased from ~200 to 400 (+200 tests), covering previously untestable core logic.
+
+### Fixed
+- **TypeScript type safety complete**: Fixed 8 type errors in `page-factory-core.test.ts` (interface completeness, null checks, parameter types). Project achieves TypeScript strict mode compliance.
+
+- **Query engine stability**: Page content loading capped at 3000 tokens (MAX_PAGE_CONTENT_CHARS) to prevent token overflow in `loadRelevantPages`.
+
+- **Dual Gate Verification Mechanism**: Upgraded quality gates to require both ESLint and TypeScript passing (0 errors + 0 warnings each). ESLint alone is insufficient for type safety.
+
+### Changed
+- **Core architecture refactoring**: Extracted 4 pure function modules to `src/core/` directory:
+  - `conflict-resolver.ts` — zero-IO conflict detection
+  - `dead-link-detector.ts` — dead link identification
+  - `orphan-matcher.ts` — orphan page matching
+  - `prompt-builders.ts` — prompt template builders
+  
+- **Constants centralization**: Centralized 30+ scattered magic numbers into `src/constants.ts` (192 lines). Activated semantic constants: WIKI_SUBFOLDERS, notice durations, token budgets, retry parameters.
+
+- **lint-fixes.ts refactoring**: Extracted pure logic to core modules, reduced file complexity (~180 lines removed).
+
+- **Documentation upgrades**:
+  - TDD Standard: "write failing test first, then implementation"
+  - Development Protocol: "plan first, then execute"
+  - ROADMAP architecture quality upgrade plan
+  - Dual Gate Verification documentation (ESLint + TypeScript both required)
+
+- **Code quality**: 2576 lines added, 503 lines removed across 44 files. Zero side effects, zero breaking changes, backward-compatible refactorings.
+
 ## [1.13.0] - 2026-05-31
 
 ### Added

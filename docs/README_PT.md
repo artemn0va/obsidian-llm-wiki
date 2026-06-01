@@ -24,7 +24,7 @@
   - [🔑 Configurar um LLM Provider](#-configurar-um-llm-provider)
   - [🎮 Uso](#-uso)
   - [⚠️ Atualizando de uma Versão Anterior?](#️-atualizando-de-uma-versão-anterior)
-- [⚡ Novidades na v1.13.0](#-novidades-na-v1130)
+- [⚡ Novidades na v1.14.0](#-novidades-na-v1140)
 - [✨ Funcionalidades](#-funcionalidades)
   - [📊 Qualidade do Conhecimento](#-qualidade-do-conhecimento)
   - [🛠️ Manutenção](#️-manutenção)
@@ -179,39 +179,28 @@ Settings → **Ingestion Acceleration**:
 ---
 ---
 
-## ⚡ Novidades na v1.13.0
+## ⚡ Novidades na v1.14.0
 
-Esta versão foca na **prevenção de duplicados cross-type**. Quando a mesma entity/concept era classificada diferente em sessões de ingestão distintas, duplicados apareciam em ambas pastas `entities/` e `concepts/` — o novo conteúdo era silenciosamente descartado. Isso está corrigido.
+Esta versão foca em **qualidade de arquitetura e infraestrutura de testes**. Melhorias completas em qualidade de código, segurança de tipos e cobertura de testes.
 
 **Melhorias principais:**
 
-- **Detecção de duplicados cross-folder.** Quando uma página já existe na pasta oposta (ex: `concepts/foo.md` existe ao extrair entity "Foo"), o novo conteúdo é fusionado nessa página existente em vez de criar um duplicado. Não mais perda silenciosa de informação.
-- **Duplicados históricos conectados.** Fast path 1 exact-match agora também verifica a pasta oposta. Se existe um duplicado histórico (ambas pastas tinham a mesma página antes deste release), um alias é adicionado automaticamente e um aviso é logado.
-- **Relatório de colisões no modal de ingestão.** O relatório batch de ingestão agora mostra todas as colisões cross-type (fusionados como aliases) — antes esta info só era agregada mas não exibida.
-- **i18n type-safe.** Helper `getText()` elimina unsafe type casts no codebase. Chaves de tradução faltantes agora são detectáveis em tempo de compilação.
-- **173 testes unitários (+8).** Cobertura completa para a nova lógica cross-type e o helper i18n.
+- **Expansão de compatibilidade de modelos (Issues #64/#65).** DeepSeek-R1, QwQ (modelos de reasoning) e LM Studio completamente suportados. Stripping de think-tokens remove blocos de reasoning. Compatibilidade LM Studio remove `response_format: json_object` não suportado.
+- **Expansão de infraestrutura de testes.** Infraestrutura Mock (`createMockContext`, `createMockFile`) permite testes unitários do core engine sem runtime Obsidian. Total de testes duplicado de ~200 para 400 (+200 testes).
+- **Segurança de tipos TypeScript completa.** 8 erros de tipo em `page-factory-core.test.ts` corrigidos. Mecanismo dual gate exige ESLint e TypeScript ambos 0 erros + 0 warnings. ESLint sozinho não garante segurança de tipos.
+- **Refactoring de arquitetura core.** 4 módulos de funções puras extraídos para `src/core/`: conflict-resolver (136 linhas), dead-link-detector (95 linhas), orphan-matcher (82 linhas), prompt-builders (104 linhas).
+- **Centralização de constantes.** 30+ magic numbers dispersos consolidados em `src/constants.ts` (192 linhas). Constantes semânticas ativadas: WIKI_SUBFOLDERS, durações notice, budgets token.
+- **Estabilidade do motor Query.** Carregamento de conteúdo de página em `loadRelevantPages` limitado a 3000 tokens, previne overflow.
+- **Melhoria de documentação.** Standard TDD, Protocol de desenvolvimento, Plano qualidade arquitetura ROADMAP, documentação verificação dual gate.
+- **Qualidade de código.** 44 arquivos, 2576 linhas adicionadas, 503 linhas removidas. Zero side-effects, zero breaking-changes.
+
+**400 testes** (17 arquivos de teste, +200 desde v1.13.0).
 
 **Atualizando de uma versão anterior?** Execute **Lint Wiki** uma vez após a atualização para corrigir automaticamente duplicados cross-type históricos. Sua configuração existente é preservada.
 
 **Recomendamos fortemente que todos os usuários atualizem para esta versão.**
 
 ---
-
-
-Esta é uma **atualização de qualidade e infraestrutura** abrangendo múltiplas melhorias em confiabilidade de extração, prevenção de duplicados e verificação de build.
-
-**Melhorias principais：**
-
-- **Prevenção de duplicados cross-type.** `resolvePagePath()` verifica a pasta oposta (entities ↔ concepts) e mescla conteúdo. Contribuição de @dmarchevsky.
-- **Deduplicação multi-turno.** Turnos não-iniciais recebem lista de nomes e aliases já extraídos — modelos pequenos evitam duplicados sem memória interna.
-- **Sementes de alias.** Extração suporta campo `aliases` opcional. Aliases pré-gerados servem como semente para geração de página.
-- **Análise de fonte não falha mais incorretamente (#61).** Validação do primeiro lote usa `&&` em vez de `||` — fontes tipo glossário (apenas entidades) funcionam. Contribuição de @Indexed-Apogrypha.
-- **Verificação de build aprovada.** CI usa `npm install + npm run build`, idêntico ao sistema de verificação Obsidian. Todas as dependências fixadas.
-- **191 testes unitários (+18).** Nova cobertura para lógica cross-type, i18n, normalização de lote, deduplicação de alias.
-
-**Atualizando de uma versão anterior？** Execute **Lint Wiki** uma vez após atualizar para corrigir automaticamente duplicados cross-type históricos. Sua configuração existente é preservada.
-
-**Recomendamos fortemente que todos os usuários atualizem para esta versão.**
 
 ## ✨ Funcionalidades
 

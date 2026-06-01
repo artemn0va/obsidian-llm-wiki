@@ -24,7 +24,7 @@
   - [🔑 Configuration d'un Provider LLM](#-configuration-dun-provider-llm)
   - [🎮 Utilisation](#-utilisation)
   - [⚠️ Mise à niveau depuis une version antérieure ?](#️-mise-à-niveau-depuis-une-version-antérieure-)
-- [⚡ Quoi de neuf dans la v1.13.0](#-quoi-de-neuf-dans-la-v1130)
+- [⚡ Quoi de neuf dans la v1.14.0](#-quoi-de-neuf-dans-la-v1140)
 - [✨ Fonctionnalités](#-fonctionnalités)
   - [📊 Qualité des connaissances](#-qualité-des-connaissances)
   - [🛠️ Maintenance](#️-maintenance)
@@ -179,39 +179,28 @@ Paramètres → **Ingestion Acceleration** :
 ---
 ---
 
-## ⚡ Quoi de neuf dans la v1.13.0
+## ⚡ Quoi de neuf dans la v1.14.0
 
-Cette version se concentre sur la **prévention des doublons cross-type**. Quand une même entity/concept était classifiée différemment selon les sessions d'ingestion, des doublons apparaissaient dans les deux dossiers `entities/` et `concepts/` — le nouveau contenu était silencieusement ignoré. Ce problème est maintenant corrigé.
+Cette version se concentre sur **la qualité d'architecture et l'infrastructure de test**. Améliorations complètes en qualité de code, sécurité de type et couverture de tests.
 
 **Améliorations clés :**
 
-- **Détection des doublons cross-folder.** Quand une page existe déjà dans le dossier opposé (ex: `concepts/foo.md` existe lors de l'extraction de l'entity "Foo"), le nouveau contenu est fusionné dans cette page existante au lieu de créer un doublon. Pas plus de perte d'information silencieuse.
-- **Doublons historiques reliés.** Fast path 1 exact-match vérifie maintenant aussi le dossier opposé. Si un doublon historique existe (les deux dossiers avaient la même page avant cette version), un alias est automatiquement ajouté et un warning est logué.
-- **Rapport de collision dans le modal d'ingestion.** Le rapport batch d'ingestion affiche maintenant toutes les collisions cross-type (fusionnées comme aliases) — auparavant cette info était seulement agrégée mais jamais affichée.
-- **i18n type-safe.** Helper `getText()` élimine les unsafe type casts dans le codebase. Les clés de traduction manquantes sont maintenant détectables à la compilation.
-- **173 tests unitaires (+8).** Couverture complète pour la nouvelle logique cross-type et le helper i18n.
+- **Extension de compatibilité modèle (Issues #64/#65).** DeepSeek-R1, QwQ (modèles de raisonnement) et LM Studio entièrement supportés. Stripping des think-tokens supprime les blocs de raisonnement. Compatibilité LM Studio retire `response_format: json_object` non supporté.
+- **Extension de l'infrastructure de test.** Infrastructure Mock (`createMockContext`, `createMockFile`) permet les tests unitaires du core engine sans runtime Obsidian. Nombre de tests doublé de ~200 à 400 (+200 tests).
+- **Sécurité de type TypeScript complète.** 8 erreurs de type dans `page-factory-core.test.ts` corrigées. Double gate vérification exige ESLint et TypeScript tous deux 0 erreurs + 0 warnings. ESLint seul ne garantit pas la sécurité de type.
+- **Refactoring de l'architecture core.** 4 modules de fonctions pures extraits vers `src/core/`: conflict-resolver (136 lignes), dead-link-detector (95 lignes), orphan-matcher (82 lignes), prompt-builders (104 lignes).
+- **Centralisation des constantes.** 30+ magic numbers dispersés consolidés dans `src/constants.ts` (192 lignes). Constantes sémantiques activées: WIKI_SUBFOLDERS, durées notice, budgets token.
+- **Stabilité du moteur Query.** Chargement du contenu de page dans `loadRelevantPages` limité à 3000 tokens, empêche l'overflow.
+- **Amélioration de la documentation.** Standard TDD, Protocol de développement, Plan qualité architecture ROADMAP, documentation vérification double gate.
+- **Qualité du code.** 44 fichiers, 2576 lignes ajoutées, 503 lignes supprimées. Zéro side-effects, zéro breaking-changes.
+
+**400 tests** (17 fichiers de test, +200 depuis v1.13.0).
 
 **Mise à niveau depuis une version antérieure ?** Exécutez **Lint Wiki** une fois après la mise à niveau pour corriger automatiquement les doublons cross-type historiques. Votre configuration existante est préservée.
 
 **Nous recommandons vivement à tous les utilisateurs de mettre à jour vers cette version.**
 
 ---
-
-
-Il s'agit d'une **mise à jour qualité et infrastructure** avec plusieurs améliorations entrelacées : fiabilité d'extraction, prévention des doublons et vérification de build.
-
-**Améliorations clés：**
-
-- **Prévention des doublons cross-type.** `resolvePagePath()` vérifie le dossier opposé (entities ↔ concepts) et fusionne le contenu. Contribution par @dmarchevsky.
-- **Déduplication multi-tour.** Les tours non-initiaux reçoivent la liste des noms et alias déjà extraits — même les petits modèles évitent les doublons sans mémoire interne.
-- **Amorces d'alias.** L'extraction supporte un champ `aliases` optionnel. Les alias pré-générés servent de base à la génération de page.
-- **L'analyse source n'échoue plus par erreur (#61).** La validation du premier lot utilise `&&` au lieu de `||` — les sources glossaire (entités seules) fonctionnent correctement. Contribution par @Indexed-Apogrypha.
-- **Vérification de build réussie.** CI utilise `npm install + npm run build`, identique au système de vérification Obsidian. Toutes les dépendances épinglées.
-- **191 tests unitaires (+18).** Nouvelle couverture pour la logique cross-type, i18n, normalisation de lot, déduplication d'alias.
-
-**Mise à niveau depuis une version antérieure？** Exécutez **Lint Wiki** une fois après la mise à niveau pour corriger automatiquement les doublons cross-type historiques. Votre configuration existante est préservée.
-
-**Nous recommandons vivement à tous les utilisateurs de mettre à jour vers cette version.**
 
 ## ✨ Fonctionnalités
 

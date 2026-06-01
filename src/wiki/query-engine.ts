@@ -870,7 +870,18 @@ Important:
         console.debug(`[Load Page] content length: ${content.length}`);
         console.debug(`[Load Page] First 100 chars: ${content.substring(0, 100)}`);
         const displayTitle = `${this.plugin.settings.wikiFolder}/${normalizedTitle}`;
-        pages.push(`## ${displayTitle}\n\n${content}`);
+        // Cap individual page content at ~3000 tokens (~12000 chars)
+        // to prevent overflow when a page has been merged from many sources.
+        // Pages exceeding the cap get a truncation marker instead of being
+        // loaded in full — LLM native context windows are designed to handle
+        // truncated text gracefully with the marker as a signal.
+        const MAX_PAGE_CONTENT = 12000;
+        let body = content;
+        if (body.length > MAX_PAGE_CONTENT) {
+          body = body.substring(0, MAX_PAGE_CONTENT) + '\n\n... (truncated)';
+          console.debug(`[Load Page] Truncated from ${content.length} to ${MAX_PAGE_CONTENT} chars`);
+        }
+        pages.push(`## ${displayTitle}\n\n${body}`);
       } else {
         console.warn(`[Load Page] Cannot read page: ${pagePath}`);
       }

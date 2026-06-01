@@ -288,8 +288,17 @@ export class SourceAnalyzer {
           ? newConcepts.slice(0, Math.max(0, customConceptCap - allConcepts.length))
           : newConcepts;
 
-        for (const e of cappedEntities) extractedNames.add(e.name.trim().toLowerCase());
-        for (const c of cappedConcepts) extractedNames.add(c.name.trim().toLowerCase());
+        // Index both names and aliases to prevent alias-form duplicates in later rounds.
+        // If round 1 extracted "GPT-4" with alias "gpt4-turbo", round 2 must reject
+        // "gpt4-turbo" even if it appears as a standalone name.
+        for (const e of cappedEntities) {
+          extractedNames.add(e.name.trim().toLowerCase());
+          for (const alias of e.aliases || []) extractedNames.add(alias.trim().toLowerCase());
+        }
+        for (const c of cappedConcepts) {
+          extractedNames.add(c.name.trim().toLowerCase());
+          for (const alias of c.aliases || []) extractedNames.add(alias.trim().toLowerCase());
+        }
 
         allEntities.push(...cappedEntities);
         allConcepts.push(...cappedConcepts);

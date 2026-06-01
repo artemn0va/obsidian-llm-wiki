@@ -291,6 +291,27 @@ describe('cleanMarkdownResponse', () => {
     expect(result).not.toContain('```');
   });
 
+  it('strips <think>...</think> reasoning tokens', () => {
+    const input = '<think>Let me analyze this entity carefully...</think>\n\n# Entity Name';
+    const result = cleanMarkdownResponse(input);
+    expect(result).not.toContain('<think>');
+    expect(result).toContain('# Entity Name');
+  });
+
+  it('strips <thinking>...</thinking> reasoning tokens', () => {
+    const input = '<thinking>Internal reasoning here</thinking>\n\n# Concept Page';
+    const result = cleanMarkdownResponse(input);
+    expect(result).not.toContain('<thinking>');
+    expect(result).toContain('# Concept Page');
+  });
+
+  it('strips multiple consecutive think blocks', () => {
+    const input = '<think>Step 1</think><think>Step 2</think>\n\n---\ntype: entity\n---';
+    const result = cleanMarkdownResponse(input);
+    expect(result).not.toContain('<think>');
+    expect(result).toContain('type: entity');
+  });
+
   it('handles content without code fence unchanged', () => {
     const input = 'plain content no fences';
     expect(cleanMarkdownResponse(input)).toBe('plain content no fences');

@@ -398,14 +398,14 @@ export class OpenAICompatibleClient implements LLMClient {
       ? [{ role: 'system' as const, content: params.system }, ...params.messages]
       : params.messages;
 
+    // response_format: json_object is omitted for OpenAI-compatible endpoints (LM Studio,
+    // Ollama, etc.) because many local backends reject it — the prompt instruction + prefilled
+    // "{" is sufficient to enforce JSON output.
     const body: Record<string, unknown> = {
       model: params.model,
       max_tokens: params.max_tokens,
       messages
     };
-    if (params.response_format) {
-      body.response_format = params.response_format;
-    }
 
     return withRetry(async () => {
       const response = await requestUrl({

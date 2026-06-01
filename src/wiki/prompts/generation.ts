@@ -141,9 +141,10 @@ aliases: ["Alternative name or translation"]  # REQUIRED: at least 1 alias, must
 **Task Requirements:**
 1. Create a concise summary page
 2. When referencing entities and concepts, use the exact full path format from the "All Created Wiki Pages" list above
-3. Highlight key points
-4. Be objective and accurate
-5. **Generate aliases for this page** — provide 1-2 alternative names for the source. This field is REQUIRED:
+3. {{constraints}}
+4. Highlight key points
+5. Be objective and accurate
+6. **Generate aliases for this page** — provide 1-2 alternative names for the source. This field is REQUIRED:
    - Add an English translation of the title as alias (if title is in Chinese)
    - Add a Chinese translation of the title as alias (if title is in English and Wiki language is Chinese)
    - **If no natural alias exists**, use the source file name or the title itself in the other language. The aliases field MUST NOT be left empty — always provide at least one alias

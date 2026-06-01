@@ -35,13 +35,17 @@
 
 | Item | Source | Effort |
 |------|--------|--------|
-| Mock infrastructure + `page-factory.ts` core tests | 两审计共识：~4500行核心零测试 | 1周 |
-| `runLintWiki` phase extraction (835→6×~80行) | 审计二：835行，趋势增长 | 半天 |
+| **Core Engine Testing Infrastructure**: `createMockContext` mock层 + 首批core tests | 三份独立审核共识：~4500行核心零测试 | 3小时 |
+| **ConflictResolver 独立层**: 将冲突检测从`resolvePagePath`剥离为纯逻辑层 | 三份审核一致建议 | 2小时 |
 
 ### P1 — Planned
 
 | Item | Source | Effort |
 |------|--------|--------|
+| `firstBatchData` 类型收窄: `Partial<SourceAnalysis>` → `NormalizedBatch` | audit1 + 3 | 5分钟 |
+| Notice时长集中化: ~40处硬编码 → 8个语义常量 | 三无原则PR遗留 | 30分钟 |
+| Mock infrastructure + `page-factory.ts` core tests | 两审计共识：~4500行核心零测试 | 1周 |
+| `runLintWiki` phase extraction (835→6×~80行) | 审计二：835行，趋势增长 | 半天 |
 | Query local keyword filter (Layer 1 only, no vector) | 审计一：60-70%查询零API成本 | 1天 |
 | Architecture diagram (Mermaid) + debug guide | 审计一：新贡献者入门 | 2小时 |
 

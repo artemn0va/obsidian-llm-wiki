@@ -7,6 +7,7 @@ import { LintContext } from '../lint-controller';
 import { TEXTS } from '../../texts';
 import { PROMPTS } from '../../prompts';
 import { parseJsonResponse, detectRateLimitFailures, formatRateLimitNotice } from '../../utils';
+import { TOKENS_LINT_ALIAS_BATCH } from '../../constants';
 
 export async function runAliasCompletion(
   ctx: LintContext,
@@ -51,7 +52,7 @@ export async function runAliasCompletion(
 
           const response = await client.createMessage({
             model: ctx.settings.model,
-            max_tokens: 500,
+            max_tokens: TOKENS_LINT_ALIAS_BATCH,
             messages: [{ role: 'user', content: prompt }],
             response_format: { type: 'json_object' }
           });

@@ -13,6 +13,8 @@ import {
   cleanMarkdownResponse,
 } from '../utils';
 import { applySectionLabels } from './system-prompts';
+import { UNIVERSAL_LINK_CONSTRAINTS } from './prompts/constraints';
+import { TOKENS_CONVERSATION_EXTRACTION, TOKENS_CONVERSATION_PAGE, TOKENS_PAGE_GENERATION, TOKENS_QUERY_SAVE_DEDUP } from '../constants';
 import { PageFactory } from './page-factory';
 
 export interface ConversationOrchestration {
@@ -149,7 +151,7 @@ CRITICAL RULES:
 
     const analysis = await client.createMessage({
       model: this.ctx.settings.model,
-      max_tokens: 5000,
+      max_tokens: TOKENS_CONVERSATION_EXTRACTION,
       system: await this.ctx.buildSystemPrompt('conversation'),
       messages: [{
         role: 'user',
@@ -162,7 +164,7 @@ CRITICAL RULES:
       const repairPrompt = `Fix the following malformed JSON. Only fix JSON syntax errors (unescaped quotes, trailing commas, missing brackets). Do NOT change any values or content. Output ONLY the fixed JSON, no other text.\n\n${malformedJson}`;
       return await client.createMessage({
         model: this.ctx.settings.model,
-        max_tokens: 4000,
+        max_tokens: TOKENS_PAGE_GENERATION,
         system: await this.ctx.buildSystemPrompt('conversation'),
         messages: [{ role: 'user', content: repairPrompt }],
         response_format: { type: 'json_object' }
@@ -208,14 +210,15 @@ CRITICAL RULES:
       .replace('{{created_pages_list}}', createdPagesList)
       .replace(/{{source_file}}/g, `Conversation: ${parsed.source_title}`)
       .replace(/{{date}}/g, actualDate)
-      .replace('{{tags}}', tags);
+      .replace('{{tags}}', tags)
+      .replace('{{constraints}}', UNIVERSAL_LINK_CONSTRAINTS);
 
     const finalSummaryPrompt = applySectionLabels(summaryPrompt, this.ctx.settings);
 
     this.ctx.onProgress?.('Generating summary page...');
     const summaryPageContent = await client.createMessage({
       model: this.ctx.settings.model,
-      max_tokens: 8000,
+      max_tokens: TOKENS_CONVERSATION_PAGE,
       system: await this.ctx.buildSystemPrompt('summary'),
       messages: [{ role: 'user', content: finalSummaryPrompt }]
     });
@@ -302,7 +305,7 @@ CRITICAL RULES:
 
     const response = await client.createMessage({
       model: this.ctx.settings.model,
-      max_tokens: 200,
+      max_tokens: TOKENS_QUERY_SAVE_DEDUP,
       system: await this.ctx.buildSystemPrompt('conversation'),
       messages: [{ role: 'user', content: prompt }],
       response_format: { type: 'json_object' }

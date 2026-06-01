@@ -149,7 +149,7 @@ export class SourceAnalyzer {
     let contradictions: ContradictionInfo[] = [];
     let relatedPages: string[] = [];
     let keyPoints: string[] = [];
-    let firstBatchData: Partial<SourceAnalysis> | null = null;
+    let firstBatchData: NormalizedBatch | null = null;
     let finalBatchNum = 0;
 
     // Build granularity instruction from shared definitions
@@ -257,7 +257,7 @@ export class SourceAnalyzer {
           if (!norm.sourceTitle) {
             console.debug('Round 1 missing source_title, falling back to filename:', file.basename);
           }
-          firstBatchData = analysisData;
+          firstBatchData = norm;
           sourceTitle = norm.sourceTitle || file.basename;
           sourceSummary = norm.summary || '';
           contradictions = norm.contradictions;
@@ -288,8 +288,17 @@ export class SourceAnalyzer {
           ? newConcepts.slice(0, Math.max(0, customConceptCap - allConcepts.length))
           : newConcepts;
 
-        for (const e of cappedEntities) extractedNames.add(e.name.trim().toLowerCase());
-        for (const c of cappedConcepts) extractedNames.add(c.name.trim().toLowerCase());
+        // Index both names and aliases to prevent alias-form duplicates in later rounds.
+        // If round 1 extracted "GPT-4" with alias "gpt4-turbo", round 2 must reject
+        // "gpt4-turbo" even if it appears as a standalone name.
+        for (const e of cappedEntities) {
+          extractedNames.add(e.name.trim().toLowerCase());
+          for (const alias of e.aliases || []) extractedNames.add(alias.trim().toLowerCase());
+        }
+        for (const c of cappedConcepts) {
+          extractedNames.add(c.name.trim().toLowerCase());
+          for (const alias of c.aliases || []) extractedNames.add(alias.trim().toLowerCase());
+        }
 
         allEntities.push(...cappedEntities);
         allConcepts.push(...cappedConcepts);
@@ -387,8 +396,8 @@ export class SourceAnalyzer {
 
     const analysis: SourceAnalysis = {
       source_file: file.path,
-      source_title: sourceTitle || firstBatchData?.source_title || file.basename,
-      summary: sourceSummary || (firstBatchData as SourceAnalysis)?.summary || '',
+      source_title: sourceTitle || firstBatchData?.sourceTitle || file.basename,
+      summary: sourceSummary || firstBatchData?.summary || '',
       entities: allEntities,
       concepts: allConcepts,
       contradictions: contradictions,

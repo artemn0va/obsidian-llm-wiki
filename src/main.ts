@@ -7,6 +7,7 @@ import {
   LLMClient,
   IngestReport
 } from './types';
+import { TOKENS_QUERY_MODEL_DETECT } from './constants';
 import { AnthropicClient, AnthropicCompatibleClient, OpenAICompatibleClient } from './llm-client';
 
 function createLLMClient(settings: LLMWikiSettings): LLMClient {
@@ -549,7 +550,7 @@ export default class LLMWikiPlugin extends Plugin {
 
       const testResponse = await testClient.createMessage({
         model: this.settings.model,
-        max_tokens: 100,
+        max_tokens: TOKENS_QUERY_MODEL_DETECT,
         messages: [{
           role: 'user',
           content: 'Test connection. Please reply "Connection successful".'

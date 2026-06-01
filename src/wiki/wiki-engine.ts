@@ -32,8 +32,10 @@ import {
   getExistingWikiPages,
 } from './lint-fixes';
 import { ContradictionManager } from './contradictions';
+import { UNIVERSAL_LINK_CONSTRAINTS } from './prompts/constraints';
 import { SourceAnalyzer } from './source-analyzer';
 import { PageFactory } from './page-factory';
+import { TOKENS_PAGE_GENERATION } from '../constants';
 import { ConversationIngestor, ConversationOrchestration, formatConversation, ConversationHistory } from './conversation-ingest';
 
 export class WikiEngine {
@@ -643,13 +645,14 @@ export class WikiEngine {
       .replace('{{created_pages_list}}', createdPagesList || '(none)')
       .replace(/{{source_file}}/g, file.path)
       .replace(/{{date}}/g, new Date().toISOString().split('T')[0])
-      .replace('{{tags}}', analysis.concepts.map(c => c.name).join(', '));
+      .replace('{{tags}}', analysis.concepts.map(c => c.name).join(', '))
+      .replace('{{constraints}}', UNIVERSAL_LINK_CONSTRAINTS);
 
     const finalPrompt = this.applySectionLabels(prompt);
 
     const pageContent = await this.client.createMessage({
       model: this.settings.model,
-      max_tokens: 8000,
+      max_tokens: TOKENS_PAGE_GENERATION,
       system: await this.buildSystemPrompt('summary'),
       messages: [{ role: 'user', content: finalPrompt }]
     });

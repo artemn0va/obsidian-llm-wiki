@@ -10,6 +10,7 @@ import {
   PageCreationResult,
 } from '../types';
 import { PROMPTS } from '../prompts';
+import { TOKENS_DEDUP_RESOLUTION, TOKENS_PAGE_GENERATION, TOKENS_APPEND_REVIEWED } from '../constants';
 import {
   slugify,
   computeSlug,
@@ -21,6 +22,7 @@ import {
   truncateMentions,
   filterRedundantAliases,
 } from '../utils';
+import { UNIVERSAL_LINK_CONSTRAINTS } from './prompts/constraints';
 import { applySectionLabels } from './system-prompts';
 import { getExistingWikiPages } from './lint-fixes';
 
@@ -184,7 +186,7 @@ export class PageFactory {
 
       const response = await client.createMessage({
         model: this.ctx.settings.model,
-        max_tokens: 300,
+        max_tokens: TOKENS_DEDUP_RESOLUTION,
         system: await this.ctx.buildSystemPrompt('full'),
         messages: [{ role: 'user', content: prompt }],
         response_format: { type: 'json_object' }
@@ -363,7 +365,7 @@ export class PageFactory {
 
     const pageContent = await client.createMessage({
       model: this.ctx.settings.model,
-      max_tokens: 8000,
+      max_tokens: TOKENS_PAGE_GENERATION,
       system: await this.ctx.buildSystemPrompt(pageType),
       messages: [{ role: 'user', content: finalPrompt }]
     });
@@ -410,7 +412,7 @@ export class PageFactory {
 
     const mergedBody = await client.createMessage({
       model: this.ctx.settings.model,
-      max_tokens: 8000,
+      max_tokens: TOKENS_PAGE_GENERATION,
       system: await this.ctx.buildSystemPrompt('merge'),
       messages: [{ role: 'user', content: finalPrompt }]
     });
@@ -450,13 +452,14 @@ export class PageFactory {
       .replace('{{new_source}}', sourceFile.basename)
       .replace('{{entity_summary}}', info.summary)
       .replace('{{mentions}}', truncateMentions(info.mentions_in_source))
-      .replace('{{key_details}}', info.mentions_in_source?.slice(0, 2).join('; ') || '');
+      .replace('{{key_details}}', info.mentions_in_source?.slice(0, 2).join('; ') || '')
+      .replace('{{constraints}}', UNIVERSAL_LINK_CONSTRAINTS);
 
     const finalPrompt = applySectionLabels(prompt, this.ctx.settings);
 
     const newContent = await client.createMessage({
       model: this.ctx.settings.model,
-      max_tokens: 4000,
+      max_tokens: TOKENS_APPEND_REVIEWED,
       system: await this.ctx.buildSystemPrompt('merge'),
       messages: [{ role: 'user', content: finalPrompt }]
     });
@@ -502,14 +505,15 @@ export class PageFactory {
       .replace('{{page_name}}', pageName)
       .replace('{{existing_body}}', existingBody)
       .replace('{{source_basename}}', sourceFile.basename)
-      .replace('{{new_info}}', JSON.stringify(analysis.entities.find(e => e.name === pageName) || analysis.concepts.find(c => c.name === pageName) || 'No directly relevant information'));
+      .replace('{{new_info}}', JSON.stringify(analysis.entities.find(e => e.name === pageName) || analysis.concepts.find(c => c.name === pageName) || 'No directly relevant information'))
+      .replace('{{constraints}}', UNIVERSAL_LINK_CONSTRAINTS);
 
     const client = this.ctx.getClient();
     if (!client) throw new Error('LLM client not initialized');
 
     const updatedBody = await client.createMessage({
       model: this.ctx.settings.model,
-      max_tokens: 8000,
+      max_tokens: TOKENS_PAGE_GENERATION,
       system: await this.ctx.buildSystemPrompt('related'),
       messages: [{ role: 'user', content: prompt }]
     });

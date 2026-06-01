@@ -583,14 +583,20 @@ export function preserveFrontmatterReviewTag(originalContent: string, newContent
 export function cleanMarkdownResponse(response: string): string {
   console.debug('cleanMarkdownResponse input length:', response.length);
 
+  let cleaned = response.trim();
+
+  // Strip reasoning/thinking tags from reasoning models (DeepSeek-R1, QwQ, etc.)
+  // These models emit <think>...</think> or <thinking>...</thinking> blocks during
+  // inference that are not part of the intended output. Remove them before any
+  // other processing so downstream parsers see only the final response.
+  cleaned = cleaned.replace(/<think\b[^>]*>[\s\S]*?<\/think>/gi, '');
+  cleaned = cleaned.replace(/<thinking\b[^>]*>[\s\S]*?<\/thinking>/gi, '');
+
   // Remove markdown code block wrapping
   // Pattern 1: ```markdown ... ```
   // Pattern 2: ``` ... ```
   // Pattern 3: ```md ... ```
 
-  let cleaned = response.trim();
-
-  // Try matching code block patterns
   const codeBlockPatterns = [
     /^```(?:markdown|md)?\s*\n([\s\S]*?)\n```$/gm,  // Complete code block (multiline)
     /^```(?:markdown|md)?\s*([\s\S]*?)```$/gm,       // Complete code block (no newline)

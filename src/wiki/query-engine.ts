@@ -6,6 +6,7 @@ import { TEXTS } from '../texts';
 import { WIKI_LANGUAGES } from '../types';
 import { PROMPTS } from '../prompts';
 import { parseJsonResponse, parseIndexForPages, localKeywordMatch } from '../utils';
+import { MAX_PAGE_CONTENT_CHARS } from '../constants';
 
 // ---- Suggest Save Modal (post-query feedback) ----
 
@@ -870,16 +871,10 @@ Important:
         console.debug(`[Load Page] content length: ${content.length}`);
         console.debug(`[Load Page] First 100 chars: ${content.substring(0, 100)}`);
         const displayTitle = `${this.plugin.settings.wikiFolder}/${normalizedTitle}`;
-        // Cap individual page content at ~3000 tokens (~12000 chars)
-        // to prevent overflow when a page has been merged from many sources.
-        // Pages exceeding the cap get a truncation marker instead of being
-        // loaded in full — LLM native context windows are designed to handle
-        // truncated text gracefully with the marker as a signal.
-        const MAX_PAGE_CONTENT = 12000;
         let body = content;
-        if (body.length > MAX_PAGE_CONTENT) {
-          body = body.substring(0, MAX_PAGE_CONTENT) + '\n\n... (truncated)';
-          console.debug(`[Load Page] Truncated from ${content.length} to ${MAX_PAGE_CONTENT} chars`);
+        if (body.length > MAX_PAGE_CONTENT_CHARS) {
+          body = body.substring(0, MAX_PAGE_CONTENT_CHARS) + '\n\n... (truncated)';
+          console.debug(`[Load Page] Truncated from ${content.length} to ${MAX_PAGE_CONTENT_CHARS} chars`);
         }
         pages.push(`## ${displayTitle}\n\n${body}`);
       } else {

@@ -94,3 +94,12 @@ export const NOTICE_DURATION_MS = 8000;
  * Timer update interval for Query progress display (elapsed time counter).
  */
 export const TIMER_UPDATE_INTERVAL_MS = 1000;
+
+/**
+ * Maximum characters per wiki page loaded into the query engine context.
+ * Derived from MAX_TOKENS_BATCH / 5 (~3200 tokens) × 4 chars/token ≈ 12800 chars.
+ * Prevents merged multi-source pages (potentially 8000+ lines) from bloating
+ * the LLM context beyond what the model can reasonably process.
+ * Used by: query-engine.ts → loadRelevantPages
+ */
+export const MAX_PAGE_CONTENT_CHARS = 12800;

@@ -97,7 +97,8 @@ export function createMockContext(opts: MockContextOptions = {}): { ctx: EngineC
   const settings = { ...DEFAULT_SETTINGS, ...opts.settings };
 
   const ctx: EngineContext = {
-    app: {} as Record<string, never>, // minimal stub — most tests won't access app directly
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
+    app: { vault: { read: async () => '' } } as any,
     settings,
     getClient: () => client,
     createOrUpdateFile: async (path, content) => { vault.write(path, content); },

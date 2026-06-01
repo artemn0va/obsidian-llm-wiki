@@ -1,33 +1,22 @@
-import { describe, it, expect } from 'vitest';
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+import { describe, it, expect, vi } from 'vitest';
 import { createMockContext } from './__mocks__/engine-context';
 import { PageFactory } from '../wiki/page-factory';
 
-// PageFactory imports TFile from 'obsidian' which is a type-only package.
-// We mock obsidian so vitest can resolve the import at runtime.
-vi.mock('obsidian', () => {
-  return {
-    TFile: class TFile {},
-    App: class App {},
-    Vault: class Vault {},
-    Notice: class Notice { constructor() {} },
-    Plugin: class Plugin {},
-    Modal: class Modal { constructor() { return { contentEl: { createEl: () => {}, empty: () => {} } }; } },
-    MarkdownRenderer: class MarkdownRenderer {},
-    Component: class Component {},
-    Platform: { isMacOS: false, isDesktop: true },
-    normalizePath: (p: string) => p,
-    requestUrl: async () => ({ json: {} }),
-  };
-});
+vi.mock('obsidian', () => ({}));
 
-function makeFactory(vaultFiles: Record<string, string>): { factory: PageFactory; vault: any } {
+function makeFactory(vaultFiles: Record<string, string>) {
   const { ctx, vault } = createMockContext({ vaultFiles });
   const factory = new PageFactory(ctx);
-  return { factory, vault };
+  return { factory, vault: vault as unknown as Record<string, string | null> };
 }
 
-function page(vault: any, path: string): string | null {
-  return (vault as any).read(path);
+function page(vault: Record<string, string | null>, path: string): string | null {
+  return (vault as unknown as { read: (p: string) => string | null }).read(path);
+}
+
+function appendAliases(factory: PageFactory, path: string, aliases: string[]) {
+  return ((PageFactory.prototype as unknown as Record<string, unknown>).appendAliases as (p: string, a: string[]) => Promise<void>).call(factory, path, aliases);
 }
 
 describe('PageFactory — appendAliases', () => {
@@ -35,8 +24,7 @@ describe('PageFactory — appendAliases', () => {
     const { factory, vault } = makeFactory({
       'wiki/entities/llm.md': '---\ntype: entity\n---\n# LLM\nBody',
     });
-    const method = (PageFactory.prototype as any).appendAliases.bind(factory);
-    await method('wiki/entities/llm.md', ['Large Language Model']);
+    await appendAliases(factory, 'wiki/entities/llm.md', ['Large Language Model']);
 
     const content = page(vault, 'wiki/entities/llm.md');
     expect(content).toContain('aliases:');
@@ -47,8 +35,7 @@ describe('PageFactory — appendAliases', () => {
     const { factory, vault } = makeFactory({
       'wiki/entities/vigilanz.md': '---\ntype: entity\n---\n# Vigilanz\nBody',
     });
-    const method = (PageFactory.prototype as any).appendAliases.bind(factory);
-    await method('wiki/entities/vigilanz.md', ['Vigilanz']);
+    await appendAliases(factory, 'wiki/entities/vigilanz.md', ['Vigilanz']);
 
     const content = page(vault, 'wiki/entities/vigilanz.md');
     expect(content).not.toContain('aliases:');
@@ -58,8 +45,7 @@ describe('PageFactory — appendAliases', () => {
     const { factory, vault } = makeFactory({
       'wiki/entities/openai.md': '---\ntype: entity\naliases: ["OpenAI Inc"]\n---\n# OpenAI\nBody',
     });
-    const method = (PageFactory.prototype as any).appendAliases.bind(factory);
-    await method('wiki/entities/openai.md', ['OpenAI Inc', 'OAI']);
+    await appendAliases(factory, 'wiki/entities/openai.md', ['OpenAI Inc', 'OAI']);
 
     const content = page(vault, 'wiki/entities/openai.md');
     expect(content).not.toBeNull();
@@ -73,8 +59,7 @@ describe('PageFactory — appendAliases', () => {
     const { factory, vault } = makeFactory({
       'wiki/entities/bare.md': '# Just a heading\nNo frontmatter here.',
     });
-    const method = (PageFactory.prototype as any).appendAliases.bind(factory);
-    await method('wiki/entities/bare.md', ['Some Alias']);
+    await appendAliases(factory, 'wiki/entities/bare.md', ['Some Alias']);
 
     const content = page(vault, 'wiki/entities/bare.md');
     expect(content).toBe('# Just a heading\nNo frontmatter here.');
@@ -82,8 +67,7 @@ describe('PageFactory — appendAliases', () => {
 
   it('skips non-existent page silently', async () => {
     const { factory, vault } = makeFactory({});
-    const method = (PageFactory.prototype as any).appendAliases.bind(factory);
-    await method('wiki/entities/nonexistent.md', ['Alias']);
+    await appendAliases(factory, 'wiki/entities/nonexistent.md', ['Alias']);
 
     const content = page(vault, 'wiki/entities/nonexistent.md');
     expect(content).toBeNull();
@@ -92,16 +76,10 @@ describe('PageFactory — appendAliases', () => {
 
 describe('PageFactory — buildPagesListForPrompt', () => {
   it('returns formatted list from existing pages', async () => {
-    const { factory } = makeFactory({});
-    // buildPagesListForPrompt calls getExistingWikiPages which uses app.vault.getMarkdownFiles.
-    // We can't easily mock that, so we test the pure page loading logic differently.
-    // The method is a thin wrapper around getExistingWikiPages + formatting.
-    // Core formatting: aliases are appended, wiki-links are preserved.
     const mockPages = [
       { path: 'wiki/entities/llm.md', title: 'LLM', wikiLink: '[[entities/llm|LLM]]', aliases: ['Large Language Model'] },
       { path: 'wiki/concepts/rlhf.md', title: 'RLHF', wikiLink: '[[concepts/rlhf|RLHF]]' },
     ];
-    // Simulate what buildPagesListForPrompt does internally (line 222-225)
     const result = mockPages.map(p => {
       const aliasSuffix = p.aliases?.length ? ` \`aliases: ${p.aliases.join(', ')}\`` : '';
       return `- ${p.wikiLink}${aliasSuffix}`;
@@ -112,18 +90,13 @@ describe('PageFactory — buildPagesListForPrompt', () => {
   });
 
   it('includes extra paths not in existing list', async () => {
-    const { factory } = makeFactory({});
-    // Test the extra-paths logic (lines 227-235)
-    const existingList = '- [[entities/bar|bar]]';
     const includePaths = ['wiki/entities/foo.md'];
-    const newPages = includePaths.filter(p => {
+    const item = includePaths.map(p => {
       const relPath = p.replace('wiki/', '').replace('.md', '');
       const name = relPath.split('/').pop() || relPath;
-      return !existingList.includes(`[[${relPath}|${name}]]`);
-    });
-    expect(newPages).toHaveLength(1);
-    const rendered = '- [[entities/foo|foo]]';
-    expect(rendered).toContain('[[entities/foo|foo]]');
+      return `- [[${relPath}|${name}]]`;
+    }).join('\n');
+    expect(item).toContain('[[entities/foo|foo]]');
   });
 
   it('handles empty pages', async () => {

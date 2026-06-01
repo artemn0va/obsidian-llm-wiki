@@ -24,7 +24,7 @@
   - [🔑 Configure an LLM Provider](#-configure-an-llm-provider)
   - [🎮 Usage](#-usage)
   - [⚠️ Upgrading from an Older Version?](#️-upgrading-from-an-older-version)
-- [⚡ What's New in v1.13.0](#-whats-new-in-v1130)
+- [⚡ What's New in v1.14.0](#-whats-new-in-v1140)
 - [✨ Features](#-features)
   - [📊 Knowledge Quality](#-knowledge-quality)
   - [🛠️ Maintenance](#️-maintenance)
@@ -181,20 +181,25 @@ Settings → **Ingestion Acceleration**:
 
 ---
 
-## ⚡ What's New in v1.13.0
+## ⚡ What's New in v1.14.0
 
-This is a **quality & infrastructure release** spanning multiple interlocking improvements across extraction reliability, duplicate prevention, and build verification.
+This is an **architecture quality & test infrastructure release** addressing critical testing gaps identified by third-party model reviews.
 
 **Key Improvements:**
 
-- **Cross-type duplicate prevention.** When the same entity/concept is classified differently across ingestion sessions, `resolvePagePath()` now checks the opposite folder (entities ↔ concepts) and merges content into the existing page instead of creating a duplicate — no more silent information loss. Contributed by @dmarchevsky.
-- **Multi-round extraction dedup.** Non-first extraction rounds now receive a list of already-extracted names and aliases (new `aliases` field). The LLM can reliably avoid duplicates even on small/local models — no longer relies on internal model state to remember what it already extracted.
-- **Aliases seeding.** Extraction now supports an optional `aliases` field per entity/concept. Pre-generated aliases seed the page generation prompt, producing better-quality page aliases with less hallucination.
-- **Source analysis no longer false-aborts (#61).** First batch validation uses `&&` instead of `||` — glossary-style sources (entities without concepts, or vice versa) now proceed correctly. Contributed by @Indexed-Apogrypha.
-- **Build verification passes.** CI now uses `npm install + npm run build` to match Obsidian's verification system exactly. All dependencies pinned to exact versions.
-- **191 unit tests (+18 since v1.12.4).** New coverage for cross-type logic, i18n helper, batch normalization, alias dedup.
+- **Model compatibility expansion.** DeepSeek-R1, QwQ (reasoning models), and LM Studio now fully supported. Think token stripping removes reasoning blocks, LM Studio compatibility restored — users can now use these popular models without compatibility errors.
 
-**Upgrading from an older version?** Just run **Lint Wiki** once after upgrading to auto-fix any historical cross-type duplicates. Your existing configuration is preserved — no reconfiguration needed.
+- **Test infrastructure expansion.** Mock infrastructure (`createMockContext`) enables unit testing of core engine modules without Obsidian runtime. **Total tests doubled from ~200 to 400** (+200 tests), covering previously untestable extraction logic, conflict resolution, and page generation.
+
+- **TypeScript type safety complete.** Fixed all type errors. Dual Gate Verification now requires both ESLint and TypeScript passing — single tool passing insufficient for production quality.
+
+- **Core architecture refactoring.** Extracted 4 pure function modules to `src/core/` directory: conflict-resolver, dead-link-detector, orphan-matcher, prompt-builders. Constants centralization (192 lines) activated semantic constants: WIKI_SUBFOLDERS, notice durations, token budgets.
+
+- **Query engine stability.** Page content loading capped at 3000 tokens to prevent overflow, improving query reliability for large wikis.
+
+- **Documentation upgrades.** TDD Standard ("write failing test first"), Development Protocol ("plan first, then execute"), ROADMAP architecture quality plan. Dual Gate Verification documented across all standards.
+
+**Upgrading from an older version?** Just install and use — all changes are internal refactoring with zero breaking changes. Your existing wiki pages, settings, and workflows are preserved. No reconfiguration needed.
 
 **We strongly recommend all users upgrade to this version.**
 

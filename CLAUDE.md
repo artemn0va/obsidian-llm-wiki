@@ -4,7 +4,19 @@
 
 ---
 
-## Current Phase: v1.13.0 — Quality & Infrastructure
+## Current Phase: v1.14.0 — Architecture Quality & Test Infrastructure
+
+### Completed (v1.14.0)
+- ✅ **Model compatibility expansion (Issues #64/#65)**: DeepSeek-R1, QwQ (reasoning models), and LM Studio fully supported. Think token stripping removes reasoning blocks. LM Studio compatibility removes unsupported `response_format: json_object`.
+- ✅ **Test infrastructure expansion**: Mock infrastructure (`createMockContext`, `createMockFile`) enables unit testing of core engine modules without Obsidian runtime. Total tests doubled from ~200 to 400 (+200 tests).
+- ✅ **TypeScript type safety complete**: Fixed 8 type errors in `page-factory-core.test.ts`. Project achieves TypeScript strict mode compliance.
+- ✅ **Dual Gate Verification Mechanism**: Upgraded quality gates to require both ESLint and TypeScript passing (0 errors + 0 warnings each). ESLint alone insufficient for type safety.
+- ✅ **Core architecture refactoring**: Extracted 4 pure function modules to `src/core/`: conflict-resolver (136 lines), dead-link-detector (95 lines), orphan-matcher (82 lines), prompt-builders (104 lines).
+- ✅ **Constants centralization**: Centralized 30+ scattered magic numbers into `src/constants.ts` (192 lines). Activated semantic constants: WIKI_SUBFOLDERS, notice durations, token budgets.
+- ✅ **Query engine stability**: Page content loading capped at 3000 tokens in `loadRelevantPages` to prevent overflow.
+- ✅ **Documentation upgrades**: TDD Standard, Development Protocol, ROADMAP architecture quality plan, Dual Gate Verification documentation.
+- ✅ **Code quality**: 2576 lines added, 503 lines removed across 44 files. Zero side effects, zero breaking changes.
+- ✅ **400 tests** across 17 test files (+200 since v1.13.0).
 
 ### Completed (v1.13.0)
 - ✅ **Cross-type duplicate prevention (#54)**: `resolvePagePath()` checks opposite folder (entities ↔ concepts) when same-type matching fails. Cross-type collisions merge content into existing page instead of silently losing information. Contributed by @dmarchevsky.
@@ -191,14 +203,34 @@ For each modified function, trace:
 
 **Deliverable**: A breaking-change verdict: "None detected" or a specific migration plan.
 
-### 3. No Test Errors or Warnings — automated gates
+### 3. No Test Errors or Warnings — **Four automated gates (2026-06-01 upgrade)**
 
 ```bash
-pnpm lint          # ESLint: must produce 0 errors, 0 warnings
-pnpm test          # Vitest: all pass, 0 failures
-npx tsc --noEmit   # TypeScript: 0 errors
-pnpm build         # esbuild: clean exit
+# Gate 1: ESLint (code style + logic rules)
+pnpm lint
+# Required: 0 errors, 0 warnings
+# Checks: no-unused-vars, no-floating-promises, Obsidian rules, etc.
+
+# Gate 2: TypeScript (type safety)
+npx tsc --noEmit
+# Required: 0 errors, 0 warnings
+# Checks: type matching, interface completeness, null/undefined handling
+# Critical: ESLint passing does NOT guarantee type safety, must verify separately
+
+# Gate 3: Tests (functional validation)
+pnpm test
+# Required: all pass, 0 failures
+
+# Gate 4: Build (production compilation)
+pnpm build
+# Required: clean exit
 ```
+
+**Critical note (Phase 4 lesson):**
+- **ESLint and TypeScript are complementary tools, must BOTH pass**
+- ESLint does NOT check type matching (e.g., missing required interface fields)
+- TypeScript does NOT check code style (e.g., no-floating-promises)
+- **Single tool passing is insufficient, requires dual verification**
 
 If any gate fails: fix the root cause, do NOT add `@ts-ignore` or `eslint-disable`
 to silence it. Re-run all four gates after each fix.
@@ -209,6 +241,7 @@ to silence it. Re-run all four gates after each fix.
 - "It's just a one-line change" → One-line changes are the most dangerous
 - "I'll add tests later" → Tests must accompany the change, not follow it
 - "The PR review will catch it" → The reviewer has less context than you
+- "ESLint passes, TypeScript errors are fine" → ESLint does NOT check type safety
 
 ## ⚠️ Git Safety Protocol
 
@@ -286,10 +319,32 @@ git push origin X.Y.Z
 
 English, conventional commits. `feat:` `fix:` `docs:` `refactor:` `test:` `chore:`
 
+## 🧪 Test-Driven Development (TDD) Standard
+
+**Test before code.** For any new function, module, or behavior change:
+
+1. **Write a failing test first** — define the expected behavior as a test case
+2. **Write just enough code** to make the test pass
+3. **Refactor** — clean up, then verify the test still passes
+
+**Pre-existing code** (core engine files without tests): when modifying a function that has zero tests, add at least one test for the path you're changing before making the code change.
+
+**Exceptions**: trivial one-line changes, pure configuration, documentation.
+
+**Why**: Every bug found since v1.0.0 was discovered by users, not by tests. Core engine files (wiki-engine 1017 lines, query-engine 888 lines) remain at zero test coverage. TDD ensures the next change doesn't add to this debt.
+
 ## ✅ Pre-Commit Checklist
 
-- `pnpm lint` (0 errors), `pnpm test` (all pass), `pnpm build` (clean), `npx tsc --noEmit` (0 errors)
-- `pnpm lint` (0 errors), `pnpm test` (all pass), `pnpm build` (clean), `tsc --noEmit` (0 errors)
+**四重Gate验证（2026-06-01升级）**：
+
+```bash
+pnpm lint           # Gate 1: ESLint - 0 errors, 0 warnings
+npx tsc --noEmit    # Gate 2: TypeScript - 0 errors, 0 warnings
+pnpm test           # Gate 3: Tests - all pass, 0 failures
+pnpm build          # Gate 4: Build - clean exit
+```
+
+**重要**：四个命令必须**全部通过**才能提交。单一工具通过不足够（Phase 4教训）。
 
 ---
 
@@ -304,6 +359,10 @@ English, conventional commits. `feat:` `fix:` `docs:` `refactor:` `test:` `chore
 **Exceptions** (no prior approval needed): trivial one-line fixes, running lint/test/build, reading files, documenting existing code.
 
 **Why**: The user is the domain expert on product vision. The AI has tooling capability but lacks product context. Propose, don't dispose.
+
+## 🧪 TDD: Write Tests First
+
+For any new function or behavior change: write a failing test first, then write the implementation, then refactor. When modifying untested core code, add at least one test for the path you're changing. See TDD Standard above.
 
 ---
 

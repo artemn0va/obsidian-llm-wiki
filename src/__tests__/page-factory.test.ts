@@ -1,9 +1,6 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return */
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { createMockContext } from './__mocks__/engine-context';
 import { PageFactory } from '../wiki/page-factory';
-
-vi.mock('obsidian', () => ({}));
 
 function makeFactory(vaultFiles: Record<string, string>) {
   const { ctx, vault } = createMockContext({ vaultFiles });
@@ -15,8 +12,9 @@ function page(vault: Record<string, string | null>, path: string): string | null
   return (vault as unknown as { read: (p: string) => string | null }).read(path);
 }
 
-function appendAliases(factory: PageFactory, path: string, aliases: string[]) {
-  return ((PageFactory.prototype as unknown as Record<string, unknown>).appendAliases as (p: string, a: string[]) => Promise<void>).call(factory, path, aliases);
+async function appendAliases(factory: PageFactory, path: string, aliases: string[]): Promise<void> {
+  const fn = (PageFactory.prototype as unknown as { appendAliases: (p: string, a: string[]) => Promise<void> }).appendAliases;
+  await fn.call(factory, path, aliases);
 }
 
 describe('PageFactory — appendAliases', () => {

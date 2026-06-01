@@ -96,9 +96,23 @@ export function createMockContext(opts: MockContextOptions = {}): { ctx: EngineC
   const client = createMockClient(opts.llmResponses ?? []);
   const settings = { ...DEFAULT_SETTINGS, ...opts.settings };
 
+  // Build mock files array for getMarkdownFiles
+  const mockFiles = Object.keys(opts.vaultFiles ?? {}).map(path => ({
+    path,
+    basename: path.split('/').pop()?.replace('.md', '') || '',
+  }));
+
   const ctx: EngineContext = {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
-    app: { vault: { read: async () => '' } } as any,
+    app: {
+      vault: {
+        read: async (file: { path: string }) => vault.read(file.path),
+        getMarkdownFiles: () => mockFiles.map(f => ({
+          ...f,
+          extension: 'md',
+          parent: null,
+        })),
+      },
+    } as unknown as EngineContext['app'],
     settings,
     getClient: () => client,
     createOrUpdateFile: async (path, content) => { vault.write(path, content); },

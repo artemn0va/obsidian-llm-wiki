@@ -47,13 +47,12 @@ Production-critical performance release. Extraction fundamentally rearchitected 
 ### Next: v2.0.0 — Architecture Quality (Testing Infrastructure + ConflictResolver)
 
 **P0 — Core Engine Testing Infrastructure**
-- **Mock 基础设施**: `createMockContext`（~80行）。mock vault IO（内存Map）+ mock LLM（预设响应）+ mock settings（固定配置）。纯TypeScript + vitest，无需Obsidian runtime。
-- **ConflictResolver 独立层**: 将冲突检测从`resolvePagePath`剥离为纯逻辑层（`src/core/conflict-resolver.ts`）。零副作用，10+测试用例。与Mock层无依赖关系，可并行开发。
-- **首批核心测试**: source-analyzer的analyzeSource路径 + page-factory的resolvePagePath。目标：202 tests → 210+。
-- 此P0是三份独立审核的**最高共识项**：将bug发现从"用户报告"提前到"CI捕获"。
+- **Mock infrastructure**: `createMockContext` (~80 lines). mock vault IO (in-memory Map) + mock LLM (preset responses) + mock settings (fixed config). Pure TypeScript + vitest, no Obsidian runtime needed.
+- **ConflictResolver**: Extract conflict detection from `resolvePagePath` into a pure logic layer (`src/core/conflict-resolver.ts`). Zero side effects, 10+ test cases. No dependency on Mock layer — can be developed in parallel.
+- **First batch tests**: source-analyzer's analyzeSource path + page-factory's resolvePagePath core logic. Target: 202 → 210+ tests.
 
 **P1 — Planned**
-- **firstBatchData 类型收窄**: `Partial<SourceAnalysis>` → `NormalizedBatch`。~2行修改，消除防御性`|| []`残余。
+- **firstBatchData type narrowing**: `Partial<SourceAnalysis>` → `NormalizedBatch`. ~2 lines, eliminates `|| []` residual from defensive fallbacks.
 - Mock infrastructure + page-factory.ts core tests (~4500 lines, zero tests)
 - runLintWiki phase extraction (835→6×~80 lines)
 - Query local keyword filter (Layer 1 only, no vector)
@@ -74,7 +73,7 @@ Production-critical performance release. Extraction fundamentally rearchitected 
 | Hexagonal Architecture (Port-Adapter) | Over-engineering for Obsidian plugin context |
 | Vector search (Ollama embeddings) | Requires infrastructure <1% of users have |
 | Hash-bucket dedup (O(n²)→O(n log n)) | No user-reported perf issue; solve when it hurts |
-| page-factory try/catch 补全 | Exceptions bubble to centralized handler by design |
+| page-factory try/catch completion | Exceptions bubble to centralized handler by design |
 | API URL validation | Obsidian's requestUrl already validates |
 
 ### Implemented (v1.11.0) — Full Issue Resolution & UX Hardening
@@ -158,7 +157,7 @@ Production-critical performance release. Extraction fundamentally rearchitected 
 
 **LLM prompt path leakage**
 - Root cause: Two repair prompts (`mergeDuplicatePages`, `fillEmptyPage`) passed full file paths (`wiki/entities/DeepSeek-V3`) to LLM, causing it to misinterpret folder names as part of page titles
-- Result: merged pages got polluted titles like `entitiesDeepSeek-V3-2`, `concepts表征学习`
+- Result: merged pages got polluted titles like `entitiesDeepSeek-V3-2`, `conceptsBiaozheng Xuexi`
 - Fix: Removed `{{source_path}}` from mergeDuplicatePages and `{{page_path}}` from fillEmptyPage — LLM only needs body content and type, not file system paths
 - Defense layer: Added contaminated alias filtering to reject aliases matching `entities*`, `concepts*`, `sources*` patterns, preventing existing pollution from spreading
 
@@ -214,7 +213,7 @@ Production-critical performance release. Extraction fundamentally rearchitected 
 
 ### Implemented (v1.7.10) — Knowledge Deduplication + Error Resilience
 
-**方案C Phase 1+2 — Duplicate Page Detection & Merge**
+**Plan C Phase 1+2 — Duplicate Page Detection & Merge**
 - Three-layer duplicate detection: Programmatic candidates (shared sources/links/bigram) → LLM title scan (cross-lingual) → LLM content verification
 - Intelligent merge: LLM fuses content and discovers aliases, programmatic frontmatter merge, source page trashed, wiki-links rewritten
 - Aliases infrastructure: Full aliases support in frontmatter parsing, merge, enforcement, dead link fallback

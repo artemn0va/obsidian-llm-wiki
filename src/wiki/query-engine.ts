@@ -6,7 +6,7 @@ import { TEXTS } from '../texts';
 import { WIKI_LANGUAGES } from '../types';
 import { PROMPTS } from '../prompts';
 import { parseJsonResponse, parseIndexForPages, localKeywordMatch } from '../utils';
-import { MAX_PAGE_CONTENT_CHARS } from '../constants';
+import { MAX_PAGE_CONTENT_CHARS, TOKENS_QUERY_PAGE_SELECT, TOKENS_QUERY_LLM_SELECT, TOKENS_QUERY_SAVE_DEDUP } from '../constants';
 
 // ---- Suggest Save Modal (post-query feedback) ----
 
@@ -275,7 +275,7 @@ export class QueryModal extends Modal {
 
       const response = await this.plugin.llmClient.createMessage({
         model: this.plugin.settings.model,
-        max_tokens: 150,
+        max_tokens: TOKENS_QUERY_SAVE_DEDUP,
         messages: [{ role: 'user', content: prompt }],
         response_format: { type: 'json_object' }
       });
@@ -380,7 +380,7 @@ export class QueryModal extends Modal {
         try {
           fullResponse = await this.plugin.llmClient.createMessageStream({
             model: this.plugin.settings.model,
-            max_tokens: 3000,
+            max_tokens: TOKENS_QUERY_LLM_SELECT,
             system: wikiContext,
             messages: conversationMessages,
             onChunk: (chunk) => {
@@ -406,7 +406,7 @@ export class QueryModal extends Modal {
             try {
               fullResponse = await this.plugin.llmClient.createMessage({
                 model: this.plugin.settings.model,
-                max_tokens: 3000,
+                max_tokens: TOKENS_QUERY_LLM_SELECT,
                 system: wikiContext,
                 messages: conversationMessages
               });
@@ -455,7 +455,7 @@ export class QueryModal extends Modal {
           : texts.queryPhaseNonStreaming;
         const response = await this.plugin.llmClient!.createMessage({
           model: this.plugin.settings.model,
-          max_tokens: 3000,
+          max_tokens: TOKENS_QUERY_LLM_SELECT,
           system: wikiContext,
           messages: conversationMessages
         });
@@ -829,7 +829,7 @@ Important:
       console.debug('[LLM] Sending selection request...');
       const response = await this.plugin.llmClient!.createMessage({
         model: this.plugin.settings.model,
-        max_tokens: 500,
+        max_tokens: TOKENS_QUERY_PAGE_SELECT,
         messages: [{ role: 'user', content: prompt }],
         response_format: { type: 'json_object' }
       });

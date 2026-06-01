@@ -7,6 +7,7 @@ import { LintFixCallbacks, LintCounts, LintReportModal, FixReportModal, FixRepor
 import { TEXTS } from '../texts';
 import { PROMPTS } from '../prompts';
 import { cleanMarkdownResponse, parseJsonResponse, detectRateLimitFailures, formatRateLimitNotice, getText } from '../utils';
+import { TOKENS_LINT_DEDUP_LLM } from '../constants';
 import { isPageEmpty, detectPollutedPages, fixDoubleNestedWikiLinks } from './lint-fixes';
 import { generateDuplicateCandidates, DuplicateCandidate } from './lint/duplicate-detection';
 import { runAliasCompletion, runDeadLinkFixes, runEmptyPageFixes, runOrphanFixes, runDuplicateMerges } from './lint/fix-runners';
@@ -210,7 +211,7 @@ export async function runLintWiki(ctx: LintContext, signal?: AbortSignal): Promi
                 console.debug(`lintWiki: batch ${batchNum}/${batches.length} — ${batch.length} candidates`);
                 const dedupResponse = await ctx.llmClient!.createMessage({
                   model: ctx.settings.model,
-                  max_tokens: 4000,
+                  max_tokens: TOKENS_LINT_DEDUP_LLM,
                   messages: [{ role: 'user', content: dedupPrompt }],
                   response_format: { type: 'json_object' }
                 });
@@ -453,7 +454,7 @@ export async function runLintWiki(ctx: LintContext, signal?: AbortSignal): Promi
     checkCancelled();
     const llmReport = await ctx.llmClient.createMessage({
       model: ctx.settings.model,
-      max_tokens: 4000,
+      max_tokens: TOKENS_LINT_DEDUP_LLM,
       messages: [{ role: 'user', content: prompt }]
     });
 

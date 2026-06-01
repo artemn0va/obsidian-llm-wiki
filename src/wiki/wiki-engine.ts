@@ -35,6 +35,7 @@ import { ContradictionManager } from './contradictions';
 import { UNIVERSAL_LINK_CONSTRAINTS } from './prompts/constraints';
 import { SourceAnalyzer } from './source-analyzer';
 import { PageFactory } from './page-factory';
+import { TOKENS_PAGE_GENERATION } from '../constants';
 import { ConversationIngestor, ConversationOrchestration, formatConversation, ConversationHistory } from './conversation-ingest';
 
 export class WikiEngine {
@@ -651,7 +652,7 @@ export class WikiEngine {
 
     const pageContent = await this.client.createMessage({
       model: this.settings.model,
-      max_tokens: 8000,
+      max_tokens: TOKENS_PAGE_GENERATION,
       system: await this.buildSystemPrompt('summary'),
       messages: [{ role: 'user', content: finalPrompt }]
     });

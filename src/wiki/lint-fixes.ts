@@ -5,6 +5,7 @@ import { App } from 'obsidian';
 import { EngineContext } from '../types';
 import { PROMPTS } from '../prompts';
 import { slugify, parseJsonResponse, cleanMarkdownResponse, parseFrontmatter, enforceFrontmatterConstraints } from '../utils';
+import { TOKENS_LINT_PAGE_FIX, TOKENS_LINT_ORPHAN_FIX } from '../constants';
 import {
   buildSystemPrompt,
   getSectionLabels,
@@ -119,7 +120,7 @@ export class LintFixer {
 
     let response = await client.createMessage({
       model: this.ctx.settings.model,
-      max_tokens: 8000,
+      max_tokens: TOKENS_LINT_PAGE_FIX,
       system: await buildSystemPrompt(
         this.ctx.settings,
         this.ctx.getSchemaContext,
@@ -136,7 +137,7 @@ export class LintFixer {
       );
       response = await client.createMessage({
         model: this.ctx.settings.model,
-        max_tokens: 8000,
+        max_tokens: TOKENS_LINT_PAGE_FIX,
         system: await buildSystemPrompt(
           this.ctx.settings,
           this.ctx.getSchemaContext,
@@ -367,7 +368,7 @@ tags: [${stubType === 'entity' ? 'other' : 'term'}]
 
     const filledContent = await client.createMessage({
       model: this.ctx.settings.model,
-      max_tokens: 8000,
+      max_tokens: TOKENS_LINT_PAGE_FIX,
       system: await buildSystemPrompt(
         this.ctx.settings,
         this.ctx.getSchemaContext,
@@ -469,7 +470,7 @@ tags: [${stubType === 'entity' ? 'other' : 'term'}]
 
     const response = await client.createMessage({
       model: this.ctx.settings.model,
-      max_tokens: 800,
+      max_tokens: TOKENS_LINT_ORPHAN_FIX,
       system: await buildSystemPrompt(
         this.ctx.settings,
         this.ctx.getSchemaContext,
@@ -600,7 +601,7 @@ tags: [${stubType === 'entity' ? 'other' : 'term'}]
 
         const mergedContent = await client.createMessage({
           model: this.ctx.settings.model,
-          max_tokens: 8000,
+          max_tokens: TOKENS_LINT_PAGE_FIX,
           system: await buildSystemPrompt(
             this.ctx.settings,
             this.ctx.getSchemaContext,

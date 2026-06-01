@@ -10,6 +10,7 @@ import {
   PageCreationResult,
 } from '../types';
 import { PROMPTS } from '../prompts';
+import { TOKENS_DEDUP_RESOLUTION, TOKENS_PAGE_GENERATION, TOKENS_APPEND_REVIEWED } from '../constants';
 import {
   slugify,
   computeSlug,
@@ -185,7 +186,7 @@ export class PageFactory {
 
       const response = await client.createMessage({
         model: this.ctx.settings.model,
-        max_tokens: 300,
+        max_tokens: TOKENS_DEDUP_RESOLUTION,
         system: await this.ctx.buildSystemPrompt('full'),
         messages: [{ role: 'user', content: prompt }],
         response_format: { type: 'json_object' }
@@ -364,7 +365,7 @@ export class PageFactory {
 
     const pageContent = await client.createMessage({
       model: this.ctx.settings.model,
-      max_tokens: 8000,
+      max_tokens: TOKENS_PAGE_GENERATION,
       system: await this.ctx.buildSystemPrompt(pageType),
       messages: [{ role: 'user', content: finalPrompt }]
     });
@@ -411,7 +412,7 @@ export class PageFactory {
 
     const mergedBody = await client.createMessage({
       model: this.ctx.settings.model,
-      max_tokens: 8000,
+      max_tokens: TOKENS_PAGE_GENERATION,
       system: await this.ctx.buildSystemPrompt('merge'),
       messages: [{ role: 'user', content: finalPrompt }]
     });
@@ -458,7 +459,7 @@ export class PageFactory {
 
     const newContent = await client.createMessage({
       model: this.ctx.settings.model,
-      max_tokens: 4000,
+      max_tokens: TOKENS_APPEND_REVIEWED,
       system: await this.ctx.buildSystemPrompt('merge'),
       messages: [{ role: 'user', content: finalPrompt }]
     });
@@ -512,7 +513,7 @@ export class PageFactory {
 
     const updatedBody = await client.createMessage({
       model: this.ctx.settings.model,
-      max_tokens: 8000,
+      max_tokens: TOKENS_PAGE_GENERATION,
       system: await this.ctx.buildSystemPrompt('related'),
       messages: [{ role: 'user', content: prompt }]
     });

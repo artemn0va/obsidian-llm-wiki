@@ -149,7 +149,7 @@ export class SourceAnalyzer {
     let contradictions: ContradictionInfo[] = [];
     let relatedPages: string[] = [];
     let keyPoints: string[] = [];
-    let firstBatchData: Partial<SourceAnalysis> | null = null;
+    let firstBatchData: NormalizedBatch | null = null;
     let finalBatchNum = 0;
 
     // Build granularity instruction from shared definitions
@@ -257,7 +257,7 @@ export class SourceAnalyzer {
           if (!norm.sourceTitle) {
             console.debug('Round 1 missing source_title, falling back to filename:', file.basename);
           }
-          firstBatchData = analysisData;
+          firstBatchData = norm;
           sourceTitle = norm.sourceTitle || file.basename;
           sourceSummary = norm.summary || '';
           contradictions = norm.contradictions;
@@ -396,8 +396,8 @@ export class SourceAnalyzer {
 
     const analysis: SourceAnalysis = {
       source_file: file.path,
-      source_title: sourceTitle || firstBatchData?.source_title || file.basename,
-      summary: sourceSummary || (firstBatchData as SourceAnalysis)?.summary || '',
+      source_title: sourceTitle || firstBatchData?.sourceTitle || file.basename,
+      summary: sourceSummary || firstBatchData?.summary || '',
       entities: allEntities,
       concepts: allConcepts,
       contradictions: contradictions,

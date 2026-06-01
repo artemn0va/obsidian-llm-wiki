@@ -44,13 +44,18 @@ Production-critical performance release. Extraction fundamentally rearchitected 
 | Hash-bucket dedup (O(n²)→O(n log n)) | No user-reported perf issue; solve when it hurts |
 | Anthropic prompt caching (Issue #38) | System prompts too small for 1024-token cache threshold |
 
-### Next: v1.13.1+ — Community & Polish
+### Next: v2.0.0 — Architecture Quality (Testing Infrastructure + ConflictResolver)
 
-**P0 — In Progress**
-- Mock infrastructure + page-factory.ts core tests (~4500 lines, zero tests)
-- runLintWiki phase extraction (835→6×~80 lines)
+**P0 — Core Engine Testing Infrastructure**
+- **Mock 基础设施**: `createMockContext`（~80行）。mock vault IO（内存Map）+ mock LLM（预设响应）+ mock settings（固定配置）。纯TypeScript + vitest，无需Obsidian runtime。
+- **ConflictResolver 独立层**: 将冲突检测从`resolvePagePath`剥离为纯逻辑层（`src/core/conflict-resolver.ts`）。零副作用，10+测试用例。与Mock层无依赖关系，可并行开发。
+- **首批核心测试**: source-analyzer的analyzeSource路径 + page-factory的resolvePagePath。目标：202 tests → 210+。
+- 此P0是三份独立审核的**最高共识项**：将bug发现从"用户报告"提前到"CI捕获"。
 
 **P1 — Planned**
+- **firstBatchData 类型收窄**: `Partial<SourceAnalysis>` → `NormalizedBatch`。~2行修改，消除防御性`|| []`残余。
+- Mock infrastructure + page-factory.ts core tests (~4500 lines, zero tests)
+- runLintWiki phase extraction (835→6×~80 lines)
 - Query local keyword filter (Layer 1 only, no vector)
 - Architecture diagram (Mermaid) + debug guide
 

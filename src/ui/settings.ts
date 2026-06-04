@@ -161,6 +161,7 @@ export class LLMWikiSettingTab extends PluginSettingTab {
 
     const providerConfig = PREDEFINED_PROVIDERS[this.tempSettings.provider];
     const isOllama = this.tempSettings.provider === 'ollama';
+    const isLmStudio = this.tempSettings.provider === 'lmstudio';
 
     // Provider Dropdown
     new Setting(containerEl)
@@ -189,7 +190,7 @@ export class LLMWikiSettingTab extends PluginSettingTab {
       });
 
     // API Key
-    if (!isOllama) {
+    if (!isOllama && !isLmStudio) {
       new Setting(containerEl)
         .setName(this.getText('apiKeyName'))
         .setDesc(this.getText('apiKeyDesc'))
@@ -199,6 +200,11 @@ export class LLMWikiSettingTab extends PluginSettingTab {
             .onChange((value) => { this.tempSettings.apiKey = value; this.tempSettings.llmReady = false; });
           text.inputEl.type = 'password';
         });
+    } else if (isLmStudio) {
+      containerEl.createEl('p', {
+        text: this.getText('lmstudioHint'),
+        cls: 'llm-wiki-ollama-hint'
+      });
     } else {
       containerEl.createEl('p', {
         text: this.getText('ollamaHint'),
@@ -376,6 +382,26 @@ export class LLMWikiSettingTab extends PluginSettingTab {
               .setTooltip(this.getText('useDropdownButton'))
               .onClick(() => { this.tempSettings.useCustomModel = false; this.display(); });
           }
+        });
+    }
+
+    // Issue #75: max tokens per call — shown for local/custom providers only
+    const localLikeProviders = ['ollama', 'lmstudio', 'custom', 'anthropic-compatible'];
+    if (localLikeProviders.includes(this.tempSettings.provider)) {
+      const tokenOptions = [0, 1024, 2048, 4096, 8192, 16384, 32768];
+      const tokenLabels = ['0 (No limit)', '1K', '2K', '4K', '8K', '16K', '32K'];
+      const currentVal = this.tempSettings.maxTokensPerCall ?? 0;
+      new Setting(containerEl)
+        .setName(this.getText('maxTokensPerCallName'))
+        .setDesc(this.getText('maxTokensPerCallDesc'))
+        .addDropdown(dropdown => {
+          tokenOptions.forEach((val, idx) => {
+            dropdown.addOption(String(val), tokenLabels[idx]);
+          });
+          dropdown.setValue(String(currentVal));
+          dropdown.onChange((value) => {
+            this.tempSettings.maxTokensPerCall = parseInt(value);
+          });
         });
     }
 

@@ -51,6 +51,9 @@ export const KO_TEXTS = {
 
     // Ollama Hint
     ollamaHint: 'Ollama는 로컬에서 실행되며 API 키가 필요하지 않습니다',
+    lmstudioHint: 'LM Studio는 로컬에서 실행됩니다. API 키는 선택 사항입니다',
+    maxTokensPerCallName: '호출당 최대 토큰 수',
+    maxTokensPerCallDesc: '로컬 모델의 LLM 출력 제한. 0 = 제한 없음(클라우드 기본값). LM Studio / Ollama 권장: 4K/8K.',
 
     // Model Selection
     modelSection: '모델 선택',

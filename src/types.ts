@@ -112,6 +112,10 @@ export interface LLMWikiSettings {
 
   // LLM readiness — must pass Test Connection before core features are available
   llmReady: boolean;
+
+  // Issue #75: cap max_tokens per LLM call. 0 = no cap.
+  // Recommended for local models with small context windows.
+  maxTokensPerCall: number;
 }
 
 export interface QueryHistoryMessage {
@@ -350,6 +354,18 @@ export const PREDEFINED_PROVIDERS: Record<string, ProviderConfig> = {
     apiKeyPlaceholderZh: 'ollama (无需Key)',
     requiresBaseUrl: false
   },
+  lmstudio: {
+    id: 'lmstudio',
+    name: 'LM Studio (Local)',
+    nameEn: 'LM Studio (Local)',
+    nameZh: 'LM Studio（本地）',
+    baseUrl: 'http://localhost:1234/v1',
+    defaultModel: 'local-model',
+    apiKeyPlaceholder: 'lmstudio',
+    apiKeyPlaceholderEn: 'lmstudio (optional)',
+    apiKeyPlaceholderZh: 'lmstudio（可选）',
+    requiresBaseUrl: false
+  },
   custom: {
     id: 'custom',
     name: 'Custom OpenAI-Compatible',
@@ -415,4 +431,9 @@ export const DEFAULT_SETTINGS: LLMWikiSettings = {
 
   // LLM readiness
   llmReady: false,
+
+  // Issue #75: cap max_tokens per LLM call. 0 = no cap (cloud default).
+  // Local model users can set this when the provider is Ollama, LM Studio,
+  // custom, or anthropic-compatible.
+  maxTokensPerCall: 0,
 };

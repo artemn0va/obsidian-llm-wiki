@@ -81,6 +81,7 @@ export const DEFAULT_SETTINGS: LLMWikiSettings = {
   pageGenerationConcurrency: 1,
   batchDelayMs: 0,
   llmReady: true,
+  maxTokensPerCall: 0,
 };
 
 // ── Mock EngineContext ───────────────────────────────────────────

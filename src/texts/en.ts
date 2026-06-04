@@ -51,6 +51,12 @@ export const EN_TEXTS = {
 
     // Ollama Hint
     ollamaHint: 'Ollama runs locally, no API Key required',
+    // LM Studio Hint
+    lmstudioHint: 'LM Studio runs locally, API Key is optional',
+
+    // LLM execution cap
+    maxTokensPerCallName: 'Max Tokens Per Call',
+    maxTokensPerCallDesc: 'Cap LLM output for local models. 0 = no cap (cloud default). 4K/8K recommended for LM Studio / Ollama.',
 
     // Model Selection
     modelSection: 'Model Selection',

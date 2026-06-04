@@ -51,6 +51,9 @@ export const ZH_TEXTS = {
 
     // Ollama 提示
     ollamaHint: 'Ollama 本地运行，无需 API Key',
+    lmstudioHint: 'LM Studio 本地运行，API Key 可选',
+    maxTokensPerCallName: '单次调用 Token 上限',
+    maxTokensPerCallDesc: '限制本地模型的 LLM 输出。0 = 无限制（云端默认）。LM Studio / Ollama 建议 4K/8K。',
 
     // 模型选择
     modelSection: '模型选择',

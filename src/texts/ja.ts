@@ -51,6 +51,9 @@ export const JA_TEXTS = {
 
     // Ollama Hint
     ollamaHint: 'Ollamaはローカルで動作するため、API Keyは不要です',
+    lmstudioHint: 'LM Studioはローカルで動作します。API Keyは任意です',
+    maxTokensPerCallName: '1リクエストあたりの最大Token数',
+    maxTokensPerCallDesc: 'ローカルモデルのLLM出力上限。0 = 無制限（クラウドデフォルト）。LM Studio / Ollama推奨：4K/8K。',
 
     // Model Selection
     modelSection: 'モデル選択',

@@ -4,16 +4,15 @@
 
 ---
 
-## Current Phase: v1.15.0 — P1 + Selective P2 (Test Infrastructure)
+## Current Phase: v1.16.0 — Local model compatibility + data quality
 
-### Completed (v1.15.0)
-- ✅ **`parseSSEEvents` shared extraction** (Issue #207): Pure function module, 11 tests, used by both `AnthropicCompatibleClient` and `OpenAICompatibleClient`. -36 lines.
-- ✅ **`AnthropicClient` truncation tests** (Issue #208): 9 new tests via `vi.mock('@anthropic-ai/sdk')`. Coverage: truncation detection, no-retry on non-max_tokens, outer withRetry, prefill brace restoration, MAX_TOKENS_BATCH cap, cacheBreakpoint passthrough.
-- ✅ **`withTruncationRetry` shared helper** (Issue #211): Pure function module, 7 tests. Eliminated 3 duplicate truncation-retry blocks across LLM clients. -3 lines.
-- ✅ **Issue #80 wiki init UX**: Auto-init wiki on LLM Ready + status indicator. Defensive `createFolder` in `regenerateDefaultSchema`. 8-language i18n.
-- ✅ **`isWikiInitialized` DRY fix**: Extracted from `settings.ts` (2 duplicate sites → 1 method). 10 new tests cover IO check, auto-init, schema button, defensive createFolder.
-- ✅ **Streaming architecture investigation**: Documented in memory + ROADMAP P3. Root cause: commit `13e5777` replaced OpenAI SDK with `requestUrl` for "CORS" (pseudo-reason — Electron actually bypasses CORS). Only Anthropic official has true streaming.
-- ✅ **453 tests** across 22 test files (+53 since v1.14.0).
+### Completed (v1.16.0)
+- ✅ **Issue #81: Sources normalization**: 4 pure functions in `src/core/sources-normalizer.ts`, 22 tests, Lint integration (section 0.5), startup quick fixes. 6 pollution patterns → canonical `[[sources/X]]`. 572 files/1616 entries cleaned on reporter's ~3800-page vault.
+- ✅ **Issue #75: LM Studio 8K + token cap**: Removed `source-analyzer.ts:113` shadow constant. New Context Window setting (dropdown 4K~1M) caps max_tokens + truncation retry. LMStudio provider added. `capMaxTokens` pure function.
+- ✅ **Issue #76: TOKENS_DEDUP_RESOLUTION 300→1000**: Token budget safety margin. Deleted dead constants `TOKENS_PAGE_MERGE`, `TOKENS_RELATED_UPDATE`.
+- ✅ **Alias language fix (replaces PR #82)**: English as linker language, "no invented technical translations" guard. Explicit examples (Transformer≠变换器).
+- ✅ **Startup quick fixes**: Default ON. Auto-repair sources + verify wiki structure. Single 10s aggregated Notice.
+- ✅ **Settings UX redesign**: LLM-Wiki Status section, LLM Configuration/Wiki Configuration rename, Provider dropdown i18n.
 
 ### Deferred to P3 (high mock complexity — current ROI insufficient)
 - ⏸ wiki-engine `ingestSource` full-path tests (P2 #4 → P3 #14): requires Obsidian App + 5 submodule mocks

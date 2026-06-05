@@ -162,7 +162,7 @@ export async function runLintWiki(ctx: LintContext, signal?: AbortSignal): Promi
         const tier1: DuplicateCandidate[] = [];
         const tier2: DuplicateCandidate[] = [];
         for (const c of allCandidates) {
-          if (c.signal === 'crossLang') {
+          if (c.signal === 'crossLang' || c.signal === 'caseVariant') {
             tier1.push(c);
           } else if (c.signal === 'bigram') {
             (c.score >= 0.6 ? tier1 : tier2).push(c);

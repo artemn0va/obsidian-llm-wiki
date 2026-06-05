@@ -8,7 +8,7 @@ export interface DuplicateCandidate {
   target: string;
   source: string;
   reason: string;
-  signal: 'crossLang' | 'bigram' | 'sharedLinks';
+  signal: 'crossLang' | 'bigram' | 'sharedLinks' | 'caseVariant';
   score: number;
 }
 
@@ -27,6 +27,25 @@ export function bigrams(s: string): Set<string> {
 /** Normalize string for cross-language matching. */
 export function normalizeForMatch(s: string): string {
   return s.toLowerCase().replace(/[\s\-_]+/g, '').replace(/[^a-z0-9一-鿿]/g, '');
+}
+
+const BODY_STOPWORDS = new Set([
+  'also', 'are', 'been', 'being', 'both', 'but', 'can', 'could', 'did',
+  'does', 'each', 'from', 'had', 'has', 'have', 'into', 'its', 'may',
+  'might', 'must', 'not', 'only', 'other', 'our', 'shall', 'should',
+  'than', 'that', 'the', 'their', 'them', 'then', 'there', 'these',
+  'they', 'this', 'those', 'through', 'was', 'were', 'what', 'when',
+  'where', 'which', 'while', 'will', 'with', 'would', 'your',
+]);
+
+/** Extract unique meaningful words from body text for content similarity comparison. */
+export function bodyWordSet(text: string): Set<string> {
+  return new Set(
+    text.toLowerCase()
+      .replace(/[^\w\s一-鿿]/g, ' ')
+      .split(/\s+/)
+      .filter(w => w.length > 3 && !BODY_STOPWORDS.has(w)),
+  );
 }
 
 /** Compute Jaccard similarity between two sets. */
@@ -54,6 +73,7 @@ export async function generateDuplicateCandidates(
     title: string;
     aliases: string[];
     links: Set<string>;
+    bodyWords: Set<string>;
   }
 
   const YIELD_EVERY = 200;
@@ -79,7 +99,11 @@ export async function generateDuplicateCandidates(
       links.add(match[1].trim().toLowerCase());
     }
 
-    metas.push({ path: page.path, title: page.title, aliases, links });
+    // Strip wiki links before computing body words so link text doesn't inflate similarity
+    const bodyText = body.replace(/\[\[[^\]]+\]\]/g, '');
+    const bodyWords = bodyWordSet(bodyText);
+
+    metas.push({ path: page.path, title: page.title, aliases, links, bodyWords });
   }
 
   const candidates = new Map<string, DuplicateCandidate>();
@@ -111,6 +135,11 @@ export async function generateDuplicateCandidates(
       if (a.links.size === 0 || b.links.size === 0) continue;
       const jaccard = computeJaccard(a.links, b.links);
       if (jaccard >= 0.4) {
+        // Body similarity gate: pages with different content are not duplicates
+        // even if they share the same set of wiki-links (e.g., two unrelated pages
+        // both linking only to one popular hub page).
+        const bodySim = computeJaccard(a.bodyWords, b.bodyWords);
+        if (bodySim < 0.2) continue;
         addCandidate(a.path, b.path, `Shared wiki-links (${Math.round(jaccard * 100)}% overlap)`, 'sharedLinks', jaccard);
       }
     }
@@ -168,6 +197,23 @@ export async function generateDuplicateCandidates(
             break;
           }
         }
+      }
+    }
+  }
+
+  // Signal 3: Case-variant title collision
+  // Two pages whose titles differ only in casing are highly likely duplicates.
+  // e.g., "Unix" vs "unix", "Claude Code" vs "claude-code"
+  for (let i = 0; i < metas.length; i++) {
+    for (let j = i + 1; j < metas.length; j++) {
+      const a = metas[i], b = metas[j];
+      const lowerA = a.title.toLowerCase();
+      const lowerB = b.title.toLowerCase();
+      if (lowerA === lowerB && a.title !== b.title) {
+        // Always pick lowercase-as-slug as target (deterministic merge direction)
+        const [canonical, variant] = a.title < b.title ? [a, b] : [b, a];
+        addCandidate(canonical.path, variant.path,
+          `Case-variant duplicate: "${a.title}" ↔ "${b.title}"`, 'caseVariant', 0.9);
       }
     }
   }

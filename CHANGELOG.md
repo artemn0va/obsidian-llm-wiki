@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.16.1] - 2026-06-05
+
+### Fixed
+- **Issue #95 (Anthropic CORS)**: Removed `@anthropic-ai/sdk` (1.3MB) and rewrote `AnthropicClient` on Obsidian's `requestUrl`. SDK's internal `fetch` from `app://obsidian.md` origin was intermittently blocked by CORS — community-standard fix used by other LLM plugins. Prompt caching (`cache_control: ephemeral`) preserved by emitting the same JSON structure in the raw request body. Streaming is now post-hoc SSE (`parseSSEEvents`) instead of SDK's `.stream()` — consistent with all other providers.
+- **PR #87 (lowercase slugs)**: `computeSlug()` now lowercases output, preventing case-variant duplicate page creation on case-sensitive filesystems. Removed redundant `.toLowerCase()` calls in `matchExtractedToExisting` and `conflict-resolver.ts:slugMatchKeys` (now centralized in `computeSlug`).
+- **PR #87 (case-variant detection)**: New `caseVariant` signal in `generateDuplicateCandidates` catches pages with case-colliding titles (e.g., `Unix` vs `unix`). Wired as Tier 1 in `lint-controller.ts`.
+- **PR #88 (lint false positives)**: New `bodyWordSet()` with `BODY_STOPWORDS` (45 English function words) gates sharedLinks duplicate candidates by body-text similarity (threshold ≥ 0.2). Fixes the case where 3+ pages linking to the same hub page were incorrectly flagged as duplicates despite different content. 20+ unit tests cover English + CJK edge cases.
+- **PR #88 (dead links slug norm)**: `scanDeadLinks` now normalizes space→hyphen in the target basename before lookup. `[[entities/Claude Code]]` correctly matches the file `entities/Claude-Code.md`.
+
+### Changed
+- **Settings UX: drop hardcoded model fallback**: Removed `defaultModel` from all 12 `PREDEFINED_PROVIDERS` configs and the `ProviderConfig` interface. `DEFAULT_SETTINGS.model: ''` (no auto-fill on new install). Switching providers clears `model`/`availableModels`/`useCustomModel` — user must fetch models or enter manually.
+- **Settings UX: friendly fetch error classification**: New `classifyFetchError()` categorizes failures into `Auth` / `Endpoint` / `Server` / `Empty` / `Network`. Each category shows a specific Notice (e.g., "Authentication failed (HTTP 401/403). Verify your API Key, or enter a Model ID below and click Test Connection to validate.") with manual-entry fallback always present. Replaces the old `Failed: HTTP 401` message.
+- **Settings UX: auto-switch to dropdown on successful fetch**: After Fetch Models succeeds, the model selector automatically switches from text input to dropdown, so users see the list right away.
+
+### Tests
+- 512/512 passing (was 488). 24 new tests: 9 for `AnthropicClient` rewrite, 11 for `bodyWordSet` + duplicate detection, 2 for `scanDeadLinks` slug norm, 5 for `classifyFetchError`, 7 for `extractText` type tightening. 7 new tests for `matchExtractedToExisting` regression coverage.
+
 ## [1.16.0] - 2026-06-04
 
 ### Added

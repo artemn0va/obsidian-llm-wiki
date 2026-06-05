@@ -24,7 +24,7 @@
   - [🔑 LLM Provider konfigurieren](#-llm-provider-konfigurieren)
   - [🎮 Nutzung](#-nutzung)
   - [⚠️ Upgrade von einer älteren Version?](#️-upgrade-von-einer-älteren-version)
-- [⚡ Was ist neu in v1.16.0](#-was-ist-neu-in-v1160)
+- [⚡ Was ist neu in v1.16.1](#-was-ist-neu-in-v1161)
 - [✨ Funktionen](#-funktionen)
   - [📊 Knowledge Quality](#-knowledge-quality)
   - [🛠️ Maintenance](#️-maintenance)
@@ -188,25 +188,27 @@ Settings → **Ingestion Acceleration**:
 ---
 ---
 
-## ⚡ Was ist neu in v1.16.0
+## ⚡ Was ist neu in v1.16.1
 
-Dieses Release konzentriert sich auf **Lokale-Modell-Kompatibilität** und **Datenqualität**.
+Diese Version ist ein **Stabilitäts- und UX-Hotfix**, der den Anthropic-CORS-Regression behebt und langjährige Lint-Fehlalarme adressiert — keine neuen Funktionen, keine Breaking Changes.
 
-**Hauptverbesserungen：**
+**Hauptfixes:**
 
-- **LM Studio Provider (neu).** Dedizierte Dropdown-Option. API-Key optional. Basis-URL `http://localhost:1234/v1`。
+- **Anthropic CORS-Regression behoben (Issue #95).** `@anthropic-ai/sdk` (1.3MB) entfernt und `AnthropicClient` auf Obsidians `requestUrl` umgeschrieben. Das interne `fetch` des SDK aus dem `app://obsidian.md`-Origin wurde intermittierend von CORS blockiert — der Community-Standard-Fix, den auch andere LLM-Plugins verwenden. Prompt-Caching (`cache_control: ephemeral`) bleibt durch Senden derselben JSON-Struktur im Raw-Request-Body erhalten.
 
-- **Kontextfenster-Einstellung.** Lokale Benutzer können LLM-Ausgabetokens begrenzen. 4K–1M Dropdown. Nur für lokale/benutzerdefinierte Anbieter.
+- **Lint-Fehlalarme behoben (PR #88).** Neues `bodyWordSet()` mit `BODY_STOPWORDS` (45 englische Funktionswörter) filtert sharedLinks-Duplikatkandidaten per Bodytext-Ähnlichkeit (Schwellenwert ≥ 0,2). Behebt den Fall, dass 3+ Seiten, die auf dieselbe Hub-Seite verlinken, trotz unterschiedlichem Inhalt fälschlich als Duplikate markiert wurden. `scanDeadLinks` normalisiert jetzt Leerzeichen→Bindestrich im Target-Basenamen, sodass `[[entities/Claude Code]]` korrekt auf `entities/Claude-Code.md` passt.
 
-- **YAML-Sources-Normalisierung (Issue #81)。** 6 Verschmutzungsmuster automatisch korrigiert. Lint führt Reparatur vor LLM-Phasen durch.
+- **Lowercase-Slugs + Case-Variant-Erkennung (PR #87).** `computeSlug()` schreibt die Ausgabe jetzt klein, was die Erstellung von Duplikat-Seiten auf case-sensitiven Dateisystemen verhindert. Neues `caseVariant`-Signal in `generateDuplicateCandidates` erkennt Seiten mit kollidierenden Titel-Schreibweisen (z. B. `Unix` vs `unix`) als Tier 1 — keine LLM-Verifizierung nötig.
 
-- **Schnellkorrekturen beim Start.** Alte "Start-Gesundheitsprüfung" repariert jetzt low-level-Formatprobleme. 10s detaillierte Benachrichtigung.
+- **Settings-UX: Hartcodierten Modell-Fallback entfernt.** `defaultModel` aus allen 12 Provider-Konfigurationen entfernt. `DEFAULT_SETTINGS.model: ''` (kein automatisches Befüllen bei Neuinstallation). Beim Provider-Wechsel wird das Modell-Feld geleert — Benutzer muss Modelle abrufen oder manuell eingeben.
 
-- **Alias-Sprachkorrektur.** Hardcodierte Übersetzungsregeln entfernt.
+- **Settings-UX: Freundliche Fetch-Fehler-Klassifizierung.** Neues `classifyFetchError()` kategorisiert Fehler in `Auth` / `Endpoint` / `Server` / `Empty` / `Network`. Jede Kategorie zeigt eine spezifische Notice mit relevanter Aktion — z. B. „Authentifizierung fehlgeschlagen (HTTP 401/403). Überprüfen Sie den API-Schlüssel, oder geben Sie eine Modell-ID ein und klicken Sie auf Verbindung testen." Manuelle Eingabe wird immer als Fallback erwähnt.
 
-- **LM Studio HTTP 400 Fix (Issue #75)。** Shadow-Konstante entfernt + neue Kontextfenster-Einstellung.
+- **Settings-UX: Auto-Switch zu Dropdown bei erfolgreichem Fetch.** Nach erfolgreichem Fetch Models wechselt der Modell-Selektor automatisch vom Text-Eingabefeld zum Dropdown, sodass Benutzer die Liste sofort ohne zusätzlichen Klick sehen.
 
-- **Settings-UI-Optimierung.** Neuer "LLM-Wiki-Status"-Bereich. Vereinfachte Bereichstitel.
+**Upgrade von einer älteren Version?** Einfach installieren und nutzen — null Breaking Changes, null Neukonfiguration. Bestehende Wikis, Einstellungen und Workflows bleiben erhalten. Das Dropdown-Modell-Feld wird für Benutzer, die zuvor hartcodierte Standardwerte hatten, leer sein, aber ein Klick auf **Fetch Models** füllt es aus der API Ihres Providers.
+
+**Wir empfehlen allen Benutzern dringend ein Upgrade auf diese Version** — der Anthropic-CORS-Fix stellt die Plugin-Funktionalität für Benutzer unter macOS Tahoe und anderen Electron-Versionen wieder her, wo das CORS-Verhalten des SDK zuvor blockiert hatte.
 
 ---
 

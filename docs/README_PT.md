@@ -24,7 +24,7 @@
   - [🔑 Configurar um LLM Provider](#-configurar-um-llm-provider)
   - [🎮 Uso](#-uso)
   - [⚠️ Atualizando de uma Versão Anterior?](#️-atualizando-de-uma-versão-anterior)
-- [⚡ Novidades na v1.16.0](#-novidades-na-v1160)
+- [⚡ Novidades na v1.16.1](#-novidades-na-v1161)
 - [✨ Funcionalidades](#-funcionalidades)
   - [📊 Qualidade do Conhecimento](#-qualidade-do-conhecimento)
   - [🛠️ Manutenção](#️-manutenção)
@@ -183,23 +183,30 @@ Configurações → **Ingestion Acceleration**:
 ---
 ---
 
-## ⚡ Novidades na v1.16.0
+## ⚡ Novidades na v1.16.1
 
-Esta versão foca na **compatibilidade com modelos locais** e **qualidade dos dados**.
 
-**Melhorias principais：**
+Esta versão é um **hotfix de estabilidade e UX** que corrige a regressão CORS do Anthropic e aborda falsos positivos de lint antigos — sem novos recursos, sem alterações incompatíveis.
 
-- **Novo provedor LM Studio.** Opção dedicada no menu suspenso. Chave API opcional. URL padrão `http://localhost:1234/v1`。
+**Correções principais:**
 
-- **Configuração de janela de contexto.** Limite tokens de saída LLM para modelos locais. Menu suspenso 4K–1M. Mostrado apenas para provedores locais/personalizados.
+- **Regressão CORS do Anthropic corrigida (Issue #95).** Removido `@anthropic-ai/sdk` (1,3 MB) e reescrito `AnthropicClient` sobre o `requestUrl` do Obsidian. O `fetch` interno do SDK a partir da origem `app://obsidian.md` era bloqueado intermitentemente pelo CORS — a correção padrão da comunidade usada por outros plugins LLM. O prompt caching (`cache_control: ephemeral`) é preservado emitindo a mesma estrutura JSON no corpo bruto da requisição.
 
-- **Normalização do campo YAML sources (Issue #81).** 6 padrões de poluição normalizados automaticamente. Lint repara antes das fases LLM.
+- **Correções de falsos positivos de lint (PR #88).** Novo `bodyWordSet()` com `BODY_STOPWORDS` (45 palavras funcionais em inglês) filtra candidatos de duplicatas sharedLinks por similaridade do texto do corpo (limite ≥ 0,2). Corrige o caso em que 3+ páginas que apontam para a mesma página hub eram sinalizadas incorretamente como duplicatas apesar do conteúdo diferente. `scanDeadLinks` agora normaliza espaço→hífen no nome base do destino, para que `[[entities/Claude Code]]` corresponda corretamente a `entities/Claude-Code.md`.
 
-- **Correções rápidas na inicialização.** A antiga "Verificação de saúde na inicialização" agora repara ativamente problemas de formato. Notificação detalhada de 10s. Ativado por padrão.
+- **Slugs em minúsculas + detecção de variantes de maiúsculas (PR #87).** `computeSlug()` agora coloca a saída em minúsculas, evitando a criação de páginas duplicadas em sistemas de arquivos sensíveis a maiúsculas. Novo sinal `caseVariant` em `generateDuplicateCandidates` detecta páginas com títulos em colisão de maiúsculas (ex.: `Unix` vs `unix`) como Tier 1 — sem verificação LLM necessária.
 
-- **Correção de idioma de alias.** Regras de tradução chinês↔inglês removidas.
+- **UX de configurações: remover fallback de modelo codificado.** Removido `defaultModel` das 12 configurações de provedor. `DEFAULT_SETTINGS.model: ''` (sem preenchimento automático em instalação nova). Ao trocar de provedor o campo de modelo é limpo — o usuário deve buscar modelos ou inseri-los manualmente.
 
-- **Correção HTTP 400 LM Studio (Issue #75).** Constante shadow removida + nova configuração de janela de contexto.
+- **UX de configurações: classificação amigável de erros de busca.** Novo `classifyFetchError()` categoriza falhas em `Auth` / `Endpoint` / `Server` / `Empty` / `Network` 5 categorias. Cada categoria mostra um Notice específico com a ação relevante — ex.: "Falha de autenticação (HTTP 401/403). Verifique a chave API, ou insira um ID de modelo e clique em Testar conexão." A inserção manual é sempre mencionada como alternativa.
+
+- **UX de configurações: troca automática para lista suspensa após busca bem-sucedida.** Após Fetch Models bem-sucedido, o seletor de modelo troca automaticamente do campo de texto para a lista suspensa, para que os usuários vejam a lista imediatamente sem um clique extra.
+
+**Atualizando de uma versão anterior?** Basta instalar e usar — zero alterações incompatíveis, zero reconfiguração. Wikis, configurações e fluxos de trabalho existentes são preservados. O campo de modelo da lista suspensa ficará vazio para usuários que tinham padrões codificados, mas um clique em **Fetch Models** o preencherá a partir da API do seu provedor.
+
+**Recomendamos fortemente que todos os usuários atualizem para esta versão** — a correção CORS do Anthropic restaura a funcionalidade do plugin para usuários no macOS Tahoe e outras versões do Electron onde o comportamento CORS do SDK estava bloqueando.
+
+---
 
 ---
 

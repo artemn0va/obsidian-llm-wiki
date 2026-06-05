@@ -1,10 +1,19 @@
 # LLM Wiki Plugin Project Development Standards
 
-**Last Updated:** 2026-06-02
+**Last Updated:** 2026-06-05
 
 ---
 
-## Current Phase: v1.16.0 — Local model compatibility + data quality
+## Current Phase: v1.16.1 — Stability + UX hotfix (Anthropic CORS, lint false positives, settings UX)
+
+### Completed (v1.16.1)
+- ✅ **Issue #95: Anthropic CORS regression**: Removed `@anthropic-ai/sdk` (1.3MB) and rewrote `AnthropicClient` on Obsidian's `requestUrl`. SDK's internal `fetch` from `app://obsidian.md` was intermittently blocked by CORS — community-standard fix used by other LLM plugins. Prompt caching (`cache_control: ephemeral`) preserved by emitting the same JSON structure in the raw request body.
+- ✅ **PR #88: Lint false positive fixes**: New `bodyWordSet()` with `BODY_STOPWORDS` (45 English function words) gates sharedLinks duplicate candidates by body-text similarity (threshold ≥ 0.2). Plus `scanDeadLinks` now normalizes space→hyphen in target basenames.
+- ✅ **PR #87: Lowercase slugs + case-variant detection**: `computeSlug()` now lowercases output, preventing case-variant duplicate page creation on case-sensitive filesystems. New `caseVariant` signal in `generateDuplicateCandidates` catches pages with case-colliding titles (e.g., `Unix` vs `unix`) as Tier 1 — no LLM verification needed.
+- ✅ **Settings UX: drop hardcoded model fallback**: Removed `defaultModel` from all 12 provider configs. `DEFAULT_SETTINGS.model: ''` (no auto-fill on new install). Switching providers clears model field — user must fetch models or enter manually.
+- ✅ **Settings UX: friendly fetch error classification**: New `classifyFetchError()` categorizes failures into `Auth` / `Endpoint` / `Server` / `Empty` / `Network`. Each category shows a specific Notice with the relevant action and always mentions manual entry as fallback.
+- ✅ **Settings UX: auto-switch to dropdown on successful fetch**: After Fetch Models succeeds, the model selector automatically switches from text input to dropdown.
+- ✅ **Performance Gate (Gate 5)**: Added to Three-No Principle review — CPU/memory/IO/network/token usage analysis required for every change.
 
 ### Completed (v1.16.0)
 - ✅ **Issue #81: Sources normalization**: 4 pure functions in `src/core/sources-normalizer.ts`, 22 tests, Lint integration (section 0.5), startup quick fixes. 6 pollution patterns → canonical `[[sources/X]]`. 572 files/1616 entries cleaned on reporter's ~3800-page vault.
@@ -17,6 +26,7 @@
 ### Deferred to P3 (high mock complexity — current ROI insufficient)
 - ⏸ wiki-engine `ingestSource` full-path tests (P2 #4 → P3 #14): requires Obsidian App + 5 submodule mocks
 - ⏸ query-engine core flow tests (P2 #5 → P3 #15): requires Modal + MarkdownRenderer + DOM mocks
+- ⏸ True streaming for 3rd-party providers: `requestUrl` returns full response, not stream — would need Obsidian native streaming support
 
 ### Earlier Releases
 

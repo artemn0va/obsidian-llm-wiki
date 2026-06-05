@@ -24,7 +24,7 @@
   - [🔑 Configuration d'un Provider LLM](#-configuration-dun-provider-llm)
   - [🎮 Utilisation](#-utilisation)
   - [⚠️ Mise à niveau depuis une version antérieure ?](#️-mise-à-niveau-depuis-une-version-antérieure-)
-- [⚡ Quoi de neuf dans la v1.16.0](#-quoi-de-neuf-dans-la-v1160)
+- [⚡ Quoi de neuf dans la v1.16.1](#-quoi-de-neuf-dans-la-v1161)
 - [✨ Fonctionnalités](#-fonctionnalités)
   - [📊 Qualité des connaissances](#-qualité-des-connaissances)
   - [🛠️ Maintenance](#️-maintenance)
@@ -183,23 +183,27 @@ Paramètres → **Ingestion Acceleration** :
 ---
 ---
 
-## ⚡ Quoi de neuf dans la v1.16.0
+## ⚡ Quoi de neuf dans la v1.16.1
 
-Cette version se concentre sur la **compatibilité des modèles locaux** et la **qualité des données**.
+Cette version est un **correctif de stabilité et d'UX** qui corrige la régression CORS d'Anthropic et les faux positifs de lint de longue date — aucune nouvelle fonctionnalité, aucun changement cassant.
 
-**Améliorations clés :**
+**Corrections principales :**
 
-- **Nouveau fournisseur LM Studio.** Option dédiée dans la liste déroulante. Clé API facultative. URL par défaut `http://localhost:1234/v1`。
+- **Régression CORS Anthropic corrigée (Issue #95).** Suppression de `@anthropic-ai/sdk` (1,3 Mo) et réécriture de `AnthropicClient` sur le `requestUrl` d'Obsidian. Le `fetch` interne du SDK depuis l'origine `app://obsidian.md` était bloqué de façon intermittente par CORS — la correction standard de la communauté utilisée par d'autres plugins LLM. Le prompt caching (`cache_control: ephemeral`) est préservé en émettant la même structure JSON dans le corps de la requête brute.
 
-- **Paramètre de fenêtre de contexte.** Limitez les tokens de sortie LLM pour les modèles locaux. Menu déroulant 4K–1M. Affiché uniquement pour les fournisseurs locaux/personnalisés.
+- **Corrections des faux positifs de lint (PR #88).** Nouveau `bodyWordSet()` avec `BODY_STOPWORDS` (45 mots fonctionnels anglais) filtre les candidats de doublons sharedLinks par similarité du texte du corps (seuil ≥ 0,2). Corrige le cas où 3+ pages pointant vers la même page hub étaient signalées à tort comme doublons malgré un contenu différent. `scanDeadLinks` normalise maintenant espace→tiret dans le nom de base cible, donc `[[entities/Claude Code]]` correspond correctement à `entities/Claude-Code.md`.
 
-- **Normalisation du champ YAML sources (Issue #81).** 6 modèles de pollution automatiquement normalisés. Le lint répare avant les phases LLM.
+- **Slugs en minuscules + détection des variantes de casse (PR #87).** `computeSlug()` met désormais la sortie en minuscules, évitant la création de pages en doublon sur les systèmes de fichiers sensibles à la casse. Nouveau signal `caseVariant` dans `generateDuplicateCandidates` détecte les pages avec des titres en collision de casse (par ex., `Unix` vs `unix`) en Tier 1 — pas de vérification LLM nécessaire.
 
-- **Corrections rapides au démarrage.** L'ancienne "Vérification au démarrage" répare désormais activement les problèmes de format. Notification détaillée de 10s. Activé par défaut.
+- **UX des paramètres : suppression du repli de modèle codé en dur.** `defaultModel` supprimé des 12 configurations de fournisseur. `DEFAULT_SETTINGS.model: ''` (pas de remplissage automatique à la nouvelle installation). Le changement de fournisseur vide le champ de modèle — l'utilisateur doit récupérer les modèles ou les saisir manuellement.
 
-- **Correction de langue des alias.** Règles de traduction chinois↔anglais supprimées.
+- **UX des paramètres : classification amicale des erreurs de récupération.** Nouveau `classifyFetchError()` catégorise les échecs en `Auth` / `Endpoint` / `Server` / `Empty` / `Network`. Chaque catégorie affiche une notice spécifique avec l'action pertinente — par ex. « Échec d'authentification (HTTP 401/403). Vérifiez la clé API, ou entrez un ID de modèle puis cliquez sur Tester la connexion. » La saisie manuelle est toujours mentionnée comme solution de repli.
 
-- **Correction HTTP 400 LM Studio (Issue #75).** Constante shadow supprimée + nouveau paramètre de fenêtre de contexte.
+- **UX des paramètres : basculement automatique vers le menu déroulant après récupération réussie.** Après le succès de Fetch Models, le sélecteur de modèle bascule automatiquement du champ de saisie vers le menu déroulant, pour que les utilisateurs voient la liste immédiatement sans clic supplémentaire.
+
+**Mise à niveau depuis une version plus ancienne ?** Il suffit d'installer et d'utiliser — zéro changement cassant, zéro reconfiguration. Les wikis, paramètres et workflows existants sont préservés. Le champ de modèle du menu déroulant sera vide pour les utilisateurs qui avaient des valeurs par défaut codées en dur, mais un clic sur **Fetch Models** le remplira à partir de l'API de votre fournisseur.
+
+**Nous recommandons vivement à tous les utilisateurs de mettre à niveau vers cette version** — la correction CORS d'Anthropic restaure la fonctionnalité du plugin pour les utilisateurs sur macOS Tahoe et d'autres versions d'Electron où le comportement CORS du SDK bloquait auparavant.
 
 ---
 

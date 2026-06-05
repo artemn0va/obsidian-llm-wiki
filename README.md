@@ -24,7 +24,7 @@
   - [🔑 Configure an LLM Provider](#-configure-an-llm-provider)
   - [🎮 Usage](#-usage)
   - [⚠️ Upgrading from an Older Version?](#️-upgrading-from-an-older-version)
-- [⚡ What's New in v1.16.0](#-whats-new-in-v1160)
+- [⚡ What's New in v1.16.1](#-whats-new-in-v1161)
 - [✨ Features](#-features)
   - [📊 Knowledge Quality](#-knowledge-quality)
   - [🛠️ Maintenance](#️-maintenance)
@@ -183,29 +183,27 @@ Settings → **Ingestion Acceleration**:
 
 ---
 
-## ⚡ What's New in v1.16.0
+## ⚡ What's New in v1.16.1
 
-This release focuses on **local model compatibility** and **data quality** — responding to the most impactful issues reported by the community.
+This is a **stability + UX hotfix** that closes the Anthropic CORS regression and addresses long-standing lint false positives — no new features, no breaking changes.
 
-**Key Improvements:**
+**Key Fixes:**
 
-- **LM Studio support (new!).** A dedicated LM Studio provider option joins Ollama in the dropdown. API key is optional (LM Studio supports it but doesn't require it). Base URL defaults to `http://localhost:1234/v1`.
+- **Anthropic CORS regression fixed (Issue #95).** Removed `@anthropic-ai/sdk` (1.3MB) and rewrote `AnthropicClient` on Obsidian's `requestUrl`. SDK's internal `fetch` from `app://obsidian.md` was intermittently blocked by CORS — community-standard fix used by other LLM plugins. Prompt caching (`cache_control: ephemeral`) preserved by emitting the same JSON structure in the raw request body.
 
-- **Context Window setting.** Local model users can now cap LLM output tokens to avoid HTTP 400 errors when requests exceed the model's context window. A dropdown with options from 4K to 1M — shown only for local/custom providers. Also caps truncation retry, preventing retry-timeout loops. Turn it on in Settings → LLM Configuration → Context Window.
+- **Lint false positive fixes (PR #88).** New `bodyWordSet()` with `BODY_STOPWORDS` (45 English function words) gates sharedLinks duplicate candidates by body-text similarity (threshold ≥ 0.2). Fixes the case where 3+ pages linking to the same hub page were incorrectly flagged as duplicates despite different content. Plus `scanDeadLinks` now normalizes space→hyphen in target basenames, so `[[entities/Claude Code]]` correctly matches `entities/Claude-Code.md`.
 
-- **YAML sources field normalization (Issue #81).** 6 pollution patterns (external paths, .md suffixes, alias pipes, duplicates, inline arrays, empty [[]] links) are now automatically normalized to canonical `[[sources/X]]` format. Lint runs the fix before any LLM-dependent phases — 572 files / 1616 entries cleaned on the reporter's ~3800-page vault alone.
+- **Lowercase slugs + case-variant detection (PR #87).** `computeSlug()` now lowercases output, preventing case-variant duplicate page creation on case-sensitive filesystems. New `caseVariant` signal in `generateDuplicateCandidates` catches pages with case-colliding titles (e.g., `Unix` vs `unix`) as Tier 1 — no LLM verification needed.
 
-- **Startup quick fixes.** The former "Startup Health Check" now actively repairs low-level format issues (sources normalization, wiki structure verification) on plugin load. A detailed 10-second Notice shows what was fixed with a disable hint. Default ON — turn off in Settings → Auto Maintenance.
+- **Settings UX: drop hardcoded model fallback.** Removed `defaultModel` from all 12 provider configs. `DEFAULT_SETTINGS.model: ''` (no auto-fill on new install). Switching providers clears the model field — user must fetch models or enter manually.
 
-- **Alias language fix.** Replaced hardcoded Chinese↔English translation rules with English-as-linker-language and a "do NOT invent translations for established technical terms" guard. Transformer won't become "变换器" anymore.
+- **Settings UX: friendly fetch error classification.** New `classifyFetchError()` categorizes failures into `Auth` / `Endpoint` / `Server` / `Empty` / `Network`. Each category shows a specific Notice with the relevant action — e.g., "Authentication failed (HTTP 401/403). Verify your API Key, or enter a Model ID below and click Test Connection to validate." Manual entry is always mentioned as the fallback.
 
-- **LM Studio HTTP 400 fix (Issue #75).** Root cause was a shadow `MAX_TOKENS = 16000` constant in `source-analyzer.ts` that bypassed the centralized `MAX_TOKENS_BATCH`. Now fully centralized and configurable.
+- **Settings UX: auto-switch to dropdown on successful fetch.** After Fetch Models succeeds, the model selector automatically switches from text input to dropdown, so users see the list right away without an extra click.
 
-- **Settings UX refinements.** New "LLM-Wiki Status" section. Section headings simplified: "LLM Configuration" and "Wiki Configuration". LLM Concurrency and Batch Delay moved to LLM Configuration. Status indicators now in a single row with no redundant prefix.
+**Upgrading from an older version?** Just install and use — zero breaking changes, zero reconfiguration. Existing wikis, settings, and workflows are preserved. The dropdown model field will be empty for users who previously had hardcoded defaults, but clicking **Fetch Models** will populate it from your provider's API.
 
-**Upgrading from an older version?** Just install and use — zero breaking changes, zero reconfiguration. The new Context Window setting defaults to 0 (no cap) for cloud users. Local users should set it manually to match their model context.
-
-**We strongly recommend all users upgrade to this version.**
+**We strongly recommend all users upgrade to this version** — the Anthropic CORS fix restores plugin functionality for users on macOS Tahoe and other Electron versions where the SDK's CORS behavior was previously blocking.
 
 ---
 

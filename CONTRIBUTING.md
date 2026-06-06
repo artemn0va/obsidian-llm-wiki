@@ -28,7 +28,7 @@ All four checks must pass before submitting any change:
 
 ```bash
 pnpm lint          # ESLint with Obsidian plugin rules (0 errors, 0 warnings)
-pnpm test          # Vitest unit tests (400 tests, 0 failures)
+pnpm test          # Vitest unit tests (all pass)
 npx tsc --noEmit   # TypeScript type check (0 errors, 0 warnings) — Dual Gate
 pnpm build         # esbuild production build (must exit cleanly)
 ```
@@ -74,7 +74,7 @@ src/
 ├── schema/              # Schema co-evolution
 ├── ui/                  # Settings + Modals
 ├── texts/               # i18n (8 languages)
-└── __tests__/           # Unit tests (vitest, 400 tests across 17 files)
+└── __tests__/           # Unit tests (vitest, 549+ tests across 18 files)
 ```
 
 ## Internationalization
@@ -85,7 +85,7 @@ src/
 
 ## Testing
 
-Unit tests cover pure utility functions in `src/__tests__/` (400 tests across 17 files). Run with:
+Unit tests cover pure utility functions in `src/__tests__/`. Run with:
 
 ```bash
 pnpm test          # single run

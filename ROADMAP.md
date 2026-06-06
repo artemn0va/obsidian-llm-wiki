@@ -2,7 +2,7 @@
 
 > Feature planning and improvement proposals
 
-**Version:** 1.14.0 | **Updated:** 2026-06-01
+**Version:** 1.16.2 | **Updated:** 2026-06-07
 
 ---
 
@@ -59,88 +59,66 @@ Production-critical performance release. Extraction fundamentally rearchitected 
 | Hash-bucket dedup (O(n²)→O(n log n)) | No user-reported perf issue; solve when it hurts |
 | Anthropic prompt caching (Issue #38) | System prompts too small for 1024-token cache threshold |
 
-### Next: v1.15.0 — Core Engine Tests + Client Refinement
+### Implemented (v1.16.2) — P0 Bug Fix Batch (Lint + Thinking + Stubs)
 
-**P0 — Quick Fixes (This Week)**
+**Key changes:**
+- **Issue #94: Lint cancellation**: AbortSignal propagated through 5 fix-runner functions. All persistent Notices wrapped in `try/finally` for clean dismissal on cancel.
+- **Issue #96: Lint granularity**: `appendGranularityToPrompt` injects extractionGranularity into lint LLM analysis. 4 tests.
+- **Issue #99 + #86: Thinking token bleeding**: Three-layer defense — API-level disableThinking (with per-provider probe + 400 fallback) + parseJsonResponse think block stripping + cleanMarkdownResponse preamble detection.
+- **Issue #103: Delete empty stubs**: Button in Lint report modal, 8-language i18n, skips `reviewed: true` pages.
+- **ROADMAP P3 #11**: parseJsonResponse strips `<think>`/`<thinking>` before brace-counting.
+- **ROADMAP P3 #12**: disableThinking interface on LLMClient with Test Connection probe + cache.
+- **Tests**: 549/549 (+37 new tests). 5 Issues closed (#86, #94, #96, #99, #103).
 
-| # | Item | Source | Effort | Status |
-|---|------|--------|--------|--------|
-| 0 | Auto-init wiki structure on LLM Ready + wiki init status indicator | Issue #80 | 1h | ⬜ |
-| 1 | `main.ts` initialization timing comment | Model Audit B #6 | 10min | ⬜ |
+### Implemented (v1.16.1) — Stability & UX Hotfix
 
-**P1 — Client Refinement (This Week)**
+**Key changes:**
+- **Issue #95: CORS regression**: AnthropicClient rewritten to use requestUrl for third-party SDK compatibility.
+- **PR #87: Lowercase slugs**: Enforced lowercase wiki page slugs with case-variant duplicate detection.
+- **PR #88: Lint false positives**: Body similarity gate raised, reduced false duplicate flags.
+- All 8 READMEs synced with proper What's New + TOC maintenance.
+- **Tests**: 512/512 passing (stable).
 
-| # | Item | Source | Effort | Status |
-|---|------|--------|--------|--------|
-| 2 | Extract `parseSSEEvents` shared function | Model Audit B #2 | 1.5h | ✅ |
-| 3 | Add `AnthropicClient` truncation retry tests | Audit consensus | 30min | ✅ |
+### Implemented (v1.16.0) — Sources Normalization & Client Refinement
 
-**P2 — Core Engine Tests (Next Week)**
+**Key changes:**
+- **Issue #81: Sources normalization**: 4 pure functions, 22 tests, 6 pollution patterns -> canonical `[[sources/X]]`. Startup quick fixes default ON.
+- **Issue #75: LM Studio 8K + token cap**: New Context Window setting (4K~1M dropdown). LM Studio provider added. capMaxTokens pure function.
+- **Issue #76: TOKENS_DEDUP_RESOLUTION 300->1000**: Token budget safety margin.
+- **Alias language fix**: English as linker language, 'no invented translations' guard.
+- **Settings UX redesign**: LLM-Wiki Status section, provider dropdown i18n, restart notice.
+- **Tests**: 488/488 passing.
 
-| # | Item | Source | Effort | Status |
-|---|------|--------|--------|--------|
-| 4 | wiki-engine `ingestSource` full-path tests | 7th audit repeat | 2-3d | ⬜ **Deferred to P3** |
-| 5 | query-engine core flow tests (Layer 1/2/3) | Audit consensus | 1-2d | ⬜ **Deferred to P3** |
-| 6 | Extract `withTruncationRetry` helper | Model Audit B #2 | 1h | ✅ |
+### Next: v1.17.0 — Cleanup & Technical Debt
 
-**P3 — Architecture Refactoring (v1.16.0+)**
+**P1 — Required for stability**
+| # | Item | Effort | Source |
+|---|------|--------|--------|
+| 1 | page-factory resolvePagePath LLM fallback + merge + append tests | 1d | Audit consensus |
+| 2 | runLintWiki phase extraction (762 -> 6 x ~130 lines) | 0.5d | ROADMAP |
+| 3 | Fix thinkingControlCache key mismatch when baseUrl is empty | 1h | Issue #243 |
+| 4 | Fix deleteEmptyStubs callback error handling | 1h | Issue #244 |
+| 5 | Update thinkingControlSupported after successful 400 fallback | 1h | Issue #245 |
 
-| # | Item | Source | Effort | Status |
-|---|------|--------|--------|--------|
-| 7 | Local model context-window-aware token budget | Issues #75/#76 | 2-3d | ⬜ Deferred |
-| 8 | Split QueryModal → QueryEngine class | Model Audit B #4 | 2d | ⬜ Deferred |
-| 9 | Extensible SSE parser (reasoning events, etc.) | Issue #64 ext | 1d | ⬜ Deferred |
-| 10 | `source-analyzer.ts` 局部 `MAX_TOKENS` → `MAX_TOKENS_BATCH` | Second audit | 5min | ⬜ |
-| 11 | `parseJsonResponse` 内部 strip think blocks | Second audit | 15min | ✅ **Done (v1.16.2)** |
-| 12 | `disable_thinking` interface + per-client implementation | Issue #72 | 2-3h | ✅ **Done (v1.16.2)** |
-| 13 | Restore true streaming for 3rd-party providers (fetch + ReadableStream or SDK option) | User UX feedback 2026-06-02 | 1-2d | ⬜ Deferred |
-| 14 | wiki-engine `ingestSource` full-path integration tests (deferred from P2 — requires heavy Obsidian App + 5 submodule mocks) | 7th audit repeat | 2-3d | ⬜ Deferred |
-| 15 | query-engine core flow tests (deferred from P2 — requires Modal + MarkdownRenderer + DOM + LLMWikiPlugin mocks) | Audit consensus | 1-2d | ⬜ Deferred |
+**P2 — Quality improvements**
+| # | Item | Effort |
+|---|------|--------|
+| 6 | Skip unnecessary thinking probe for Anthropic clients | 30min |
+| 7 | Broaden isThinkingControlError detection patterns | 30min |
+| 8 | Fix test name contradicting assertion (said 'omits' but asserts 'sends') | 10min |
 
-**Second Audit Deep Findings (2026-06-02):**
-- `source-analyzer.ts:113` shadows `MAX_TOKENS_BATCH` with local `MAX_TOKENS = 16000`
-- `parseJsonResponse` (11 call sites) lacks think-block stripping — `extractBalancedJson` can silently extract wrong JSON from `<think>` reasoning pseudocode
-- `disable_thinking?: boolean` on `LLMClient.createMessage` with provider-specific mapping (LM Studio `model_kwargs` vs Anthropic `thinking.type`) is the cleanest #72 fix
-
-**Completed (v1.15.0 — P1 + selective P2)**
-- ✅ `parseSSEEvents` shared function extraction (#2) — pure function, 11 tests
-- ✅ `AnthropicClient` truncation retry tests (#3) — 9 tests, all paths covered
-- ✅ `withTruncationRetry` helper extraction (#6) — pure function, 7 tests
-- ✅ Issue #80 wiki init UX (auto-init on LLM Ready + status indicator)
-- ✅ `isWikiInitialized` helper extraction (DRY fix in settings.ts) + 10 tests
-- ✅ Streaming architecture investigation (P3 #13 documented for future)
-
-**Deferred from P2 (too complex for current ROI):**
-- ⏸ wiki-engine `ingestSource` full-path tests — requires Obsidian App + 5 submodule mocks
-- ⏸ query-engine core flow tests — requires Modal + MarkdownRenderer + DOM mocks
-
-**Completed (v1.14.0)**
-- ✅ `withRetry` nested retry fix (3×→1× calls)
-- ✅ `promptIncludesConstraints` dead code removal
-- ✅ `foundAliases` dead code fix
-- ✅ `PAGES_CACHE_TTL_MS` constant centralization
-- ✅ `saveSummary` i18n (8 languages)
-- ✅ `source-analyzer.test.ts` magic string cleanup
-- ✅ `firstBatchData` type narrowing (`NormalizedBatch`)
-- ✅ `extractedNames` alias indexing (batch-merger)
-- ✅ `WIKI_SUBFOLDERS` full migration (lint-fixes.ts)
-- ✅ `Decision Tree` vs `resolveEntityDedup` — design intentional (different phases)
-- ✅ `UNIVERSAL_LINK_CONSTRAINTS` + `{{constraints}}` injection (all 4 prompts verified)
-
-**Evaluated & Rejected**
-- `{{constraints}}` missing in prompts — FALSE POSITIVE (all 4 prompts verified to have placeholder)
+**P3 — Deferred (high complexity, low ROI)**
+| # | Item | Effort | Reason |
+|---|------|--------|--------|
+| 9 | wiki-engine ingestSource full-path integration tests | 2-3d | Requires Obsidian App + 5 submodule mocks |
+| 10 | query-engine core flow tests | 1-2d | Requires Modal + MarkdownRenderer + DOM mocks |
+| 11 | Restore true streaming for 3rd-party providers | 1-2d | SDK dependency, low user demand |
+| 12 | Tag vocabulary ecosystem (Issues #85/#90/#91) | 2-3d | Design discussion needed |
 
 ### Evaluated & Rejected
 
 | Proposal | Reason |
 |----------|--------|
-| Hexagonal Architecture (Port-Adapter) | Over-engineering for Obsidian plugin context |
-| Vector search (Ollama embeddings) | Requires infrastructure <1% of users have |
-| Hash-bucket dedup (O(n²)→O(n log n)) | No user-reported perf issue; solve when it hurts |
-| Anthropic prompt caching (Issue #38) | System prompts too small for 1024-token cache threshold |
-| API URL validation | Obsidian's requestUrl already validates; self-phishing impossible |
-
----
 
 ## Known Gaps (from Karpathy audit)
 
@@ -182,19 +160,22 @@ Karpathy: *"I like to do them one at a time, and be involved myself."*
 
 | Version | Date | Key Features | Status |
 |---------|------|-------------|--------|
-| **v1.14.0** | 2026-06 | Architecture quality, test infrastructure, dual gate verification | Released |
-| **v1.13.0** | 2026-05 | Cross-type dedup, normalizeBatchResponse, aliases seeding, Three-No framework | Released |
-| **v1.12.6** | 2026-05 | Build verification fix, dependency pinning | Released |
-| **v1.12.0** | 2026-05 | Extraction rearchitected (~80% faster), dynamic batch limits, convergence detection | Released |
-| **v1.11.0** | 2026-05 | llmReady gating, cancel ingestion, ribbon icon, double-nested link fix | Released |
-| **v1.10.x** | 2026-05 | Aliases support, minimal/custom granularity, slug normalization | Released |
-| **v1.9.x** | 2026-05 | 4-layer pollution defense, code quality upgrade (B+→A-), lint report enhancements | Released |
-| **v1.8.x** | 2026-05 | Full i18n for 8 languages, dynamic download badge, rate limit detection | Released |
-| **v1.7.x** | 2026-05 | Code quality milestone, 20 releases, lint UI freeze fix, modular refactoring | Released |
-| **v1.6.x** | 2026-05 | Wiki output language, iterative batch extraction, query-to-wiki feedback | Released |
-| **v1.4.0** | 2026-04 | Schema layer, auto-maintenance, ESLint compliance | Released |
 | **v1.0.0** | 2026-04 | Multi-page generation, entity/concept extraction, bidirectional links | Released |
-| **v1.15.0** | TBD | Wiki engine full-path tests, query engine core flow | Planned |
+| **v1.4.0** | 2026-04 | Schema layer, auto-maintenance, ESLint compliance | Released |
+| **v1.6.x** | 2026-05 | Wiki output language, iterative batch extraction, query-to-wiki feedback | Released |
+| **v1.7.x** | 2026-05 | Code quality milestone, 20 releases, lint UI freeze fix, modular refactoring | Released |
+| **v1.8.x** | 2026-05 | Full i18n for 8 languages, dynamic download badge, rate limit detection | Released |
+| **v1.9.x** | 2026-05 | 4-layer pollution defense, code quality upgrade (B+→A-), lint report enhancements | Released |
+| **v1.10.x** | 2026-05 | Aliases support, minimal/custom granularity, slug normalization | Released |
+| **v1.11.0** | 2026-05 | llmReady gating, cancel ingestion, ribbon icon, double-nested link fix | Released |
+| **v1.12.0** | 2026-05 | Extraction rearchitected (~80% faster), dynamic batch limits, convergence detection | Released |
+| **v1.12.6** | 2026-05 | Build verification fix, dependency pinning | Released |
+| **v1.13.0** | 2026-05 | Cross-type dedup, normalizeBatchResponse, aliases seeding, Three-No framework | Released |
+| **v1.14.0** | 2026-06 | Architecture quality, test infrastructure, dual gate verification | Released |
+| **v1.15.0** | 2026-06 | parseSSEEvents, truncation retry tests, wiki init UX, streaming research | Released |
+| **v1.16.0** | 2026-06 | Sources normalization, LM Studio, Context Window, settings redesign | Released |
+| **v1.16.1** | 2026-06 | CORS fix, lowercase slugs, lint false positives, README sync | Released |
+| **v1.16.2** | 2026-06 | P0 bug fix batch: Lint cancellation, granularity, thinking defense, delete stubs | Released |
 
 ---
 
@@ -502,7 +483,7 @@ Karpathy: *"I like to do them one at a time, and be involved myself."*
 | **v1.0.0** | 2026-04 | Multi-page generation, entity/concept extraction, bidirectional links | Released |
 | **v1.9.0** | 2026-05 | 4-layer pollution defense, code quality upgrade (B+→A-), lint report enhancements, long source notice | Released |
 | **v1.8.x** | — | ~~Quality upgrade~~ Merged into v1.9.0 | Superseded |
-| **v1.10.0** | TBD | Ingest Wizard, lint per-item review, query keyword pre-filter | Planned |
+| **v1.17.0** | TBD | Cleanup & technical debt | Planned |
 | **v2.0.0** | TBD | Agent mode, multi-modal | Concept |
 
 ---

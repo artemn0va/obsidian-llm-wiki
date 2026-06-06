@@ -1,12 +1,12 @@
 # LLM Wiki Plugin Project Development Standards
 
-**Last Updated:** 2026-06-05
+**Last Updated:** 2026-06-07
 
 ---
 
-## Current Phase: v1.16.2 — P0 bug fix batch (Lint + Thinking + Stubs)
+## Current Phase: v1.16.2 — Released (P0 bug fix batch)
 
-### Completed (v1.16.2)
+### Completed (v1.16.2) — Released 2026-06-07
 - ✅ **Issue #94: Lint cancellation**: AbortSignal propagated through 5 fix-runner functions. `try/finally` wraps all persistent Notices.
 - ✅ **Issue #96: Lint granularity**: `appendGranularityToPrompt` injects extractionGranularity into lint LLM analysis. 4 tests.
 - ✅ **Issue #99 + #86: Thinking token bleeding**: Three-layer defense — API `disableThinking` + `parseJsonResponse` strip + `cleanMarkdownResponse` Layer B2 preamble detection.
@@ -32,25 +32,36 @@
 
 Complete version history (v1.14.0 → v1.0.0) is maintained in [ROADMAP.md](ROADMAP.md). CLAUDE.md tracks only the current phase and active work items.
 
-### P0 — In Progress
+### P0 — Not applicable (v1.16.2 released)
 
-| Item | Source | Effort |
+All P0 items resolved. Current phase transitions to cleanup & technical debt.
+
+### P1 — Cleanup (v1.17.0 target)
+
+| Item | Effort |
+|------|--------|
+| page-factory resolvePagePath LLM fallback + merge + append tests | 1 day |
+| runLintWiki phase extraction (762 → 6 × ~130 lines) | half day |
+| Fix thinkingControlCache key mismatch when baseUrl is empty | 1h |
+| Fix deleteEmptyStubs callback error handling | 1h |
+| Update thinkingControlSupported after successful 400 fallback | 1h |
+| Broaden isThinkingControlError detection patterns | 30min |
+| Skip unnecessary thinking probe for Anthropic clients | 30min |
+
+### P2 — Test infrastructure (deferred, high mock complexity)
+
+| Item | Effort | Reason |
 |------|--------|--------|
-| Wiki-engine full-path tests (ingestSource, mock 6+ LLM calls) | Three independent audit consensus | 1 day |
-| query-engine core tests | Audit consensus | 1 day |
+| wiki-engine ingestSource full-path integration tests | 2-3 days | Requires Obsidian App + 5 submodule mocks |
+| query-engine core flow tests (Layer 1/2/3) | 1-2 days | Requires Modal + MarkdownRenderer + DOM mocks |
 
-### P1 — Planned
-
-| Item | Source | Effort |
-|------|--------|--------|
-| page-factory resolvePagePath LLM fallback + merge + append tests | ROADMAP | 1 day |
-| runLintWiki phase extraction (762 → 6 × ~130 lines) | ROADMAP | half day |
-
-### P2 — Backlog
+### P3 — Backlog
 
 | Item | Effort |
 |------|--------|
 | Good First Issue tagging | 10min |
+| Tag vocabulary ecosystem (Issues #85/#90/#91) | 2-3 days |
+| Restore true streaming for 3rd-party providers | 1-2 days |
 
 ### Evaluated & Rejected
 

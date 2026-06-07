@@ -219,7 +219,16 @@ export async function runLintWiki(ctx: LintContext, signal?: AbortSignal): Promi
           for (let i = 0; i < batches.length; i += concurrency) {
             checkCancelled();
             const chunk = batches.slice(i, i + concurrency);
-            stageNotice.setMessage(`Checking duplicates: batch ${Math.floor(i / concurrency) + 1}/${Math.ceil(batches.length / concurrency)}...`);
+            // Show the actual inner-batch range (matches console log) so the
+            // user sees consistent numbers in both places.
+            const batchStart = i + 1;
+            const batchEnd = Math.min(i + concurrency, batches.length);
+            const progressLabel = batchEnd > batchStart
+              ? `${batchStart}-${batchEnd}/${batches.length}`
+              : `${batchStart}/${batches.length}`;
+            stageNotice.setMessage(t.lintCheckingDuplicatesProgress
+              .replace('{current}', progressLabel)
+              .replace('{total}', String(batches.length)));
             const results = await Promise.allSettled(
               chunk.map(async (batch, bi) => {
                 const batchNum = i + bi + 1;
@@ -525,41 +534,63 @@ export async function runLintWiki(ctx: LintContext, signal?: AbortSignal): Promi
     };
 
     // ---- Build callbacks ----
+
+    // Issue #94 regression: each fix phase is its own lint operation
+    // lifecycle so the status-bar cancel affordance persists throughout
+    // the fix. The modal closes immediately (preserving original UX);
+    // the user gets a top-right progress notice from the fix runner +
+    // the bottom-right status bar for cancellation.
+    const runFixPhase = async (fn: (signal: AbortSignal | undefined) => Promise<void>) => {
+      const signal = ctx.wikiEngine.startLintOperation();
+      try {
+        await fn(signal);
+      } finally {
+        ctx.wikiEngine.endLintOperation();
+      }
+    };
+
     const fixCallbacks: LintFixCallbacks = {};
     fixCallbacks.onAnalyzeSchema = () => { void ctx.onAnalyzeSchema(); };
 
     // Polluted page repair (structural root cause — similar to aliases)
     if (pollutedPages.length > 0) {
       fixCallbacks.onFixPollutedPages = () => {
-        void (async () => {
+        void runFixPhase(async (signal) => {
           let fixed = 0;
           const fixNotice = new Notice('', 0);
-          for (const pp of pollutedPages) {
-            fixNotice.setMessage(`Fixing polluted page ${fixed + 1}/${pollutedPages.length}: ${pp.title} → ${pp.cleanTitle}`);
-            try {
-              const result = await ctx.wikiEngine.fixPollutedPage(pp.path, pp.cleanTitle);
-              console.debug(`[Pollution Fix] ${result}`);
-              fixed++;
-            } catch (e) {
-              console.error(`[Pollution Fix] Failed: ${pp.path}`, e);
+          try {
+            for (const pp of pollutedPages) {
+              if (signal?.aborted) break;
+              fixNotice.setMessage(t.lintFixingPolluted
+                .replace('{current}', String(fixed + 1))
+                .replace('{total}', String(pollutedPages.length))
+                .replace('{title}', pp.title)
+                .replace('{newTitle}', pp.cleanTitle));
+              try {
+                await ctx.wikiEngine.fixPollutedPage(pp.path, pp.cleanTitle);
+                fixed++;
+              } catch (e) {
+                console.error(`[Pollution Fix] Failed: ${pp.path}`, e);
+              }
             }
+            if (fixed > 0) {
+              await ctx.wikiEngine.generateIndexFromEngine();
+            }
+            const msg = getText(ctx.settings.language, 'lintPollutedFixed')
+              .replace('{fixed}', String(fixed))
+              .replace('{total}', String(pollutedPages.length));
+            new Notice(msg, 0);
+          } finally {
+            fixNotice.hide();
           }
-          fixNotice.hide();
-          if (fixed > 0) {
-            await ctx.wikiEngine.generateIndexFromEngine();
-          }
-          const msg = getText(ctx.settings.language, 'lintPollutedFixed')
-            .replace('{fixed}', String(fixed))
-            .replace('{total}', String(pollutedPages.length));
-          new Notice(msg, 0);
-        })();
+        });
       };
     }
 
     // Alias completion (runs first — improves duplicate detection for future Lint runs)
     if (aliasDeficientPages.length > 0) {
       fixCallbacks.onCompleteAliases = () => {
-        void (async () => {
+        void runFixPhase(async (signal) => {
           const { filled, results } = await runAliasCompletion(ctx, signal, aliasDeficientPages);
           if (filled > 0) {
             await ctx.wikiEngine.generateIndexFromEngine();
@@ -568,13 +599,13 @@ export async function runLintWiki(ctx: LintContext, signal?: AbortSignal): Promi
           const msg = t.lintAliasesFilled.replace('{filled}', String(filled)).replace('{total}', String(aliasDeficientPages.length))
             + (filled > 0 ? '\n' + t.lintFixIndexUpdated : '');
           new Notice(msg, 0);
-        })();
+        });
       };
     }
 
     if (deadLinks.length > 0) {
       fixCallbacks.onFixDeadLinks = () => {
-        void (async () => {
+        void runFixPhase(async (signal) => {
           const { fixed, results } = await runDeadLinkFixes(ctx, signal, deadLinks);
           if (fixed > 0) {
             await ctx.wikiEngine.generateIndexFromEngine();
@@ -583,13 +614,13 @@ export async function runLintWiki(ctx: LintContext, signal?: AbortSignal): Promi
           const msg = t.lintFixDeadComplete.replace('{fixed}', String(fixed)).replace('{total}', String(deadLinks.length))
             + (fixed > 0 ? '\n' + t.lintFixIndexUpdated : '');
           new Notice(msg, 0);
-        })();
+        });
       };
     }
 
     if (emptyPages.length > 0) {
       fixCallbacks.onFillEmptyPages = () => {
-        void (async () => {
+        void runFixPhase(async (signal) => {
           const { filled, results } = await runEmptyPageFixes(ctx, signal, emptyPages);
           if (filled > 0) {
             await ctx.wikiEngine.generateIndexFromEngine();
@@ -598,26 +629,38 @@ export async function runLintWiki(ctx: LintContext, signal?: AbortSignal): Promi
           const msg = t.lintFillComplete.replace('{filled}', String(filled)).replace('{total}', String(emptyPages.length))
             + (filled > 0 ? '\n' + t.lintFixIndexUpdated : '');
           new Notice(msg, 0);
-        })();
+        });
       };
     }
 
     // Issue #103: independent delete action (not a fix phase) — always available
     fixCallbacks.onDeleteEmptyStubs = () => {
-      void (async () => {
-        const deleted = await ctx.wikiEngine.deleteEmptyStubs(ctx.settings.wikiFolder);
-        const msg = t.lintDeleteCompleted.replace('{count}', String(deleted));
-        if (deleted > 0) {
+      void runFixPhase(async (signal) => {
+        const result = await ctx.wikiEngine.deleteEmptyStubs(ctx.settings.wikiFolder);
+        if (result.deleted > 0) {
           await ctx.wikiEngine.generateIndexFromEngine();
-          await ctx.wikiEngine.logLintFix('Delete Empty Stubs', `Deleted ${deleted} empty stubs`);
+          await ctx.wikiEngine.logLintFix('Delete Empty Stubs', `Deleted ${result.deleted} empty stubs`);
         }
-        new Notice(msg, 0);
-      })();
+        // Issue #244: surface success + failure breakdown to the user.
+        const parts: string[] = [];
+        if (result.deleted > 0) {
+          parts.push(t.lintDeleteCompleted.replace('{count}', String(result.deleted)));
+        }
+        if (result.failed > 0) {
+          parts.push(t.lintDeleteFailed
+            .replace('{failed}', String(result.failed))
+            .replace('{total}', String(result.deleted + result.failed)));
+        }
+        if (parts.length === 0) {
+          parts.push(t.lintDeleteCompleted.replace('{count}', '0'));
+        }
+        new Notice(parts.join('\n'), 0);
+      });
     };
 
     if (orphans.length > 0) {
       fixCallbacks.onLinkOrphans = () => {
-        void (async () => {
+        void runFixPhase(async (signal) => {
           const { linked, results } = await runOrphanFixes(ctx, signal, orphans);
           if (linked > 0) {
             await ctx.wikiEngine.generateIndexFromEngine();
@@ -626,13 +669,13 @@ export async function runLintWiki(ctx: LintContext, signal?: AbortSignal): Promi
           const msg = t.lintLinkComplete.replace('{linked}', String(linked))
             + (linked > 0 ? '\n' + t.lintFixIndexUpdated : '');
           new Notice(msg, 0);
-        })();
+        });
       };
     }
 
     if (duplicates.length > 0) {
       fixCallbacks.onMergeDuplicates = () => {
-        void (async () => {
+        void runFixPhase(async (signal) => {
           const { merged, results } = await runDuplicateMerges(ctx, signal, duplicates);
           if (merged > 0) {
             await ctx.wikiEngine.generateIndexFromEngine();
@@ -641,7 +684,7 @@ export async function runLintWiki(ctx: LintContext, signal?: AbortSignal): Promi
           const msg = t.lintMergeComplete.replace('{merged}', String(merged)).replace('{total}', String(duplicates.length))
             + (merged > 0 ? '\n' + t.lintFixIndexUpdated : '');
           new Notice(msg, 0);
-        })();
+        });
       };
     }
 

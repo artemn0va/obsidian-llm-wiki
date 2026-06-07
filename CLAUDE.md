@@ -4,7 +4,17 @@
 
 ---
 
-## Current Phase: v1.16.2 — Released (P0 bug fix batch)
+## Current Phase: v1.16.3 — Released (v1.16.2 P0 hotfix completion)
+
+### Completed (v1.16.3) — Released 2026-06-07
+- ✅ **Issue #94 (regression fix)**: Each fix phase now manages its own lint-operation lifecycle (startLintOperation + endLintOperation) so the status bar persists across fix phases. Modal closes immediately (preserving original UX); the user gets a top-right progress notice and the bottom-right status bar for cancellation.
+- ✅ **#243 thinkingControlCache key fix**: extracted `getThinkingControlCacheKey()` helper so read and write paths use the same key. Predefined providers without baseUrl override no longer cause permanent cache miss.
+- ✅ **#244 deleteEmptyStubs resilience**: returns `{deleted, failed, errors}` instead of throwing on the first failure. Each file wrapped in try/catch.
+- ✅ **#245 thinkingControlSupported cache after fallback**: `OpenAICompatibleClient` sets `thinkingControlSupported = false` after successful 400-fallback to skip the redundant probe-and-fail round-trip.
+- ✅ **#248 isThinkingControlError tightening**: now requires both HTTP 400 status AND a rejected-field keyword.
+- ✅ **i18n cleanup**: 3 hardcoded English progress strings replaced with i18n keys in 8 locales.
+- ✅ **de.ts trailing-comma fix**: 6 other language files had the same issue — all fixed in lockstep.
+- ✅ **Tests**: 549/549 passing. 4-Gate clean.
 
 ### Completed (v1.16.2) — Released 2026-06-07
 - ✅ **Issue #94: Lint cancellation**: AbortSignal propagated through 5 fix-runner functions. `try/finally` wraps all persistent Notices.
@@ -108,98 +118,120 @@ src/
 
 ---
 
-## 🛡️ Three-No Principle
+## 🛡️ Six-Gate Quality Closure
 
-Every change must satisfy all three before being considered complete.
-**Automated gates catch syntax/type/test errors; manual review catches logic
-and architectural errors that no linter can see.**
+Every change must pass all six gates before being considered complete. Gates 1-4 are developer-responsible (checked during development and in Step 2 of the release workflow). Gates 5-6 are automated by `pre-release-gate` before user approval.
 
-### 1. No Side Effects — required structured review
+| Gate | Constraint | How | Who |
+|------|-----------|-----|-----|
+| **1. Code correct** | `pnpm lint` 0/0 + `npx tsc --noEmit` 0/0 + `pnpm test` all pass + `pnpm build` clean | 4-Gate script | Developer |
+| **2. No side effects** | Call-site audit + data flow trace + state mutation check + error propagation check | Structured review | Developer |
+| **3. No breaking changes** | API/Schema/File format/Default behavior/Command IDs/Obsidian API all backward-compatible | Breaking-change matrix | Developer |
+| **4. No performance regression** | CPU/memory/IO/network/token usage — 5-dim walkthrough, written assessment table | simplify + code-review + Gate 4 table | Developer |
+| **5. Docs complete** | 8 READMEs + ROADMAP + CLAUDE.md + CHANGELOG + memory all updated | pre-release-gate | Gate |
+| **6. Release clean (superset of 1-5)** | Gate 1-5 all green, PLUS TOC anchors + localization + Release Notes + Contributors + git hygiene + **Gate 4 perf re-verification** | pre-release-gate | Gate |
 
-**Goal**: The change does not alter behavior outside its intended scope.
+### Gate 1: Four-Gate automated
 
-#### 1a. Call-site Audit
-Run `grep -rn "<functionName>" src/` to list every call-site. For each:
-- [ ] **Arguments**: check if any caller depends on old return value / side effect
-- [ ] **Return value**: check if any caller would break with new return shape
-- [ ] **Error handling**: check if try/catch or `.catch()` paths still make sense
-
-#### 1b. Data Flow Trace
-For each modified function, trace:
-- [ ] **Inputs**: Where does each parameter value originate? (user input / setting / file / LLM / computed)
-- [ ] **Outputs**: Where does each return value / mutated state go? (file write / UI / downstream function / cache)
-- [ ] **Side effects**: Does the function mutate external state? (file system, Obsidian API, global vars, DOM)
-- [ ] **IO points**: Mark every `await this.ctx.*`, `app.*`, `document.*`, `localStorage.*`
-
-#### 1c. State Mutation Analysis
-- [ ] If the function is async: can it run concurrently with itself or another function touching the same state?
-- [ ] If the function writes files: does it overwrite or append? Is the path deterministic?
-- [ ] If the function reads settings: does it handle missing/new fields gracefully?
-
-#### 1d. Error Propagation Check
-- [ ] New error paths: are they caught by all callers?
-- [ ] Changed error types: do existing catch blocks still match?
-- [ ] Silent failures: are there any paths that swallow errors without logging?
-
-**Deliverable**: A 3-5 sentence side-effect assessment, e.g.:
-> "Modified `resolvePagePath` is called from 2 private methods in PageFactory.
-> The new `collision` return field is consumed by `createOrUpdatePage` and
-> `IngestReportModal` only. No other module touches this path. The function
-> still writes aliases via `appendAliases` (same side effect as before); no
-> new IO introduced."
-
-### 2. No Breaking Changes — required structured review
-
-**Goal**: Existing users do not need to reconfigure or migrate data.
-
-| Dimension | Check | Method | Pass Criteria |
-|-----------|-------|--------|---------------|
-| **API Signature** | Function params / return type changed? | `git diff` + `grep` | All call-sites updated; no new required params without defaults |
-| **Settings Schema** | `data.json` fields added/removed? | Check `types.ts` + `settings.ts` | New fields have defaults in constructor; removed fields are gracefully ignored |
-| **File Format** | Frontmatter / output / index format changed? | Check generation templates | Old files load without error; new format is backward-compatible |
-| **Default Behavior** | Any default value changed? | Check constructor / config init | Old behavior is preserved unless explicitly opted in |
-| **Command/Setting IDs** | Any command palette ID or setting key renamed? | `grep` for IDs/keys | IDs unchanged; if changed, old IDs still map |
-| **Obsidian API** | Minimum Obsidian version requirement changed? | `manifest.json` | `minAppVersion` >= current; no new Obsidian-exclusive APIs |
-
-**Deliverable**: A breaking-change verdict: "None detected" or a specific migration plan.
-
-### 3. No Test Errors or Warnings — **Four automated gates (2026-06-01 upgrade)**
+Must all pass sequentially. If any fails, fix root cause (no `@ts-ignore` or `eslint-disable` to silence):
 
 ```bash
-# Gate 1: ESLint (code style + logic rules)
-pnpm lint
-# Required: 0 errors, 0 warnings
-# Checks: no-unused-vars, no-floating-promises, Obsidian rules, etc.
-
-# Gate 2: TypeScript (type safety)
-npx tsc --noEmit
-# Required: 0 errors, 0 warnings
-# Checks: type matching, interface completeness, null/undefined handling
-# Critical: ESLint passing does NOT guarantee type safety, must verify separately
-
-# Gate 3: Tests (functional validation)
-pnpm test
-# Required: all pass, 0 failures
-
-# Gate 4: Build (production compilation)
-pnpm build
-# Required: clean exit
+pnpm lint           # ESLint + Obsidian rules: 0 errors, 0 warnings
+npx tsc --noEmit    # TypeScript: 0 errors (ESLint does NOT check type safety)
+pnpm test           # Vitest: all pass, 0 failures
+pnpm build          # esbuild: clean exit
 ```
 
-**Critical note (Phase 4 lesson):**
-- **ESLint and TypeScript are complementary tools, must BOTH pass**
-- ESLint does NOT check type matching (e.g., missing required interface fields)
-- TypeScript does NOT check code style (e.g., no-floating-promises)
-- **Single tool passing is insufficient, requires dual verification**
+**Dual Gate critical note**: ESLint and TypeScript are complementary — ESLint does not check type matching, TypeScript does not check code style. Single tool passing is insufficient.
 
-If any gate fails: fix the root cause, do NOT add `@ts-ignore` or `eslint-disable`
-to silence it. Re-run all four gates after each fix.
+### Gate 2: No Side Effects — structured review
 
-### ⚠️ Anti-patterns that bypass these checks
+For each modified function, trace:
+- **Call-site audit**: `grep -rn "<fn>" src/` → check arguments, return value, error handling
+- **Data flow**: inputs (origin?) → outputs (destination?) → side effects (file/API/DOM?)
+- **State mutation**: concurrent safety? file overwrite vs append?
+- **Error propagation**: new error paths caught by all callers?
+
+**Deliverable**: 3-5 sentence side-effect assessment.
+
+### Gate 3: No Breaking Changes — structured review
+
+| Dimension | Check | Pass Criteria |
+|-----------|-------|---------------|
+| API Signature | `git diff` + `grep` | All call-sites updated; no new required params without defaults |
+| Settings Schema | `types.ts` + `settings.ts` | New fields have defaults; removed fields ignored |
+| File Format | Generation templates | Old files load without error |
+| Default Behavior | Constructor / config init | Old behavior preserved unless opted in |
+| Command/Setting IDs | `grep` for IDs/keys | IDs unchanged |
+| Obsidian API | `manifest.json` | `minAppVersion` >= current |
+
+**Deliverable**: "None detected" or specific migration plan.
+
+### Gate 4: No Performance Regression — structured procedure
+
+Performance regressions in this plugin have a user-visible cost (the Lint
+phase on a 2000-page vault already runs 60+ seconds). Every change must
+explicitly clear five performance dimensions **within the change scope**.
+
+**Procedure** (do not skip):
+
+1. **Run `simplify` skill** (3 parallel agents: Code Reuse / Code Quality / Efficiency). The Efficiency agent covers most of dimension 1-3 below.
+2. **Run `code-review` skill** (max effort). Catches performance foot-guns specific to this codebase (e.g., N+1 LLM calls, N+1 vault ops).
+3. **Walk through the 5 dimensions below** and produce a written assessment.
+4. **If a dimension shows regression** → propose a mitigation OR escalate to user for sign-off. Do NOT silently accept regressions.
+5. **If a dimension is N/A** (no code in that path) → state "N/A — no [hot path/IO/etc.] in change scope".
+
+#### Five dimensions to evaluate
+
+| # | Dimension | What to check | Project-specific signals |
+|---|-----------|---------------|--------------------------|
+| 1 | **CPU** | New O(n²) loops? Synchronous blocking in hot path? Hot loop allocating? | `O(n²) candidate generation` is the known risk — do not regress it. |
+| 2 | **Memory** | Unbounded arrays / caches? Event listener leaks? Map growing without eviction? | `thinkingControlCache` (Record per baseUrl) is bounded by user count. `Map<string, PageMeta>` in `generateDuplicateCandidates` holds all pages in memory at once. |
+| 3 | **IO** | Redundant file reads? N+1 vault operations? Unnecessary re-serialization? | `vault.read()` per page in loops is expensive. `vault.modify()` per page × N. Index regen on every fix call (was pre-fix). |
+| 4 | **Network** | Extra LLM calls per operation? Redundant API requests? Missing cache reuse? | `OpenAICompatibleClient.createMessage` should cache 400-fallback results (Issue #245). Lint dedup batches by 100 / budget 500 — overshooting is a real risk (Issue #99 followup). |
+| 5 | **Token usage** | Increased prompt size? Unnecessary context in LLM calls? Wrong model? | Ingest prompts are 1-3K tokens. Lint dedup prompt = 100 candidates × ~30 tokens = 3K per batch. Be especially alert to LLM retries (each retry consumes the full prompt again). |
+
+**Deliverable** (mandatory in commit body or PR description):
+```
+## Gate 4: Performance
+
+| Dim | Status | Notes |
+|-----|--------|-------|
+| CPU | ✅ / ⚠️ / N/A | ... |
+| Memory | ✅ / ⚠️ / N/A | ... |
+| IO | ✅ / ⚠️ / N/A | ... |
+| Network | ✅ / ⚠️ / N/A | ... |
+| Token | ✅ / ⚠️ / N/A | ... |
+```
+
+A bare "no regression" without the table is **not acceptable**.
+
+#### Anti-patterns that bypass Gate 4
+
+- "I didn't touch the slow path" — hot paths can be regressed by adjacent changes (e.g., adding an extra vault.read() inside a loop).
+- "simplify didn't flag it" — simplify's Efficiency agent is a starting point, not a complete audit. The 5-dim walkthrough is mandatory.
+- "Premature optimization" — true for speculative work, false when measuring the change you're about to ship.
+
+### Gate 5 + Gate 6
+
+Gate 6 is a **superset of Gates 1-5**: re-verifies everything is still green
+*plus* release-specific hygiene. Automated by the `pre-release-gate`
+skill before user approval (release Step 5c). The skill's REPORT phase
+must include:
+
+- All Gate 1 mechanical checks (lint/tsc/test/build) — re-run, do not trust cached
+- All Gate 4 dimensions marked with explicit ✅ / ⚠️ / N/A based on the change scope
+- Gate 5 docs verification (checklist sweep)
+- Gate 6 release hygiene (TOC anchors, i18n completeness, Contributors policy, git commit format)
+
+If any dimension regresses between commit and release time, Gate 6
+**fails** even if Gate 1-4 passed at commit time.
+
+### ⚠️ Anti-patterns
 
 - "The tests pass, so it's fine" → Tests only cover what you thought to test
 - "It's just a one-line change" → One-line changes are the most dangerous
-- "I'll add tests later" → Tests must accompany the change, not follow it
+- "I'll add tests later" → Tests must accompany the change
 - "The PR review will catch it" → The reviewer has less context than you
 - "ESLint passes, TypeScript errors are fine" → ESLint does NOT check type safety
 
@@ -209,7 +241,7 @@ to silence it. Re-run all four gates after each fix.
 
 ## 📦 Development Workflow
 
-1. `pnpm lint && pnpm test && npx tsc --noEmit && pnpm build` — all four must pass (Three-No Principle)
+1. `pnpm lint && pnpm test && npx tsc --noEmit && pnpm build` — all four must pass (Six-Gate Gate 1)
 
 ### Build modes
 
@@ -327,7 +359,7 @@ Closes #94, #96, #99"
 6. Confirm GREEN    → Run test, verify it passes
 7. Refactor         → Clean up; tests must still pass
 8. 4-Gate verify    → lint + tsc + test + build all clean
-9. Three-No review  → No side effects, no breaking changes, no warnings
+9. Six-Gate review  → side effects + breaking + performance + doc + release
 ```
 
 **When tests are required** (mandatory):
@@ -367,18 +399,18 @@ it('debug', () => {
 
 **Reference**: [[feedback-tdd-standard]] for full TDD standard with examples.
 
-## ✅ Pre-Commit Checklist
+## ✅ Pre-Release Checklist
 
-**四重Gate验证（2026-06-01升级）**：
+**六无门禁 Gate 1 验证：**
 
 ```bash
 pnpm lint           # Gate 1: ESLint - 0 errors, 0 warnings
-npx tsc --noEmit    # Gate 2: TypeScript - 0 errors, 0 warnings
-pnpm test           # Gate 3: Tests - all pass, 0 failures
-pnpm build          # Gate 4: Build - clean exit
+npx tsc --noEmit    # Gate 1: TypeScript - 0 errors, 0 warnings
+pnpm test           # Gate 1: Tests - all pass, 0 failures
+pnpm build          # Gate 1: Build - clean exit
 ```
 
-**重要**：四个命令必须**全部通过**才能提交。单一工具通过不足够（Phase 4教训）。
+**重要**：四个命令必须**全部通过**才能提交。单一工具通过不足够。Gates 2-6 在发布流程中依次验证。
 
 ---
 

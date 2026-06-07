@@ -164,7 +164,7 @@ export class WikiEngine {
       this.lintAbortController.abort();
       const msg = getText(this.settings.language, 'ingestionCancelling');
       new Notice(msg, NOTICE_ABORT);
-      console.debug('Lint cancellation requested');
+      console.debug('[lint] cancellation requested');
     }
   }
 
@@ -173,6 +173,7 @@ export class WikiEngine {
   }
 
   endLintOperation(): void {
+    if (this.lintAbortController === null) return;
     this.lintAbortController = null;
     this.onLintEnd?.();
   }
@@ -868,7 +869,7 @@ export class WikiEngine {
   }
 
   // Issue #103: delete empty stubs without running full lint pipeline
-  async deleteEmptyStubs(wikiFolder: string): Promise<number> {
+  async deleteEmptyStubs(wikiFolder: string): Promise<{ deleted: number; failed: number; errors: string[] }> {
     return this.lintFixer.deleteEmptyStubs(wikiFolder);
   }
 

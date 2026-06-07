@@ -147,7 +147,7 @@ export class LintReportModal extends Modal {
     if (this.counts.pollutedPages > 0 && this.fixCallbacks.onFixPollutedPages) {
       const row = actionSection.createDiv({ attr: { style: 'margin-bottom: 10px;' } });
       const btn = row.createEl('button', {
-        text: `🧹 Fix polluted pages (${this.counts.pollutedPages})`,
+        text: t.lintModalFixPolluted.replace('{count}', String(this.counts.pollutedPages)),
         cls: 'mod-cta',
         attr: { style: 'font-weight: bold;' }
       });

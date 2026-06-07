@@ -2,7 +2,7 @@
 
 > Feature planning and improvement proposals
 
-**Version:** 1.16.2 | **Updated:** 2026-06-07
+**Version:** 1.16.3 | **Updated:** 2026-06-07
 
 ---
 
@@ -59,6 +59,17 @@ Production-critical performance release. Extraction fundamentally rearchitected 
 | Hash-bucket dedup (O(n²)→O(n log n)) | No user-reported perf issue; solve when it hurts |
 | Anthropic prompt caching (Issue #38) | System prompts too small for 1024-token cache threshold |
 
+### Implemented (v1.16.3) — Hotfix P0 Completion
+
+**Key changes:**
+- **Issue #94 (regression fix)**: v1.16.2 wired AbortSignal to fix-runners but the LintReportModal still called `this.close()` on every fix-button click, firing `onClose` → `endLintOperation` and hiding the status bar before the user could cancel. Each fix phase now manages its own lint-operation lifecycle (startLintOperation + endLintOperation wraps the async work) so the status bar persists across fix phases. Modal closes immediately (preserving original UX); the user gets a top-right progress notice and the bottom-right status bar for cancellation.
+- **#243 thinkingControlCache key fix**: extracted `getThinkingControlCacheKey()` helper so read and write paths use the same key. Predefined providers without baseUrl override caused cache writes to use `''` while reads used the predefined URL → permanent cache miss.
+- **#244 deleteEmptyStubs resilience**: now returns `{deleted, failed, errors}` instead of throwing on the first failure. Each file wrapped in try/catch.
+- **#245 thinkingControlSupported cache after fallback**: `OpenAICompatibleClient` sets `thinkingControlSupported = false` after successful 400-fallback to skip the redundant probe-and-fail round-trip.
+- **#248 isThinkingControlError tightening**: now requires both HTTP 400 status AND a rejected-field keyword — was matching any error containing "thinking".
+- **Batch count display in i18n strings**: 3 hardcoded English progress strings replaced with i18n keys in 8 locales.
+- **549/549 tests passing, 4-Gate clean**.
+
 ### Implemented (v1.16.2) — P0 Bug Fix Batch (Lint + Thinking + Stubs)
 
 **Key changes:**
@@ -106,6 +117,10 @@ Production-critical performance release. Extraction fundamentally rearchitected 
 | 6 | Skip unnecessary thinking probe for Anthropic clients | 30min |
 | 7 | Broaden isThinkingControlError detection patterns | 30min |
 | 8 | Fix test name contradicting assertion (said 'omits' but asserts 'sends') | 10min |
+| 9 | **Duplicate detection Tier 1 budget override** (3-tier Plan A + rotation offset for permanent miss prevention) | 4h | User vault analysis 2026-06-07 |
+| 10 | Worker pool for dedup batches (replace sequential round loop with persistent N worker slots) | 2h | User feedback 2026-06-07 |
+| 11 | Lint Notice progress granularity (split L1 vs L3 verify; add orphan detect notice; i18n completeness) | 2h | User feedback 2026-06-07 |
+| 12 | Lint 3 missing cancel paths (polluted pages, delete empty stubs, schema analyze — none wire signal currently) | 2h | User audit 2026-06-07 |
 
 **P3 — Deferred (high complexity, low ROI)**
 | # | Item | Effort | Reason |

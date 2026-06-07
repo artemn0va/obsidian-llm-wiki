@@ -106,6 +106,10 @@ Production-critical performance release. Extraction fundamentally rearchitected 
 | 6 | Skip unnecessary thinking probe for Anthropic clients | 30min |
 | 7 | Broaden isThinkingControlError detection patterns | 30min |
 | 8 | Fix test name contradicting assertion (said 'omits' but asserts 'sends') | 10min |
+| 9 | **Duplicate detection Tier 1 budget override** (3-tier Plan A + rotation offset for permanent miss prevention) | 4h | User vault analysis 2026-06-07 |
+| 10 | Worker pool for dedup batches (replace sequential round loop with persistent N worker slots) | 2h | User feedback 2026-06-07 |
+| 11 | Lint Notice progress granularity (split L1 vs L3 verify; add orphan detect notice; i18n completeness) | 2h | User feedback 2026-06-07 |
+| 12 | Lint 3 missing cancel paths (polluted pages, delete empty stubs, schema analyze — none wire signal currently) | 2h | User audit 2026-06-07 |
 
 **P3 — Deferred (high complexity, low ROI)**
 | # | Item | Effort | Reason |

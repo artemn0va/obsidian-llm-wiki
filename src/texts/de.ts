@@ -409,6 +409,7 @@ export const DE_TEXTS = {
 
     // Lint Report Modal
     lintModalActionsTitle: 'Behebungsvorschläge (benötigt LLM-Tokens):',
+    lintLogReference: 'Vollständiger Bericht in log.md gespeichert',
     lintModalFixDeadLinks: 'Defekte Links beheben ({count})',
     lintModalExpandEmpty: 'Leere Seiten erweitern ({count})',
     lintModalDeleteEmpty: 'Leere Stubs löschen ({count})',   

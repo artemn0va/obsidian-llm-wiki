@@ -96,7 +96,9 @@ Output ONLY the body content (no frontmatter):
 [Updated concept links]
 
 ## Mentions in Source
-[ALL mentions — existing preserved, new appended with attribution. Verbatim quotes in original language]`,
+[ALL mentions — existing preserved with their source attribution blocks, new appended under a new source block:
+> **Source: [[source-name]]**
+> - "Verbatim quote in original language"]`,
 
   mergeConceptPage: `You are a Wiki editor performing intelligent content integration. Merge new source information into an existing concept page following the schema-defined structure.
 
@@ -147,7 +149,9 @@ Output ONLY the body content (no frontmatter):
 [Updated entity links]
 
 ## Mentions in Source
-[ALL mentions — existing preserved, new appended. Verbatim quotes in original language]`,
+[ALL mentions — existing preserved with their source attribution blocks, new appended under a new source block:
+> **Source: [[source-name]]**
+> - "Verbatim quote in original language"]`,
 
   // Minimal append mode for reviewed pages
   appendToReviewedPage: `You are a Wiki editor adding new information to a user-reviewed page. The existing content is AUTHORITATIVE and must be preserved exactly.

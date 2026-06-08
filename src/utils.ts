@@ -695,6 +695,8 @@ export function enforceFrontmatterConstraints(content: string, pageType: 'entity
   const fmText = content.substring(3, fmEnd);
   let body = content.substring(fmEnd + 5);
 
+  const today = new Date().toISOString().split('T')[0];
+
   // Parse existing frontmatter
   const lines = fmText.split('\n');
   const newLines: string[] = [];
@@ -704,10 +706,20 @@ export function enforceFrontmatterConstraints(content: string, pageType: 'entity
   let foundTags = false;
   let foundAliases = false;
   let collectedAliases: string[] = [];
+  let createdValue = '';
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
     if (!line) continue;
+
+    // Strip LLM-hallucinated dates — dates are programmatic, not generative
+    if (line.startsWith('created:')) {
+      createdValue = line.substring(8).trim();
+      continue;
+    }
+    if (line.startsWith('updated:')) {
+      continue;
+    }
 
     if (line.startsWith('type:')) {
       foundType = true;
@@ -770,9 +782,14 @@ export function enforceFrontmatterConstraints(content: string, pageType: 'entity
     result.push(typeLine);
   }
 
-  // Add other fields (preserving order)
+  // Programmatic date fields — never trust LLM-generated dates
+  result.push(`created: ${createdValue || today}`);
+  result.push(`updated: ${today}`);
+
+  // Add other fields (preserving order), skipping any stale date lines
   for (const line of newLines) {
-    if (!line.startsWith('type:') && !line.startsWith('tags:') && !line.startsWith('aliases:')) {
+    if (!line.startsWith('type:') && !line.startsWith('tags:') && !line.startsWith('aliases:') &&
+        !line.startsWith('created:') && !line.startsWith('updated:')) {
       result.push(line);
     }
   }
@@ -853,15 +870,36 @@ export function formatRateLimitNotice(
 }
 
 // Truncate mentions to a reasonable token budget for merge/create prompts.
-export function truncateMentions(mentions: string[] | undefined, maxChars = 500): string {
+export function truncateMentions(
+  mentions: string[] | undefined,
+  maxChars = 500,
+  sourcePath?: string
+): string {
   if (!mentions || mentions.length === 0) return '';
   let result = '';
-  for (const m of mentions) {
-    if (result.length + m.length > maxChars) {
-      if (result.length > 0) break;
-      return m.substring(0, maxChars);
+  if (sourcePath) {
+    // Strip .md from left path; display name is the basename without extension
+    const leftPath = sourcePath.replace(/\.md$/, '');
+    const displayName = leftPath.split('/').pop() || leftPath;
+    for (const m of mentions) {
+      const line = `- ${m} — [[${leftPath}|${displayName}]]`;
+      if (result.length + line.length + 1 > maxChars) {
+        if (result.length > 0) break;
+        const head = Math.max(0, maxChars - ` — [[${leftPath}|${displayName}]]`.length - 3);
+        return `- ${m.substring(0, head)}... — [[${leftPath}|${displayName}]]`;
+      }
+      result += (result ? '\n' : '') + line;
     }
-    result += (result ? '\n' : '') + m;
+    return result;
+  }
+  // No source path — plain list
+  for (const m of mentions) {
+    const line = `- ${m}`;
+    if (result.length + line.length + 1 > maxChars) {
+      if (result.length > 0) break;
+      return `- ${m.substring(0, Math.max(0, maxChars - 3))}...`;
+    }
+    result += (result ? '\n' : '') + line;
   }
   return result;
 }

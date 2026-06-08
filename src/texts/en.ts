@@ -415,6 +415,7 @@ export const EN_TEXTS = {
 
     // Lint Report Modal
     lintModalActionsTitle: 'Fix suggestions (requires LLM tokens):',
+    lintLogReference: 'Full report saved to log.md',
     lintModalFixDeadLinks: 'Fix dead links ({count})',
     lintModalExpandEmpty: 'Expand empty pages ({count})',
     lintModalDeleteEmpty: 'Delete empty stubs ({count})',   

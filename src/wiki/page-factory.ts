@@ -339,7 +339,7 @@ export class PageFactory {
       .replace('{{concept_summary}}', info.summary)
       .replace('{{extraction_aliases}}', info.aliases?.length
         ? `[${info.aliases.join(', ')}]` : 'None')
-      .replace('{{mentions}}', truncateMentions(info.mentions_in_source) || 'No specific mentions')
+      .replace('{{mentions}}', truncateMentions(info.mentions_in_source, 500, sourceFile.path) || 'No specific mentions')
       .replace('{{related_entities}}', info.related_entities?.join(', ') || 'No related entities')
       .replace('{{related_concepts}}', info.related_concepts?.join(', ') || 'No related concepts')
       .replace('{{existing_pages}}', await this.buildPagesListForPrompt(extraPagePaths))
@@ -389,7 +389,7 @@ export class PageFactory {
       .replace('{{new_source}}', sourceFile.basename)
       .replace('{{entity_summary}}', info.summary)
       .replace('{{concept_summary}}', info.summary)
-      .replace('{{mentions}}', truncateMentions(info.mentions_in_source))
+      .replace('{{mentions}}', truncateMentions(info.mentions_in_source, 500, sourceFile.path))
       .replace('{{related_entities}}', info.related_entities?.join(', ') || '')
       .replace('{{related_concepts}}', info.related_concepts?.join(', ') || '')
       .replace('{{key_details}}', info.mentions_in_source?.slice(0, 2).join('; ') || '')
@@ -438,7 +438,7 @@ export class PageFactory {
       .replace('{{existing_body}}', existingBody)
       .replace('{{new_source}}', sourceFile.basename)
       .replace('{{entity_summary}}', info.summary)
-      .replace('{{mentions}}', truncateMentions(info.mentions_in_source))
+      .replace('{{mentions}}', truncateMentions(info.mentions_in_source, 500, sourceFile.path))
       .replace('{{key_details}}', info.mentions_in_source?.slice(0, 2).join('; ') || '')
       .replace('{{constraints}}', UNIVERSAL_LINK_CONSTRAINTS);
 

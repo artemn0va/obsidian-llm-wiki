@@ -405,6 +405,7 @@ export const ZH_TEXTS = {
 
     // 维护报告弹窗
     lintModalActionsTitle: '修复建议（需消耗LLM Token）：',
+    lintLogReference: '完整报告已保存至 log.md',
     lintModalFixDeadLinks: '修复断链（{count}）',
     lintModalExpandEmpty: '扩充空洞页面（{count}）',
     lintModalDeleteEmpty: '删除空洞页面（{count}）',   

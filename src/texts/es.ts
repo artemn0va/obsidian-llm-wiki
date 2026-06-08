@@ -409,6 +409,7 @@ export const ES_TEXTS = {
 
     // Lint Report Modal
     lintModalActionsTitle: 'Sugerencias de corrección (requiere tokens LLM):',
+    lintLogReference: 'Informe completo guardado en log.md',
     lintModalFixDeadLinks: 'Corregir enlaces rotos ({count})',
     lintModalExpandEmpty: 'Expandir páginas vacías ({count})',
     lintModalDeleteEmpty: 'Eliminar stubs vacíos ({count})',   

@@ -409,6 +409,7 @@ export const JA_TEXTS = {
 
     // Lint Report Modal
     lintModalActionsTitle: '修復提案（LLMトークンを消費）：',
+    lintLogReference: '完全なレポートが log.md に保存されました',
     lintModalFixDeadLinks: 'リンク切れを修復（{count}件）',
     lintModalExpandEmpty: '空ページを拡充（{count}件）',
     lintModalDeleteEmpty: '空のスタブを削除（{count}件）',   

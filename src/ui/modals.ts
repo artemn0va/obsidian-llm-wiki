@@ -114,6 +114,14 @@ export class LintReportModal extends Modal {
     });
     void MarkdownRenderer.render(this.app, this.report, reportDiv, '', this.renderComponent);
 
+    // Reference to persisted log entry
+    if (t.lintLogReference) {
+      contentEl.createEl('p', {
+        text: `📋 ${t.lintLogReference}`,
+        attr: { style: 'font-size: 0.85em; color: var(--text-muted); margin: 4px 0 0 0;' }
+      });
+    }
+
     // Action buttons — organized by operation logic
     // Layer 1: Pre-flight operations (improve detection quality)
     // Layer 2: Root cause fixes → downstream fixes (causality order)

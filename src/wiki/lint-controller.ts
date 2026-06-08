@@ -837,6 +837,8 @@ export async function runLintWiki(ctx: LintContext, signal?: AbortSignal): Promi
     }
 
     stageNotice.hide();
+    // Persist the full lint report to log.md before showing the modal
+    await ctx.wikiEngine.logLintFix(t.lintReportTitle, fullReport);
     new LintReportModal(ctx.app, fullReport, fixCallbacks, counts, ctx.settings.language).open();
     await ctx.wikiEngine.generateIndexFromEngine();
     new Notice(TEXTS[ctx.settings.language].lintWikiComplete);

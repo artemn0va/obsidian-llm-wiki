@@ -410,6 +410,7 @@ export const KO_TEXTS = {
 
     // Lint Report Modal
     lintModalActionsTitle: '수정 제안 (LLM 토큰 필요):',
+    lintLogReference: '전체 보고서가 log.md에 저장되었습니다',
     lintModalFixDeadLinks: '깨진 링크 수정 ({count})',
     lintModalExpandEmpty: '빈 페이지 확장 ({count})',
     lintModalDeleteEmpty: '빈 스텁 삭제 ({count})',   

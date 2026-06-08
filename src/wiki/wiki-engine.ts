@@ -1021,9 +1021,12 @@ export class WikiEngine {
   /** Append a lint-fix entry to the operation log. */
   async logLintFix(operation: string, details: string): Promise<void> {
     const logPath = `${this.settings.wikiFolder}/log.md`;
-    const date = new Date().toISOString().split('T')[0];
+    // Use minute-precision timestamp so multiple entries on the same day are distinguishable.
+    const now = new Date();
+    const date = now.toISOString().split('T')[0];
+    const time = now.toTimeString().slice(0, 5); // HH:MM
     const lang = this.settings.wikiLanguage || 'en';
-    const entry = `\n\n## [${date}] Lint Fix: ${operation}\n\n${details}\n`;
+    const entry = `\n\n## [${date} ${time}] ${operation}\n\n${details}\n`;
     const existingLog = await this.tryReadFile(logPath) || `# Wiki ${lang === 'zh' ? '操作日志' : 'Operation Log'}\n\n`;
     await this.createOrUpdateFile(logPath, existingLog + entry);
   }

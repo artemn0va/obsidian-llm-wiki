@@ -68,7 +68,8 @@ aliases: ["Alternative name or translation"]  # REQUIRED: at least 1 alias, must
 [Reference related concepts using full paths from the list above]
 
 ## {{section_mentions_in_source}}
-- [Verbatim quote from source, preserved in original language. Translation optional in parentheses]
+[Each verbatim quote as an academic-footnote style entry. The provided mentions in the input already include the source wiki-link — keep them as-is. If you need to add more quotes, use the same format:
+- "Verbatim quote in original language (optional translation)" — [[source-name]]]
 
 ---`,
 
@@ -142,7 +143,8 @@ aliases: ["Alternative name or translation"]  # REQUIRED: at least 1 alias, must
 [Reference related entities using full paths from the list above]
 
 ## {{section_mentions_in_source}}
-- [Verbatim quote from source, preserved in original language. Translation optional in parentheses]
+[Each verbatim quote as an academic-footnote style entry. The provided mentions in the input already include the source wiki-link — keep them as-is. If you need to add more quotes, use the same format:
+- "Verbatim quote in original language (optional translation)" — [[source-name]]]
 
 ---`,
 

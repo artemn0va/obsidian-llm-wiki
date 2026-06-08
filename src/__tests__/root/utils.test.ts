@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { slugify, computeSlug, parseFrontmatter, detectRateLimitFailures, formatRateLimitNotice, cleanMarkdownResponse, enforceFrontmatterConstraints, parseJsonResponse, mergeFrontmatter, preserveFrontmatterReviewTag, extractBody, getText, filterRedundantAliases, coerceToArray } from '../../utils';
+import { slugify, computeSlug, parseFrontmatter, detectRateLimitFailures, formatRateLimitNotice, cleanMarkdownResponse, enforceFrontmatterConstraints, parseJsonResponse, mergeFrontmatter, preserveFrontmatterReviewTag, extractBody, getText, filterRedundantAliases, coerceToArray, truncateMentions } from '../../utils';
 import { getGranularityInstruction, getGranularityFixLimits, appendGranularityToPrompt } from '../../wiki/system-prompts';
 import { LLMWikiSettings } from '../../types';
 
@@ -508,11 +508,13 @@ describe('enforceFrontmatterConstraints', () => {
     expect(result).toContain('reviewed: true');
   });
 
-  it('preserves created and updated dates', () => {
+  it('preserves created but forces updated to today', () => {
     const input = '---\ntype: entity\ncreated: 2026-01-01\nupdated: 2026-05-18\n---\n\nBody';
     const result = enforceFrontmatterConstraints(input, 'entity');
+    const today = new Date().toISOString().split('T')[0];
     expect(result).toContain('created: 2026-01-01');
-    expect(result).toContain('updated: 2026-05-18');
+    expect(result).toContain(`updated: ${today}`);
+    expect(result).not.toContain('updated: 2026-05-18');
   });
 
   it('ensures blank line before body', () => {
@@ -532,6 +534,23 @@ describe('enforceFrontmatterConstraints', () => {
     const input = '---\ntype: entity\ntags: [invalid_tag]\n---\n\nBody';
     const result = enforceFrontmatterConstraints(input, 'entity');
     expect(result).toContain('tags: [other]');
+  });
+
+  it('preserves existing created but forces updated to today', () => {
+    const input = '---\ntype: entity\ncreated: 2025-03-20\nupdated: 2024-12-01\n---\n\nBody';
+    const result = enforceFrontmatterConstraints(input, 'entity');
+    const today = new Date().toISOString().split('T')[0];
+    expect(result).toContain('created: 2025-03-20');
+    expect(result).toContain(`updated: ${today}`);
+    expect(result).not.toContain('updated: 2024-12-01');
+  });
+
+  it('adds created/updated when missing from frontmatter', () => {
+    const input = '---\ntype: entity\n---\n\nBody';
+    const result = enforceFrontmatterConstraints(input, 'entity');
+    const today = new Date().toISOString().split('T')[0];
+    expect(result).toContain(`created: ${today}`);
+    expect(result).toContain(`updated: ${today}`);
   });
 });
 
@@ -1158,5 +1177,52 @@ describe('coerceToArray', () => {
 
   it('preserves array contents', () => {
     expect(coerceToArray<string>(['a', 'b'])).toEqual(['a', 'b']);
+  });
+});
+
+describe('truncateMentions', () => {
+  it('returns empty string for undefined or empty input', () => {
+    expect(truncateMentions(undefined)).toBe('');
+    expect(truncateMentions([])).toBe('');
+  });
+
+  it('formats each mention as footnote-style line with source link', () => {
+    const result = truncateMentions(['老子是道家创始人。'], 500, 'sources/史记_司马迁.md');
+    expect(result).toBe('- 老子是道家创始人。 — [[sources/史记_司马迁|史记_司马迁]]');
+  });
+
+  it('uses plain list when no source is provided', () => {
+    const result = truncateMentions(['test quote']);
+    expect(result).toBe('- test quote');
+  });
+
+  it('joins multiple mentions with newlines', () => {
+    const result = truncateMentions(['first', 'second'], 500, 'sources/test.md');
+    expect(result).toContain('- first — [[sources/test|test]]');
+    expect(result).toContain('- second — [[sources/test|test]]');
+    expect(result.split('\n')).toHaveLength(2);
+  });
+
+  it('truncates first mention when it exceeds maxChars', () => {
+    const longQuote = 'A'.repeat(1000);
+    const result = truncateMentions([longQuote], 100, 'sources/x.md');
+    // The link itself takes ~30 chars; we allow a small overshoot for the ellipsis
+    expect(result.length).toBeLessThanOrEqual(110);
+    expect(result).toContain('[[sources/x|x]]');
+    expect(result).toContain('...');
+  });
+
+  it('stops adding mentions when adding next would exceed maxChars', () => {
+    const result = truncateMentions(['quote1', 'quote2', 'quote3'], 50, 'sources/s.md');
+    // 50-char budget; first entry takes ~30 chars; subsequent entries would push over
+    const lines = result.split('\n');
+    expect(lines.length).toBeLessThan(3);
+  });
+
+  it('strips .md from left path of wiki link', () => {
+    const result = truncateMentions(['q'], 500, 'sources/史记_〔汉〕司马迁.md');
+    // The LEFT path (before |) is the path without .md; RIGHT is display name (also without .md)
+    expect(result).toContain('[[sources/史记_〔汉〕司马迁|史记_〔汉〕司马迁]]');
+    expect(result).not.toContain('.md|');
   });
 });

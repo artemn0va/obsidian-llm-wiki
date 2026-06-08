@@ -115,7 +115,7 @@ export const ZH_TEXTS = {
     maxConversationHistoryDesc: '限制对话消息数，避免超出LLM token限制',
     maxConversationHistoryHint: '推荐：不超过50轮',
     numberRangeValidation: '请输入1-50之间的数字',
-    numberRangeClamped: '数值超出范围（1-300），已自动设定为 {}',
+    numberRangeClamped: '数值超出范围（1-500），已自动设定为 {}',
 
     // Query Modal UI
     queryModalTitle: 'Query Wiki - 对话式查询',
@@ -247,11 +247,11 @@ export const ZH_TEXTS = {
     extractionGranularityStandard: '标准 — 日常笔记（≤50个）',
     extractionGranularityCoarse: '粗放 — 快速概览（≤10个）',
     extractionGranularityMinimal: '极简 — 批量100+文件（≤5个）',
-    extractionGranularityCustom: '自定义 — 自行设定上限（1~300）',
+    extractionGranularityCustom: '自定义 — 自行设定上限（1~500）',
     customEntityLimitName: '自定义实体上限',
-    customEntityLimitDesc: '每篇源文件最多提取的实体数量（1-300）',
+    customEntityLimitDesc: '每篇源文件最多提取的实体数量（1-500）',
     customConceptLimitName: '自定义概念上限',
-    customConceptLimitDesc: '每篇源文件最多提取的概念数量（1-300）',
+    customConceptLimitDesc: '每篇源文件最多提取的概念数量（1-500）',
 
     // 摄入加速
     accelerationSectionTitle: '摄入加速',

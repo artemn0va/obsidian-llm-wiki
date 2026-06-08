@@ -7,8 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.17.0] - 2026-06-08
+
+### Added
+- **Long-document ingestion now works end-to-end.** Previously, sources over ~200KB were unprocessable due to a hardcoded batch size of 15 items in custom granularity and a `max_tokens` cap that truncated large responses. The same 619KB Chinese source (史记 / Shiji) that previously failed after 3 minutes and 15 items now completes fully, extracting hundreds of entities and concepts. Key enablers:
+  - Custom granularity now dynamically scales `initialBatchSize` and `maxBatchesBase` from the user's `customEntityLimit` + `customConceptLimit` (was hardcoded to 5/1, capped at 15 items). For caps of 300+300: batchSize=50, maxBatchesBase=12, up to 36 effective batches.
+  - `max_tokens` now scales with batch size (base: 16K → 20K for 50-item batches; retry cap: 60K), avoiding the silent truncation that previously caused later batches to fail with malformed JSON.
+  - Truncation retry: if a non-first batch's response is truncated, the system halves the batch size and retries once instead of aborting the whole ingestion.
+- **Source pages inherit tags from source note frontmatter (Issue #90).** The LLM used to inject arbitrary concept names (e.g. `Alzheimer-Demenz`, `Neuroprotektion`) into source pages, polluting the user's tag vocabulary. New `extractSourceTags()` pure helper reads the source note's frontmatter tags and passes them directly to the summary-page template, falling back to LLM-derived names only when the source has no tags.
+- **Default Schema documents the new contracts.** Three new sections were added to the default `wiki-folder/schema/config.md`:
+  - `## Source Page Template` — mandates tag inheritance from source note, no LLM-derived tags.
+  - `## Date Fields` — documents that `created`/`updated` are filled programmatically (the LLM may produce wrong dates; the system overrides them).
+  - `## Mentions Format` — academic-footnote style: `- "verbatim quote (optional translation)" — [[source-path|display-name]]`.
+  Existing user schema files are NOT overwritten; only `regenerateDefaultSchema()` writes the new template.
+- **Lint report persistence with minute-precision timestamps.** Lint now writes the full report to `wiki-folder/log.md` before showing the modal, with a `📋 Full report saved to log.md` hint. Log entries have minute-precision timestamps (e.g. `[2026-06-08 14:35]`) so multiple Lint runs on the same day are distinguishable. The Lint Report Modal also points to the persisted log.
+- **Custom granularity upper bound raised from 300 to 500** to support professional knowledge bases (legal, medical, deep research). 8-language i18n text updated accordingly.
+
+### Changed
+- **Mentions are now footnote-style with explicit source attribution.** The "Mentions in Source" section in entity/concept pages now renders each verbatim quote as `- "quote" — [[source-path|display-name]]`, replacing the previous free-form block of untraced quotes. The source link makes every quote traceable to its origin, so future page merges can never mix up which quote came from which source.
+- **Setting description for custom entity/concept limit now reads "1-500"** (was "1-300") in all 8 languages to match the new hard cap.
+- **Test connection no longer persists broken config on failure.** When "Test Connection" fails, the previously-saved settings are restored and a 2nd saveData() call re-persists the original. Prevents the user from accidentally saving settings that the test proved broken.
+
 ### Fixed
-- **Schema analyze cancel wiring** (ROADMAP v1.17.0 P1 #1): Extracted `runSchemaAnalyze()` to `src/wiki/schema-analyze.ts` with proper `startLintOperation` / `endLintOperation` lifecycle. The status bar's "click to cancel" now works during "Suggest Schema Updates" (both command palette and Lint Report Modal entry points). User-initiated cancel suppresses stale result Notice; LLM errors during cancel are silent. 9 unit tests in `src/__tests__/schema-analyze.test.ts`.
+- **Provider settings no longer fail to propagate.** Switching Provider/API Key/Model in Settings used to fail to reach the wiki engine, so the next Ingest/Lint/Query would silently use the old provider. Root cause: `settings.ts` was replacing `plugin.settings` with a NEW object (from tempSettings spread), but the `EngineContext` passed to all submodules captured the OLD reference at construction time. Fix: `WikiEngine.updateSettings()` now keeps the EngineContext.settings reference in sync, and all settings paths (saveSettings, test connection, language switch) call it.
+- **LLM-hallucinated dates in frontmatter are now stripped.** The LLM sometimes invents wrong dates (e.g. a 2025 date on a 2026-06-08 ingestion). `enforceFrontmatterConstraints` now strips LLM-generated `created`/`updated` lines and replaces them with programmatic values: `created` is preserved on merge (older value kept), `updated` is always set to today. 3 new TDD tests cover: preserves created, forces updated, adds when missing.
+- **Long-source Notice no longer blocks the UI.** Was `new Notice(..., 0)` (persistent, never auto-hides). Now `NOTICE_NORMAL` (5-second auto-hide) so the user isn't stuck with a forever-visible notice.
+- **Lint dedup progress "1/1/1" display bug.** The progress template was `批次 {current}/{total}` but `progressLabel` was already passed `1/1` (with the total), causing duplication. Removed the extra `/{total}` substitution.
+- **Folder ingest `setDoneCallback` not restored on early return.** If `ingestCount === 0` (no new files), the method returned early without restoring the callback, so subsequent folder ingests used a wrong callback. Now restored before the early return.
+- **5 audit-discovered issues** (test settings pollution on connection failure; custom-scaling edge cases; repair-call max_tokens insufficient; constant duplication; comment misleading). All resolved with explicit Gate-4 performance verification.
+
+**Closes:** #90 — Source pages now inherit tags from the source note frontmatter instead of LLM-generated concept names.
+- **Small Schema / prompt / i18n cleanups** (new `lintLogReference` i18n key in 8 languages; prompt updates for the new mentions format; pure helper extractions: `extractSourceTags`, `truncateMentions` with `sourcePath` parameter).
+
+### Tests
+- 38 new tests added (549 → 587): 7 in `batch-limits.test.ts`, 6 in `truncateMentions` block of `utils.test.ts`, 3 in `enforceFrontmatterConstraints` block, 6 in `extractSourceTags` block, 1 in `default-schema.test.ts`, plus updates across reorganized test folders. Test suite: 28 files, 587 tests, 0 regressions.
 
 ## [1.16.3] - 2026-06-07
 

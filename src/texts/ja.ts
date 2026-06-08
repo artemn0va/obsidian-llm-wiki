@@ -115,7 +115,7 @@ export const JA_TEXTS = {
     maxConversationHistoryDesc: 'トークンオーバーフローを防ぐため会話メッセージ数を制限します',
     maxConversationHistoryHint: '推奨：50ラウンド以内',
     numberRangeValidation: '1〜50の数値を入力してください',
-    numberRangeClamped: '値が範囲外です（1-300）、自動的に {} に設定されました',
+    numberRangeClamped: '値が範囲外です（1-500）、自動的に {} に設定されました',
     // Query Modal UI
     queryModalTitle: 'Query Wiki - 対話型問い合わせ',
     queryModalPlaceholder: '質問を入力...',
@@ -246,11 +246,11 @@ export const JA_TEXTS = {
     extractionGranularityStandard: '標準 — 日常ノート（≤50件）',
     extractionGranularityCoarse: '粗め — 概要（≤10件）',
     extractionGranularityMinimal: '最小 — 100+ファイル一括処理（≤5件）',
-    extractionGranularityCustom: 'カスタム — 上限を独自設定（1~300）',
+    extractionGranularityCustom: 'カスタム — 上限を独自設定（1~500）',
     customEntityLimitName: 'カスタムエンティティ上限',
-    customEntityLimitDesc: 'ソースファイルごとの最大エンティティ抽出数（1-300）',
+    customEntityLimitDesc: 'ソースファイルごとの最大エンティティ抽出数（1-500）',
     customConceptLimitName: 'カスタム概念上限',
-    customConceptLimitDesc: 'ソースファイルごとの最大概念抽出数（1-300）',
+    customConceptLimitDesc: 'ソースファイルごとの最大概念抽出数（1-500）',
 
     // Ingestion Acceleration
     accelerationSectionTitle: '取り込み高速化',

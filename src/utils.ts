@@ -904,6 +904,24 @@ export function truncateMentions(
   return result;
 }
 
+/**
+ * Extract tags from a source note's frontmatter.
+ * Used by summary page generation to preserve user-defined tags instead of
+ * overwriting with LLM-derived concept names (Issue #90).
+ *
+ * @param content - Raw file content with optional YAML frontmatter
+ * @returns Array of tag strings (trimmed, non-empty); [] if no frontmatter or no tags
+ */
+export function extractSourceTags(content: string): string[] {
+  const fm = parseFrontmatter(content);
+  if (!fm) return [];
+  const raw = fm.tags;
+  if (Array.isArray(raw)) {
+    return raw.map(t => String(t).trim()).filter(t => t.length > 0);
+  }
+  return [];
+}
+
 // ── Index parsing & local keyword matching ─────────────────────
 
 interface PageRef {

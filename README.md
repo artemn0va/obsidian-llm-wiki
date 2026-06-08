@@ -25,7 +25,7 @@
   - [🔑 Configure an LLM Provider](#-configure-an-llm-provider)
   - [🎮 Usage](#-usage)
   - [⚠️ Upgrading from an Older Version?](#️-upgrading-from-an-older-version)
-- [⚡ What's New in v1.16.3](#-whats-new-in-v1163)
+- [⚡ What's New in v1.17.0](#-whats-new-in-v1170)
 - [✨ Features](#-features)
   - [📊 Knowledge Quality](#-knowledge-quality)
   - [🛠️ Maintenance](#️-maintenance)
@@ -186,81 +186,30 @@ Settings → **LLM Configuration**:
 
 ---
 
-## ⚡ What's New in v1.16.3
+## ⚡ What's New in v1.17.0
 
-This is a **hotfix release** that completes the v1.16.2 P0 bug-fix batch. The Lint cancel status-bar fix from v1.16.2 was incomplete (the modal closed immediately after clicking a fix button, hiding the status bar before the user could cancel), and five small cleanup items from the v1.16.2 review are now shipped. **Zero breaking changes, zero reconfiguration needed.**
+This is a **major quality release** with significant ingestion improvements. Closes one tracked issue (#90). The biggest change: long documents that previously couldn't be ingested at all now work, and ingested content carries much richer source attribution. **Zero breaking changes, zero reconfiguration needed.**
 
-**Key Fixes:**
+**Highlights:**
 
-- **Lint cancel status bar now actually works (Issue #94).** v1.16.2 wired the AbortSignal to the fix-runners but the modal still closed on button click — firing `onClose` → `endLintOperation` and hiding the status bar before the user could cancel. The fix gives each fix phase its own lint-operation lifecycle: `startLintOperation` runs when you click a fix button, `endLintOperation` runs when the fix finishes. Modal closes immediately (preserving the original UX); the user gets a top-right progress notice and the bottom-right status bar stays visible throughout the fix — click it to cancel.
+- **Long-document ingestion now actually works.** A 619KB Chinese source like 史记 (Shiji) used to be unprocessable — custom-granularity batch size was hardcoded to a maximum of 15 items regardless of how many you asked for, and the LLM's `max_tokens` was capped below the response length needed for large batches. Now `customEntityLimit` and `customConceptLimit` actually scale the batch pipeline (1-500, default 5 each), and `max_tokens` dynamically scales with batch size (20K-60K) with automatic batch-size halving on truncation. The same long source that previously failed after 3 minutes and 15 items now completes fully and extracts hundreds of entities + concepts from the same document.
 
-- **Duplicate-check progress count now matches the console (Issue #94 followup).** Was showing "1/4" (outer round) instead of "1-4/16" (inner batch range). Fixed so the Notice and console log stay in sync — no more confusion about progress.
+- **Mentions carry source attribution (footnote-style).** The "Mentions in Source" section in entity and concept pages used to be a free-form block of untraceable quotes. Now each quote is rendered as an academic-style footnote: `- "verbatim quote in original language (optional translation)" — [[source-path|display-name]]`. Each quote is linkable to its origin, so future page merges can never mix up which quote came from which source.
 
-- **thinkingControlCache key fix (Issue #243).** Predefined providers without a baseUrl override caused cache writes to use an empty key while reads used the predefined URL — the cache would forever-miss, triggering a wasted 400 round-trip on every call. Read and write paths now use the same `getThinkingControlCacheKey()` helper.
+- **Custom granularity upper bound raised from 300 to 500** to support professional knowledge bases (legal, medical, deep-research).
 
-- **deleteEmptyStubs is now resilient (Issue #244).** A single vault read or deleteFile failure no longer aborts the whole loop. Each file is independently try/caught, and the user gets a clear Notice showing deleted/failed counts.
+**Other Fixes & Improvements:**
 
-- **Fallback-after-thinking-control caches the negative result (Issue #245).** `OpenAICompatibleClient` now sets `thinkingControlSupported = false` after a successful 400-fallback, so subsequent calls to the same baseUrl skip the redundant probe-and-fail round-trip.
+- **Provider settings now sync everywhere.** Switching Provider/API Key/Model in Settings used to fail to propagate to the wiki engine, so your next Ingest/Lint/Query would silently use the old provider. Fixed via a new `wikiEngine.updateSettings()` that keeps the EngineContext in sync with the live settings. The Test Connection button also no longer persists broken config on failure.
+- **Dates are now programmatic, not LLM-generated.** LLM-hallucinated `created`/`updated` dates in source pages (e.g. a 2025 date on a 2026-06-08 ingestion) are stripped and replaced by the system. `created` is preserved on merge; `updated` is always set to today.
+- **Lint reports are now persisted to log.md** with minute-precision timestamps so multiple same-day Lint runs are distinguishable. The Lint Report Modal shows a `📋 Full report saved to log.md` hint pointing to the persisted log entry.
+- **Source pages inherit tags from the source note frontmatter (Issue #90).** Previously the LLM would inject arbitrary concept names (e.g. Alzheimer-Demenz, Neuroprotektion) into source pages, polluting the user's tag vocabulary. Now `tags` is programmatically inherited from the source note's frontmatter.
+- **Test connection restores live settings on failure.** A failed Test Connection used to overwrite your saved config with the broken test settings. Now the previous settings are restored if the test fails.
+- **Folder ingest callback restored on early return.** The `setDoneCallback` is now properly restored when folder ingest exits early with no new files to process, so subsequent ingests use the correct callback.
 
-- **i18n cleanup (Issue #94 followup + #248):** 3 hardcoded English progress strings replaced with proper i18n keys (`lintCheckingDuplicatesProgress`, `lintFixingPolluted`, `lintModalFixPolluted`) in 8 locales. The thinking-control error detector now requires both an HTTP 400 status AND a rejected-field keyword — was matching any error containing "thinking", causing false-positive fallbacks.
+**We strongly recommend all users upgrade to this version.** Long-document ingestion is the headline improvement — if you've ever had a large source file fail with a 400 error or extract only a handful of items, this release fixes that. Source attribution and date integrity improvements apply to every page you generate.
 
-**Upgrading from an older version?** Zero breaking changes, zero reconfiguration. Existing wikis, settings, and workflows are preserved.
-
-**We strongly recommend all users upgrade to this version** — the Lint cancel fix completes the cancel-UX story, and the cache and resilience fixes are quietly running on every Lint invocation.
-
-### 📊 Knowledge Quality
-
-- **🔍 Entity/Concept Extraction** — LLM extracts entities (people, orgs, products, events) and concepts (theories, methods, terms) from your notes with flexible extraction granularity (Minimal~5 items, Coarse~10, Standard~50, Fine~100, Custom 1–300) to balance analysis depth vs. API cost
-- **🏷️ Mandatory Page Aliases** — Every generated page includes at least 1 alias (translation, acronym, alternate name), enabling cross-language duplicate detection
-- **🔄 Duplicate Detection & Merge** — Semantic tiering catches true duplicates (cross-language translations, abbreviations, spelling variants); intelligent LLM merge fuses content and preserves aliases
-- **🧩 Smart Knowledge Fusion** — Multi-source updates merge new info without redundancy, contradictions preserved with attribution, `reviewed: true` pages protected from overwrite
-- **📏 Content Truncation Protection** — 8000 max_tokens with automatic stop_reason detection and retry at 2× tokens across all providers
-- **📝 Verbatim Source Mentions** — Original language quotes preserved with optional translation for traceability
-
-### 🛠️ Maintenance
-
-- **🔍 Lint Health Scan** — Detects duplicates, dead links, empty pages, orphans, missing aliases, and contradictions in one comprehensive report
-- **🎯 Semantic-Tier Duplicate Detection** — Tier 1 (direct name matches: cross-language, abbreviations, high-similarity titles) always verified; Tier 2 (indirect signals: shared links, moderate similarity) fills token budget
-- **⚡ Smart Fix All** — Causality-ordered batch fix: duplicates merged → dead links resolved → orphans linked → empty pages expanded
-- **🔗 Double-Nested Link Auto-Fix** — Lint automatically detects and fixes `[[[[...]]]]` formatting errors across all wiki files, zero LLM cost
-- **⏹️ Cancel Operations** — Cancel ongoing ingestion or lint via status bar click or command palette, with clean partial-result preservation
-- **🏷️ Alias Completion** — One-click parallel batch generation of missing aliases, improving future duplicate detection
-- **🔄 Auto-Maintenance** — Multi-folder file watcher, periodic lint, startup health check (all optional)
-- **⚠️ Contradiction State Machine** — `detected → review_ok → resolved` (AI fix) or `detected → pending_fix` (manual)
-
-### 💬 Query & Feedback
-
-- **🤖 Conversational Query** — ChatGPT-style dialog with streaming Markdown and `[[wiki-links]]`, multi-turn history
-- **📤 Query-to-Wiki Feedback** — Save valuable conversations to Wiki with entity/concept extraction, semantic dedup before save
-- **🔒 Duplicate Save Prevention** — Hash tracking prevents re-evaluation of unchanged conversations
-
-### 🌐 LLM & Language
-
-- **🔌 Multi-Provider** — Anthropic, Anthropic Compatible (Coding Plan), Gemini, OpenAI, DeepSeek, Kimi, GLM, MiniMax, LM Studio, Ollama, OpenRouter, custom endpoints — with guided first-run setup and real-time model list fetching
-- **🔄 5xx/429/Overload Retry** — Automatic exponential backoff retry (max 2) on HTTP 5xx/429/529 overload errors across all clients, with status-aware error diagnostics
-- **📋 Dynamic Model List** — Real-time fetching from provider APIs
-- **🌐 Wiki Output Language** — 8 languages independent of UI (EN/ZH/JA/KO/DE/FR/ES/PT), with custom input
-- **🌍 Full UI Internationalization** — Plugin UI supports 8 languages (EN/ZH/JA/KO/DE/FR/ES/PT), 269+ UI fields fully translated with natural local expressions
-- **⚡ Rate Limit Guardian** — When parallel generation triggers rate limits, auto-detects and suggests: lower concurrency, increase batch delay, switch provider
-- **🦙 Web Clipper Compatible** — One-click add Obsidian Web Clipper's `Clippings/` folder to watch list, auto-ingest web clips into Wiki
-
-### 🏗️ Architecture & Performance
-
-- **⚡ Parallel Page Generation** — Configurable 1–5 concurrent pages, default 3 (parallel), 2–3× faster for large sources, error isolation per page
-- **📚 Iterative Batch Extraction** — Adaptive batch sizing eliminates max_tokens bottleneck for long documents
-- **⏹️ Batch-Level Cancellation** — Cancel long-running operations at batch boundaries, preserving completed work with immediate user feedback
-- **🏛️ Three-Layer Architecture** — `sources/` (read-only) → `wiki/` (LLM-generated) → `schema/` (co-evolved config)
-- **🧩 Modular Codebase** — 20+ focused modules in `src/`
-
-### 🔒 Privacy & Security
-
-- **No backend, no telemetry.** The plugin runs entirely inside Obsidian — there is no external server, no analytics, and no data collection of any kind. Your notes never leave your vault unless you explicitly configure an LLM provider.
-- **Your data stays local by default.** The plugin does not store, cache, or transmit your content anywhere beyond the LLM API you choose. Only the text you send for ingestion or query leaves your device — and only to the provider you configured.
-- **Full local mode with Ollama, LM Studio, or local providers.** For complete data sovereignty, use a locally-running LLM. Your notes are processed entirely on your machine — nothing touches the internet.
-- **Minimal permissions.** Vault file access is required for wiki management (reading notes, generating pages, detecting dead links). Network access is used exclusively for LLM API calls to your chosen provider. Clipboard access is limited to the "Copy" button in the Query modal — only when you click it.
-
----
-
+**Closes:** #90 — Source pages now inherit tags from the source note frontmatter instead of LLM-generated concept names.
 ## ⌨️ Commands
 
 | Command | Description |

@@ -26,7 +26,7 @@
   - [🔑 LLM Provider konfigurieren](#-llm-provider-konfigurieren)
   - [🎮 Nutzung](#-nutzung)
   - [⚠️ Upgrade von einer älteren Version?](#️-upgrade-von-einer-älteren-version)
-- [⚡ Was ist neu in v1.16.3](#-was-ist-neu-in-v1163)
+- [⚡ Was ist neu in v1.17.0](#-was-ist-neu-in-v1170)
 - [✨ Funktionen](#-funktionen)
   - [📊 Knowledge Quality](#-knowledge-quality)
   - [🛠️ Maintenance](#️-maintenance)
@@ -68,28 +68,28 @@ Notizen schreiben. KI organisiert. Fragen stellen. Das ist alles.
 
 ---
 
-## ⚡ Was ist neu in v1.16.3
+## ⚡ Was ist neu in v1.17.0
 
-Dieses **Hotfix-Release** schließt die v1.16.2 P0-Bugfix-Batch ab. Die Lint-Abbruch-Statusleisten-Korrektur aus v1.16.2 war unvollständig (das Modal schloss sich unmittelbar nach Klick auf eine Reparaturschaltfläche, wodurch die Statusleiste verschwand, bevor der Nutzer abbrechen konnte), und die fünf Cleanup-Punkte aus der v1.16.2-Review sind jetzt enthalten. **Keine Breaking Changes, keine Neukonfiguration.**
+Dies ist ein **großes Qualitätsrelease** mit erheblichen Verbesserungen bei der Ingestion. Schließt ein verfolgtes Issue (#90). Die wichtigste Änderung: Lange Dokumente, die bisher überhaupt nicht ingestiert werden konnten, funktionieren nun, und die ingestierten Inhalte tragen eine viel reichhaltigere Quellenzuordnung. **Keine Breaking Changes, keine Neukonfiguration.**
 
-**Wichtigste Korrekturen:**
+**Highlights:**
 
-- **Lint-Abbruch-Statusleiste funktioniert jetzt wirklich (Issue #94).** v1.16.2 propagierte zwar das AbortSignal zu den Fix-Runnern, aber das Modal schloss sich beim Button-Klick — was onClose → endLintOperation auslöste und die Statusleiste verschwand, bevor der Nutzer abbrechen konnte. Die Korrektur gibt jeder Reparaturphase einen eigenen lint-operation-Lebenszyklus: `startLintOperation` beim Klick auf eine Reparaturschaltfläche, `endLintOperation` nach Abschluss der Reparatur. Das Modal schließt sich sofort (erhält die ursprüngliche UX); der Nutzer sieht oben die Fortschrittsmeldung und unten die Statusleiste dauerhaft während der gesamten Reparatur — Klick zum Abbrechen.
+- **Langk dokument-Ingestion funktioniert jetzt tatsächlich.** Eine 619KB chinesische Quelle wie Shiji (史記) konnte bisher nicht verarbeitet werden — die benutzerdefinierte Granularitäts-Batchgröße war hardcoded auf maximal 15 Elemente begrenzt, unabhängig davon, wie viele Sie angefordert hatten, und das `max_tokens` des LLM war unter der für große Batches erforderlichen Antwortlänge gedeckelt. Jetzt steuern `customEntityLimit` und `customConceptLimit` tatsächlich die Batch-Pipeline (1-500, Standard je 5), und `max_tokens` skaliert dynamisch mit der Batchgröße (20K-60K) mit automatischer Batchgrößen-Halbierung bei Trunkierung. Dieselbe lange Quelle, die zuvor nach 3 Minuten und 15 Elementen fehlschlug, wird nun vollständig verarbeitet und extrahiert Hunderte von Entitäten und Konzepten aus demselben Dokument.
 
-- **Fortschrittszähler bei Duplikatprüfung stimmt mit Konsole überein (Issue #94-Folgebug).** Zeigte vorher "1/4" (äußere Runde) statt "1-4/16" (innerer Batch-Bereich). Korrigiert, damit Meldung und Konsolen-Log übereinstimmen — keine Verwechslung des Fortschritts mehr.
+- **Mentions tragen Quellenzuordnung (Fußnoten-Stil).** Der Abschnitt "Mentions in Source" in Entitäts- und Konzeptseiten war früher ein formloser Block nicht zurückverfolgbarer Zitate. Jetzt wird jedes Zitat als akademische Fußnote gerendert: `- "Wörtliches Zitat in der Originalsprache (optionale Übersetzung)" — [[source-path|display-name]]`. Jedes Zitat ist zu seinem Ursprung verlinkbar, sodass zukünftige Seitenzusammenführungen nie Zitate aus verschiedenen Quellen vermischen können.
 
-- **thinkingControlCache-Schlüssel-Korrektur (Issue #243).** Bei vordefinierten Anbietern ohne baseUrl-Überschreibung verwendete das Schreiben einen leeren Schlüssel, das Lesen die vordefinierte URL — der Cache verfehlte für immer und löste bei jedem Aufruf einen verschwendeten 400-Roundtrip aus. Lese- und Schreibpfad verwenden jetzt denselben `getThinkingControlCacheKey()`-Helfer.
+- **Obergrenze für benutzerdefinierte Granularität von 300 auf 500 erhöht**, um professionelle Wissensdatenbanken (Recht, Medizin, Tiefenforschung) zu unterstützen.
 
-- **deleteEmptyStubs ist jetzt belastbar (Issue #244).** Ein einzelner vault-read- oder deleteFile-Fehler bricht nicht mehr die gesamte Schleife ab. Jede Datei ist unabhängig in try/catch gewickelt, und der Nutzer erhält eine klare Meldung mit Anzahl der gelöschten/fehlgeschlagenen.
+**Other Fixes & Improvements:**
 
-- **Fallback nach Thinking-Control cached das negative Ergebnis (Issue #245).** `OpenAICompatibleClient` setzt jetzt nach erfolgreichem 400-Fallback `thinkingControlSupported = false`, sodass nachfolgende Aufrufe an dieselbe baseUrl den redundanten Probe-und-Fail-Roundtrip überspringen.
+- **Provider-Einstellungen werden jetzt überall synchronisiert.** Das Wechseln von Provider/API Key/Model in den Einstellungen wurde nicht an die Wiki-Engine weitergegeben, sodass Ihr nächster Ingest/Lint/Query stillschweigend den alten Provider verwendete. Behoben durch eine neue `wikiEngine.updateSettings()`, die den EngineContext mit den Live-Einstellungen synchronisiert. Die Schaltfläche "Verbindung testen" speichert auch keine fehlerhafte Konfiguration mehr bei einem Fehlschlag.
+- **Daten sind jetzt programmatisch, nicht LLM-generiert.** LLM-halluzinierte `created`/`updated` Daten in Quellseiten (z. B. ein 2025-Datum bei einer 2026-06-08 Ingestion) werden entfernt und vom System ersetzt. `created` wird beim Zusammenführen beibehalten; `updated` wird immer auf heute gesetzt.
+- **Lint-Berichte werden jetzt in log.md gespeichert** mit minutengenauen Zeitstempeln, sodass mehrere Lint-Läufe am selben Tag unterscheidbar sind. Das Lint-Berichts-Modal zeigt einen `📋 Vollständiger Bericht in log.md gespeichert` Hinweis.
+- **Quellseiten erben Tags aus dem Frontmatter der Quellnotiz (Issue #90).** Zuvor fügte das LLM beliebige Konzeptnamen (z. B. Alzheimer-Demenz, Neuroprotektion) in Quellseiten ein und verschmutzte das Tag-Vokabular des Benutzers. Jetzt wird `tags` programmatisch aus dem Frontmatter der Quellnotiz geerbt.
+- **Testverbindung stellt Live-Einstellungen bei Fehlschlag wieder her.** Eine fehlgeschlagene Testverbindung hat zuvor Ihre gespeicherte Konfiguration mit den fehlerhaften Testeinstellungen überschrieben. Jetzt werden die vorherigen Einstellungen wiederhergestellt, wenn der Test fehlschlägt.
+- **Folder-Ingest-Callback wird bei frühem Abbruch wiederhergestellt.** Der `setDoneCallback` wird jetzt korrekt wiederhergestellt, wenn der Folder-Ingest mit keinen neuen Dateien vorzeitig beendet wird, sodass nachfolgende Ingests den richtigen Callback verwenden.
 
-- **i18n-Bereinigung (Issue #94-Folgebug + #248):** 3 hartkodierte englische Fortschrittsmeldungen durch offizielle i18n-Schlüssel ersetzt (`lintCheckingDuplicatesProgress`, `lintFixingPolluted`, `lintModalFixPolluted`), in 8 Sprachen. Die Thinking-Control-Fehlererkennung verlangt jetzt sowohl einen HTTP-400-Status als auch ein abgelehntes-Feld-Schlüsselwort — passte vorher auf jeden Fehler, der "thinking" enthielt, was zu falschen Fallbacks führte.
-
-**Upgrade von einer älteren Version?** Keine Breaking Changes, keine Neukonfiguration. Bestehende Wikis, Einstellungen und Workflows bleiben erhalten.
-
-**Wir empfehlen allen Nutzern dringend ein Upgrade auf diese Version** — die Lint-Abbruch-Korrektur vervollständigt die Cancel-UX-Story, und die Cache- und Belastbarkeitskorrekturen wirken leise bei jedem Lint-Aufruf.---
-
+**Wir empfehlen allen Benutzern dringend ein Upgrade auf diese Version.** Die Langk-Dokument-Ingestion ist die wichtigste Verbesserung — wenn Sie jemals Probleme mit großen Quelldateien hatten, die mit einem 400-Fehler fehlschlugen oder nur eine Handvoll Elemente extrahierten, behebt diese Version das. Die Verbesserungen bei Quellenzuordnung und Datenintegrität gelten für jede Seite, die Sie generieren.
 ## ✨ Funktionen
 
 ### 📊 Knowledge Quality
@@ -415,3 +415,5 @@ MIT License — siehe [LICENSE](LICENSE).
 ---
 
 **Official Site:** [llmwiki.greenerai.top](https://llmwiki.greenerai.top/)
+
+**Closes:** #90 — Quellseiten erben Tags nun aus dem Frontmatter der Quellnotiz statt LLM-generierte Konzeptnamen zu verwenden.

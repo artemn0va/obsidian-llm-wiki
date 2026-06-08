@@ -115,7 +115,7 @@ export const ES_TEXTS = {
     maxConversationHistoryDesc: 'Limita los mensajes de conversación para evitar desbordamiento de tokens',
     maxConversationHistoryHint: 'Recomendado: no superar 50 rondas',
     numberRangeValidation: 'Introduce un número entre 1 y 50',
-    numberRangeClamped: 'Valor fuera del rango (1-300), automáticamente establecido a {}',
+    numberRangeClamped: 'Valor fuera del rango (1-500), automáticamente establecido a {}',
     // Query Modal UI
     queryModalTitle: 'Consultar Wiki - Consulta conversacional',
     queryModalPlaceholder: 'Introduce una pregunta...',
@@ -246,11 +246,11 @@ export const ES_TEXTS = {
     extractionGranularityStandard: 'Estándar — notas diarias (≤50 elementos)',
     extractionGranularityCoarse: 'Gruesa — visión rápida (≤10 elementos)',
     extractionGranularityMinimal: 'Mínima — procesamiento por lotes 100+ archivos (≤5 elementos)',
-    extractionGranularityCustom: 'Personalizado — Establecer tus propios límites (1~300)',
+    extractionGranularityCustom: 'Personalizado — Establecer tus propios límites (1~500)',
     customEntityLimitName: 'Límite personalizado de entidades',
-    customEntityLimitDesc: 'Número máximo de entidades a extraer por archivo fuente (1-300)',
+    customEntityLimitDesc: 'Número máximo de entidades a extraer por archivo fuente (1-500)',
     customConceptLimitName: 'Límite personalizado de conceptos',
-    customConceptLimitDesc: 'Número máximo de conceptos a extraer por archivo fuente (1-300)',
+    customConceptLimitDesc: 'Número máximo de conceptos a extraer por archivo fuente (1-500)',
 
     // Ingestion Acceleration
     accelerationSectionTitle: 'Aceleración de ingestión',

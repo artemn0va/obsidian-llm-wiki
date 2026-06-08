@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { slugify, computeSlug, parseFrontmatter, detectRateLimitFailures, formatRateLimitNotice, cleanMarkdownResponse, enforceFrontmatterConstraints, parseJsonResponse, mergeFrontmatter, preserveFrontmatterReviewTag, extractBody, getText, filterRedundantAliases, coerceToArray, truncateMentions } from '../../utils';
+import { slugify, computeSlug, parseFrontmatter, detectRateLimitFailures, formatRateLimitNotice, cleanMarkdownResponse, enforceFrontmatterConstraints, parseJsonResponse, mergeFrontmatter, preserveFrontmatterReviewTag, extractBody, getText, filterRedundantAliases, coerceToArray, truncateMentions, extractSourceTags } from '../../utils';
 import { getGranularityInstruction, getGranularityFixLimits, appendGranularityToPrompt } from '../../wiki/system-prompts';
 import { LLMWikiSettings } from '../../types';
 
@@ -1224,5 +1224,36 @@ describe('truncateMentions', () => {
     // The LEFT path (before |) is the path without .md; RIGHT is display name (also without .md)
     expect(result).toContain('[[sources/史记_〔汉〕司马迁|史记_〔汉〕司马迁]]');
     expect(result).not.toContain('.md|');
+  });
+});
+
+describe('extractSourceTags', () => {
+  it('returns empty array when content has no frontmatter', () => {
+    expect(extractSourceTags('# Just a heading\nNo frontmatter')).toEqual([]);
+  });
+
+  it('returns empty array when frontmatter has no tags field', () => {
+    const content = '---\ntype: source\ncreated: 2026-06-08\n---\n\nBody';
+    expect(extractSourceTags(content)).toEqual([]);
+  });
+
+  it('extracts tags from inline array format', () => {
+    const content = '---\ntags: [历史, 古代, 文学]\n---\n\nBody';
+    expect(extractSourceTags(content)).toEqual(['历史', '古代', '文学']);
+  });
+
+  it('extracts tags from multi-line array format', () => {
+    const content = '---\ntags:\n  - 历史\n  - 古代\n  - 文学\n---\n\nBody';
+    expect(extractSourceTags(content)).toEqual(['历史', '古代', '文学']);
+  });
+
+  it('returns single-element array when tags is a scalar (Obsidian allows this)', () => {
+    const content = '---\ntags: history\n---\n\nBody';
+    expect(extractSourceTags(content)).toEqual(['history']);
+  });
+
+  it('trims whitespace and filters empty strings', () => {
+    const content = '---\ntags: [ 历史 , , 古代 ]\n---\n\nBody';
+    expect(extractSourceTags(content)).toEqual(['历史', '古代']);
   });
 });

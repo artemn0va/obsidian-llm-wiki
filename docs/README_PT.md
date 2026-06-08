@@ -26,7 +26,7 @@
   - [🔑 Configurar um LLM Provider](#-configurar-um-llm-provider)
   - [🎮 Uso](#-uso)
   - [⚠️ Atualizando de uma Versão Anterior?](#️-atualizando-de-uma-versão-anterior)
-- [⚡ Novidades na v1.16.3](#-novidades-na-v1163)
+- [⚡ Novidades na v1.17.0](#-novidades-na-v1170)
 - [✨ Funcionalidades](#-funcionalidades)
   - [📊 Qualidade do Conhecimento](#-qualidade-do-conhecimento)
   - [🛠️ Manutenção](#️-manutenção)
@@ -61,30 +61,28 @@ Você escreve. A IA organiza. Você pergunta. Simples assim.
 
 ---
 
-## ⚡ Novidades na v1.16.3
+## ⚡ Novidades da v1.17.0
 
-Esta **versão de hotfix** completa o lote de correções de bugs P0 da v1.16.2. A correção da barra de estado de cancelamento do Lint da v1.16.2 estava incompleta (o modal fechava imediatamente após clicar em um botão de correção, ocultando a barra de estado antes que o usuário pudesse cancelar), e os cinco itens de limpeza da revisão da v1.16.2 agora estão incluídos. **Sem mudanças incompatíveis, sem reconfiguração.**
+Esta é uma **versão maior com foco em qualidade** com melhorias significativas na ingestão. Fecha um problema rastreado (#90). A maior mudança: documentos longos que antes não podiam ser ingeridos agora funcionam, e o conteúdo ingerido carrega uma atribuição de fonte muito mais rica. **Zero mudanças incompatíveis, zero reconfiguração.**
 
-**Correções principais:**
+**Highlights:**
 
-- **A barra de estado de cancelamento do Lint agora realmente funciona (Issue #94).** A v1.16.2 propagava o AbortSignal para os fix-runners, mas o modal fechava ao clicar no botão — disparando onClose → endLintOperation e ocultando a barra de estado antes que o usuário pudesse cancelar. A correção dá a cada fase de correção seu próprio ciclo de vida de operação de lint: `startLintOperation` ao clicar em um botão de correção, `endLintOperation` ao finalizar a correção. O modal fecha imediatamente (preservando a UX original); o usuário vê a notificação de progresso no topo e a barra de estado na parte inferior permanece visível durante toda a correção — clique para cancelar.
+- **A ingestão de documentos longos agora realmente funciona.** Uma fonte chinesa de 619KB como o Shiji (史记) antes era impossível de processar — o tamanho do lote de granularidade personalizada estava codificado em no máximo 15 itens, não importa quantos você solicitasse, e o `max_tokens` do LLM estava limitado abaixo do comprimento de resposta necessário para lotes grandes. Agora `customEntityLimit` e `customConceptLimit` realmente dirigem o pipeline de lotes (1-500, 5 cada por padrão), e `max_tokens` escala dinamicamente com o tamanho do lote (20K-60K) com redução automática pela metade do tamanho do lote em caso de truncamento. A mesma fonte longa que antes falhava após 3 minutos e 15 itens agora é ingerida completamente e extrai centenas de entidades e conceitos do mesmo documento.
 
-- **O contador de progresso da verificação de duplicados agora coincide com o console (Issue #94 continuação).** Antes mostrava "1/4" (contador de rodadas externo) em vez de "1-4/16" (intervalo de lotes interno). Corrigido para que a notificação e o log do console permaneçam sincronizados — não há mais confusão sobre o progresso.
+- **As menções carregam atribuição de fonte (estilo nota de rodapé).** A seção "Mentions in Source" nas páginas de entidade e conceito antes era um bloco de citações não rastreáveis. Agora cada citação é renderizada como nota acadêmica: `- "citação verbatim no idioma original (tradução opcional)" — [[source-path|display-name]]`. Cada citação é vinculável à sua origem, para que futuras fusões de páginas nunca misturem citações de fontes diferentes.
 
-- **Correção da chave de thinkingControlCache (Issue #243).** Com provedores predefinidos sem substituição de baseUrl, a escrita do cache usava uma chave vazia, a leitura usava a URL predefinida — o cache falhava para sempre, disparando um round-trip 400 desperdiçado em cada chamada. Os caminhos de leitura/escritura agora usam o mesmo helper `getThinkingControlCacheKey()`.
+- **O limite superior de granularidade personalizada aumenta de 300 para 500** para suportar bases de conhecimento profissionais (jurídico, médico, pesquisa profunda).
 
-- **deleteEmptyStubs agora é resiliente (Issue #244).** Uma única falha de leitura de vault ou de deleteFile não interrompe mais o loop completo. Cada arquivo é independentemente envolvido em try/catch, e o usuário recebe uma notificação clara com a contagem de excluídos/falhos.
+**Other Fixes & Improvements:**
 
-- **O fallback após thinking-control agora cacheia o resultado negativo (Issue #245).** `OpenAICompatibleClient` agora define `thinkingControlSupported = false` após um fallback 400 bem-sucedido, para que chamadas subsequentes à mesma baseUrl pulem o round-trip redundante de probe-falha.
+- **As configurações do Provider agora sincronizam em todos os lugares.** Mudar Provider/API Key/Model nas Configurações não se propagava para o motor wiki, então sua próxima Ingest/Lint/Query usava silenciosamente o provedor antigo. Corrigido com um novo `wikiEngine.updateSettings()` que mantém o EngineContext sincronizado com as configurações ativas. O botão Test Connection também não persiste mais configuração quebrada em caso de falha.
+- **As datas agora são programáticas, não geradas pelo LLM.** Datas `created`/`updated` alucinadas pelo LLM em páginas source (por ex. uma data de 2025 em uma ingestão de 2026-06-08) são removidas e substituídas pelo sistema. `created` é preservado em fusões; `updated` é sempre definido para hoje.
+- **Os relatórios Lint agora são persistidos em log.md** com timestamps por minuto, permitindo distinguir várias execuções Lint no mesmo dia. O modal de Relatório Lint mostra uma dica `📋 Relatório completo salvo em log.md`.
+- **As páginas source herdam tags do frontmatter da nota source (Issue #90).** Anteriormente o LLM injetava nomes de conceitos arbitrários (por ex. Alzheimer-Demenz, Neuroprotektion), poluindo o vocabulário de tags do usuário. Agora `tags` é herdado programaticamente do frontmatter da nota source.
+- **Test Connection restaura configurações ativas em caso de falha.** Um Test Connection que falhava antes sobrescrevia sua configuração salva com as configurações de teste quebradas. Agora as configurações anteriores são restauradas se o teste falhar.
+- **Callback de ingestão de pasta restaurado em retorno antecipado.** O `setDoneCallback` agora é corretamente restaurado quando a ingestão de pasta termina antecipadamente sem arquivos novos, de modo que as ingestões subsequentes usem o callback correto.
 
-- **Limpeza i18n (Issue #94 continuação + #248):** 3 strings de progresso em inglês codificadas de forma rígida substituídas por chaves i18n oficiais (`lintCheckingDuplicatesProgress`, `lintFixingPolluted`, `lintModalFixPolluted`), em 8 idiomas. A detecção de erros de thinking-control agora requer tanto um status HTTP 400 quanto uma palavra-chave de campo rejeitado — antes correspondia a qualquer erro que contivesse "thinking", causando fallbacks falsos.
-
-**Atualizar de uma versão anterior?** Sem mudanças incompatíveis, sem reconfiguração. Wikis, configurações e fluxos de trabalho existentes são preservados.
-
-**Recomendamos enfaticamente a todos os usuários atualizar para esta versão** — a correção de cancelamento do Lint completa a história de UX de cancelamento, e as correções de cache e resiliência operam silenciosamente em cada chamada do Lint.---
-
----
-
+**Recomendamos fortemente que todos os usuários atualizem para esta versão.** A ingestão de documentos longos é a melhoria principal — se você já teve um arquivo-fonte grande que falhou com erro 400 ou extraiu apenas alguns itens, esta versão corrige isso completamente. As melhorias de atribuição de fonte e integridade de datas se aplicam a cada página que você gera.
 ## ✨ Funcionalidades
 
 ### 📊 Qualidade do Conhecimento
@@ -393,3 +391,5 @@ Licença MIT — veja [LICENSE](LICENSE).
 - **💡 Conceito:** [LLM Wiki de Andrej Karpathy](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) — a visão original que inspirou este plugin
 - **🛠️ Plataforma:** [Obsidian Plugin API](https://docs.obsidian.md/Plugins/Getting+started/Build+a+plugin)
 - **🔌 Transporte LLM:** `requestUrl` do Obsidian (Anthropic) + OpenAI SDK (provedores terceiros compatíveis com OpenAI)
+
+**Closes:** #90 — As páginas source agora herdam tags do frontmatter da nota source em vez de nomes de conceitos gerados por LLM.

@@ -115,7 +115,7 @@ export const KO_TEXTS = {
     maxConversationHistoryDesc: '토큰 초과를 방지하기 위해 대화 메시지를 제한합니다',
     maxConversationHistoryHint: '추천: 50 라운드를 초과하지 않기',
     numberRangeValidation: '1-50 사이의 숫자를 입력하세요',
-    numberRangeClamped: '값이 범위를 초과했습니다 (1-300), 자동으로 {}으로 설정되었습니다',
+    numberRangeClamped: '값이 범위를 초과했습니다 (1-500), 자동으로 {}으로 설정되었습니다',
 
     // Query Modal UI
     queryModalTitle: '위키 질의 - 대화형 질의',
@@ -247,11 +247,11 @@ export const KO_TEXTS = {
     extractionGranularityStandard: '표준 — 일상 노트 (≤50개)',
     extractionGranularityCoarse: '굵음 — 빠른 개요 (≤10개)',
     extractionGranularityMinimal: '최소 — 100+ 파일 일괄 처리 (≤5개)',
-    extractionGranularityCustom: '사용자 지정 — 자체 상한 설정 (1~300)',
+    extractionGranularityCustom: '사용자 지정 — 자체 상한 설정 (1~500)',
     customEntityLimitName: '사용자 지정 엔티티 상한',
-    customEntityLimitDesc: '소스 파일당 최대 엔티티 추출 수 (1-300)',
+    customEntityLimitDesc: '소스 파일당 최대 엔티티 추출 수 (1-500)',
     customConceptLimitName: '사용자 지정 컨셉 상한',
-    customConceptLimitDesc: '소스 파일당 최대 컨셉 추출 수 (1-300)',
+    customConceptLimitDesc: '소스 파일당 최대 컨셉 추출 수 (1-500)',
 
     // Ingestion Acceleration
     accelerationSectionTitle: '수집 가속화',

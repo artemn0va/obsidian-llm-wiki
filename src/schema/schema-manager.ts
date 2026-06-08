@@ -27,7 +27,7 @@ const TASK_SECTIONS: Record<SchemaTask, string[]> = {
   full: ['Wiki Structure', 'Entity Page Template', 'Concept Page Template', 'Naming Conventions', 'Classification Rules', 'Maintenance Policies'],
 };
 
-function buildDefaultSchemaBody(): string {
+export function buildDefaultSchemaBody(): string {
   return `# Wiki Schema Configuration
 
 This file governs how the LLM builds and maintains your Wiki. Edit it freely.
@@ -55,7 +55,7 @@ Pages in \`entities/\` MUST follow this structure:
 2. **Description**: 3-6 sentences with concrete facts, bidirectional links
 3. **Related Entities**: Links to related entities using [[entities/...]]
 4. **Related Concepts**: Links to related concepts using [[concepts/...]]
-5. **Mentions in Source**: Verbatim quotes (2-4) from source, preserved in original language
+5. **Mentions in Source**: Verbatim quotes with source attribution — see [Mentions Format](#mentions-format) below
 
 ## Concept Page Template
 Pages in \`concepts/\` MUST follow this structure:
@@ -74,12 +74,41 @@ Pages in \`concepts/\` MUST follow this structure:
 3. **Applications**: Real-world usage scenarios
 4. **Related Concepts**: Links using [[concepts/...]]
 5. **Related Entities**: Links using [[entities/...]]
-6. **Mentions in Source**: Verbatim quotes (2-4) from source, preserved in original language
+6. **Mentions in Source**: Verbatim quotes with source attribution — see [Mentions Format](#mentions-format) below
 
 ## Naming Conventions
 - Filenames: lowercase-with-hyphens (slugified)
 - Entity/concept names: Preserve original language from source, NEVER translate
 - Wiki-links: Use full paths [[entities/page-name|Display Name]] or [[concepts/page-name|Display Name]]
+
+## Source Page Template
+Pages in \`sources/\` MUST follow this structure:
+
+**Frontmatter fields:**
+- \`type: source\` — page category (MUST be exactly "source")
+- \`tags:\` — INHERITED from the source note's frontmatter (do NOT use LLM-derived concept names). The system programmatically populates this from the source file; the LLM must not overwrite it with extracted concept names. This preserves the user's existing tag vocabulary and prevents pollution from LLM hallucinations.
+- \`sources:\` — array of related wiki page links created from this source
+- \`created:\` / \`updated:\` — set by the system, see Date Fields below
+
+**Sections:**
+1. **Summary**: Brief description of the source content (2-4 sentences)
+2. **Key Points**: Bullet list of main insights
+3. **Mentioned Pages**: List of [[entities/...]] and [[concepts/...]] pages created from this source
+
+## Date Fields
+- \`created:\` and \`updated:\` are filled by the system programmatically — NEVER LLM-generated
+- The LLM may produce wrong dates during extraction; the system overrides them post-write to ensure correctness
+- \`created:\` is preserved on merge (older value kept); \`updated:\` is always set to the current date
+- \`source_note:\` (optional) — wiki-link to the original source file
+
+## Mentions Format
+"Mentions in Source" entries use academic-footnote style with source attribution. The format is:
+- "Verbatim quote in original language (optional translation)" — [[source-name|display-name]]
+
+Rules:
+- Quotes must be VERBATIM — never paraphrase, summarize, or translate away the original
+- The source wiki-link is required so future page merges can trace each quote to its origin
+- Multiple quotes from the same source go in the same block, separated by newlines
 
 ## Content Rules
 - mentions_in_source MUST be VERBATIM quotes — never paraphrase or translate

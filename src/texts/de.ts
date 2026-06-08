@@ -115,7 +115,7 @@ export const DE_TEXTS = {
     maxConversationHistoryDesc: 'Konversationsnachrichten begrenzen, um Token-Überlauf zu vermeiden',
     maxConversationHistoryHint: 'Empfehlung: 50 Runden nicht überschreiten',
     numberRangeValidation: 'Bitte eine Zahl zwischen 1 und 50 eingeben',
-    numberRangeClamped: 'Wert außerhalb des Bereichs (1-300), automatisch auf {} gesetzt',
+    numberRangeClamped: 'Wert außerhalb des Bereichs (1-500), automatisch auf {} gesetzt',
     // Query Modal UI
     queryModalTitle: 'Wiki-Anfrage — Konversationelle Abfrage',
     queryModalPlaceholder: 'Frage eingeben...',
@@ -241,16 +241,16 @@ export const DE_TEXTS = {
     // Extraction Settings
     extractionSectionTitle: 'Extraktion',
     extractionGranularityName: 'Extraktions-Granularität',
-    extractionGranularityDesc: 'Steuert Extraktionen pro Quelldatei. Höher = mehr Seiten/API-Verbrauch.\nFein: Tiefenanalyse. Standard: Tägliche Notizen. Grob: Schnelle Übersicht. Minimal: 100+ Dateien stapeln. Benutzerdefiniert: Eigene Limits (max 300).\nTipp: Verwenden Sie Minimal/Grob für Ordner mit vielen Dateien zur Zeit- und Kosteneinsparung.',
+    extractionGranularityDesc: 'Steuert Extraktionen pro Quelldatei. Höher = mehr Seiten/API-Verbrauch.\nFein: Tiefenanalyse. Standard: Tägliche Notizen. Grob: Schnelle Übersicht. Minimal: 100+ Dateien stapeln. Benutzerdefiniert: Eigene Limits (max 500).\nTipp: Verwenden Sie Minimal/Grob für Ordner mit vielen Dateien zur Zeit- und Kosteneinsparung.',
     extractionGranularityFine: 'Fein — Tiefenanalyse (≤100 Elemente)',
     extractionGranularityStandard: 'Standard — Tägliche Notizen (≤50 Elemente)',
     extractionGranularityCoarse: 'Grob — Schnellübersicht (≤10 Elemente)',
     extractionGranularityMinimal: 'Minimal — Stapelverarbeitung 100+ Dateien (≤5 Elemente)',
-    extractionGranularityCustom: 'Benutzerdefiniert — Eigene Limits festlegen (1~300)',
+    extractionGranularityCustom: 'Benutzerdefiniert — Eigene Limits festlegen (1~500)',
     customEntityLimitName: 'Benutzerdefiniertes Entitätslimit',
-    customEntityLimitDesc: 'Maximale Anzahl zu extrahierender Entitäten pro Quelldatei (1-300)',
+    customEntityLimitDesc: 'Maximale Anzahl zu extrahierender Entitäten pro Quelldatei (1-500)',
     customConceptLimitName: 'Benutzerdefiniertes Konzeptlimit',
-    customConceptLimitDesc: 'Maximale Anzahl zu extrahierender Konzepte pro Quelldatei (1-300)',
+    customConceptLimitDesc: 'Maximale Anzahl zu extrahierender Konzepte pro Quelldatei (1-500)',
 
     // Ingestion Acceleration
     accelerationSectionTitle: 'Aufnahmen-Beschleunigung',

@@ -124,7 +124,7 @@ export const EN_TEXTS = {
     maxConversationHistoryDesc: 'Limit conversation messages to avoid token overflow',
     maxConversationHistoryHint: 'Recommended: not exceed 50 rounds',
     numberRangeValidation: 'Please enter a number between 1-50',
-    numberRangeClamped: 'Value exceeds range (1-300), automatically set to {}',
+    numberRangeClamped: 'Value exceeds range (1-500), automatically set to {}',
 
     // Query Modal UI
     queryModalTitle: 'Query Wiki - Conversational Query',
@@ -247,16 +247,16 @@ export const EN_TEXTS = {
     // Extraction Settings
     extractionSectionTitle: 'Extraction',
     extractionGranularityName: 'Extraction Granularity',
-    extractionGranularityDesc: 'Controls entities/concepts extracted per source file. Higher = more pages, more API tokens.\nFine: deep analysis. Standard: daily notes. Coarse: quick overview. Minimal: batch 100+ files. Custom: set your own (up to 300).\nTip: Use Minimal/Coarse for folders with many files to save time and cost.',
+    extractionGranularityDesc: 'Controls entities/concepts extracted per source file. Higher = more pages, more API tokens.\nFine: deep analysis. Standard: daily notes. Coarse: quick overview. Minimal: batch 100+ files. Custom: set your own (up to 500).\nTip: Use Minimal/Coarse for folders with many files to save time and cost.',
     extractionGranularityFine: 'Fine — deep analysis (≤100 items)',
     extractionGranularityStandard: 'Standard — daily notes (≤50 items)',
     extractionGranularityCoarse: 'Coarse — quick overview (≤10 items)',
     extractionGranularityMinimal: 'Minimal — batch 100+ files (≤5 items)',
-    extractionGranularityCustom: 'Custom — set your own limits (1~300)',
+    extractionGranularityCustom: 'Custom — set your own limits (1~500)',
     customEntityLimitName: 'Custom Entity Limit',
-    customEntityLimitDesc: 'Maximum number of entities to extract per source file (1-300)',
+    customEntityLimitDesc: 'Maximum number of entities to extract per source file (1-500)',
     customConceptLimitName: 'Custom Concept Limit',
-    customConceptLimitDesc: 'Maximum number of concepts to extract per source file (1-300)',
+    customConceptLimitDesc: 'Maximum number of concepts to extract per source file (1-500)',
 
     // Ingestion Acceleration
     accelerationSectionTitle: 'Ingestion Acceleration',

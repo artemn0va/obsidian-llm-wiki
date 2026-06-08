@@ -115,7 +115,7 @@ export const PT_TEXTS = {
     maxConversationHistoryDesc: 'Limitar mensagens da conversa para evitar excesso de tokens',
     maxConversationHistoryHint: 'Recomendado: não ultrapassar 50 rodadas',
     numberRangeValidation: 'Insira um número entre 1 e 50',
-    numberRangeClamped: 'Valor fora do intervalo (1-300), automaticamente definido como {}',
+    numberRangeClamped: 'Valor fora do intervalo (1-500), automaticamente definido como {}',
     // Query Modal UI
     queryModalTitle: 'Consultar Wiki — Consulta conversacional',
     queryModalPlaceholder: 'Insira sua pergunta...',
@@ -241,16 +241,16 @@ export const PT_TEXTS = {
     // Extraction Settings
     extractionSectionTitle: 'Extração',
     extractionGranularityName: 'Granularidade da extração',
-    extractionGranularityDesc: 'Controla extrações por arquivo fonte. Maior = mais páginas/tokens API.\nFina: análise profunda. Padrão: notas diárias. Grosseira: visão rápida. Mínima: processamento 100+ arquivos. Personalizada: limites próprios (até 300).\nDica: Use Mínima/Grosseira para pastas com muitos arquivos para economizar tempo e custo.',
+    extractionGranularityDesc: 'Controla extrações por arquivo fonte. Maior = mais páginas/tokens API.\nFina: análise profunda. Padrão: notas diárias. Grosseira: visão rápida. Mínima: processamento 100+ arquivos. Personalizada: limites próprios (até 500).\nDica: Use Mínima/Grosseira para pastas com muitos arquivos para economizar tempo e custo.',
     extractionGranularityFine: 'Fina — análise profunda (≤100 itens)',
     extractionGranularityStandard: 'Padrão — notas diárias (≤50 itens)',
     extractionGranularityCoarse: 'Grosseira — visão rápida (≤10 itens)',
     extractionGranularityMinimal: 'Mínima — processamento em lote 100+ arquivos (≤5 itens)',
-    extractionGranularityCustom: 'Personalizada — Definir seus próprios limites (1~300)',
+    extractionGranularityCustom: 'Personalizada — Definir seus próprios limites (1~500)',
     customEntityLimitName: 'Limite personalizado de entidades',
-    customEntityLimitDesc: 'Número máximo de entidades a extrair por arquivo fonte (1-300)',
+    customEntityLimitDesc: 'Número máximo de entidades a extrair por arquivo fonte (1-500)',
     customConceptLimitName: 'Limite personalizado de conceitos',
-    customConceptLimitDesc: 'Número máximo de conceitos a extrair por arquivo fonte (1-300)',
+    customConceptLimitDesc: 'Número máximo de conceitos a extrair por arquivo fonte (1-500)',
 
     // Ingestion Acceleration
     accelerationSectionTitle: 'Aceleração da ingestão',

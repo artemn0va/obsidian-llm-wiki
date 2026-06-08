@@ -20,6 +20,7 @@ import {
   detectRateLimitFailures,
   formatRateLimitNotice,
   getText,
+  extractSourceTags,
 } from '../utils';
 import { SchemaManager, SchemaTask } from '../schema/schema-manager';
 import {
@@ -636,6 +637,14 @@ export class WikiEngine {
     const path = normalizePath(`${this.settings.wikiFolder}/sources/${slug}.md`);
     const content = await this.app.vault.read(file);
 
+    // Issue #90: inherit tags from source note frontmatter when available,
+    // so the generated summary page doesn't pollute the tag vocabulary with
+    // LLM-derived concept names. Fallback to LLM-derived tags if source has none.
+    const sourceTags = extractSourceTags(content);
+    const tagsValue = sourceTags.length > 0
+      ? sourceTags.join(', ')
+      : analysis.concepts.map(c => c.name).join(', ');
+
     const createdPagesList = plannedPaths.length > 0
       ? plannedPaths.map(p => {
           const relPath = p.replace(this.settings.wikiFolder + '/', '').replace('.md', '');
@@ -653,7 +662,7 @@ export class WikiEngine {
       .replace('{{created_pages_list}}', createdPagesList || '(none)')
       .replace(/{{source_file}}/g, file.path)
       .replace(/{{date}}/g, new Date().toISOString().split('T')[0])
-      .replace('{{tags}}', analysis.concepts.map(c => c.name).join(', '))
+      .replace('{{tags}}', tagsValue)
       .replace('{{constraints}}', UNIVERSAL_LINK_CONSTRAINTS);
 
     const finalPrompt = this.applySectionLabels(prompt);

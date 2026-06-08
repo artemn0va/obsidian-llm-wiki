@@ -6,7 +6,7 @@
 >
 > **Obsidian 공식 평점 95/100** | 8개 언어 네이티브 지원 | 활발한 유지보수, 지속 진화
 
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/green-dalii/obsidian-llm-wiki) [![Release Obsidian plugin](https://github.com/green-dalii/obsidian-llm-wiki/actions/workflows/release.yml/badge.svg)](https://github.com/green-dalii/obsidian-llm-wiki/actions/workflows/release.yml) ![Version](https://img.shields.io/github/v/release/green-dalii/obsidian-llm-wiki?style=flat-square) ![Author](https://img.shields.io/badge/author-Greener--Dalii-blue?style=flat-square) ![License](https://img.shields.io/badge/license-MIT-green?style=flat-square) ![Maintenance](https://img.shields.io/badge/maintenance-actively%20maintained-brightgreen?style=flat-square) ![Build Status](https://img.shields.io/github/actions/workflow/status/green-dalii/obsidian-llm-wiki/release.yml?style=flat-square) ![Obsidian Compatibility](https://img.shields.io/badge/obsidian-1.6.6%2B-purple?style=flat-square) ![GitHub Stars](https://img.shields.io/github/stars/green-dalii/obsidian-llm-wiki?style=flat-square) ![Downloads](https://img.shields.io/badge/dynamic/json?logo=obsidian&color=483699&label=downloads&query=$[karpathywiki].downloads&url=https://raw.githubusercontent.com/obsidianmd/obsidian-releases/master/community-plugin-stats.json&style=flat-square) ![Languages](https://img.shields.io/badge/languages-8-informational?style=flat-square) ![Providers](https://img.shields.io/badge/providers-8%2B-cyan?style=flat-square)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/green-dalii/obsidian-llm-wiki) [![Release Obsidian plugin](https://github.com/green-dalii/obsidian-llm-wiki/actions/workflows/release.yml/badge.svg)](https://github.com/green-dalii/obsidian-llm-wiki/actions/workflows/release.yml) ![Version](https://img.shields.io/github/v/release/green-dalii/obsidian-llm-wiki?style=flat-square) ![Author](https://img.shields.io/badge/author-Greener--Dalii-blue?style=flat-square) ![License](https://img.shields.io/badge/license-MIT-green?style=flat-square) ![Maintenance](https://img.shields.io/badge/maintenance-actively%20maintained-brightgreen?style=flat-square) ![Build Status](https://img.shields.io/github/actions/workflow/status/green-dalii/obsidian-llm-wiki/release.yml?style=flat-square) ![Obsidian Compatibility](https://img.shields.io/badge/obsidian-1.6.6%2B-purple?style=flat-square) ![GitHub Stars](https://img.shields.io/github/stars/green-dalii/obsidian-llm-wiki?style=flat-square) ![Downloads](https://img.shields.io/badge/dynamic/json?logo=obsidian&color=483699&label=downloads&query=$[karpathywiki].downloads&url=https://raw.githubusercontent.com/obsidianmd/obsidian-releases/master/community-plugin-stats.json&style=flat-square) ![Languages](https://img.shields.io/badge/languages-8-informational?style=flat-square) ![Providers](https://img.shields.io/badge/providers-12%2B-cyan?style=flat-square)
 
 [English](../README.md) | [中文文档](README_CN.md) | [日本語](README_JA.md) | [한국어](README_KO.md) | [Deutsch](README_DE.md) | [Français](README_FR.md) | [Español](README_ES.md) | [Português](README_PT.md)
 
@@ -102,7 +102,7 @@
 - **Semantic-Tier 중복 감지** — Tier 1(직접 이름 일치: 교차 언어, 약어, 높은 유사도 제목)은 항상 검증됩니다. Tier 2(간접 신호: 공유 링크, 중간 유사도)은 token 예산을 채웁니다
 - **스마트 일괄 수정** — 인과 관계 순서로 배치 수정: 중복 병합 → dead link 해결 → orphan 연결 → 빈 페이지 확장
 - **Alias 완성** — 누락된 alias의 일괄 병렬 생성을 원클릭으로 수행해 향후 중복 감지를 개선합니다
-- **자동 유지 관리** — 다중 폴더 파일 감시, 주기적 lint, 시작 시 상태 검사(모두 선택적)
+- **자동 유지 관리** — Startup Quick Fixes 기본 ON(시작 시 1회 건강 검사), 다중 폴더 파일 감시와 주기적 lint는 기본 OFF(필요 시 활성화)
 - **모순 상태 머신** — `detected → review_ok → resolved`(AI 수정) 또는 `detected → pending_fix`(수동)
 
 ### 💬 조회 및 피드백
@@ -113,8 +113,8 @@
 
 ### 🌐 LLM 및 언어
 
-- **다중 Provider 지원** — Anthropic, Anthropic Compatible(Coding Plan), Gemini, OpenAI, DeepSeek, Kimi, GLM, OpenRouter, Ollama, custom endpoint
-- **5xx 자동 재시도** — 모든 클라이언트에서 HTTP 5xx/429/529/529 오류 시 지수 백오프 재시도(최대 2회)
+- **다중 Provider 지원** — Anthropic, Anthropic Compatible(Coding Plan), Gemini, OpenAI, DeepSeek, Kimi, GLM, MiniMax, LM Studio, OpenRouter, Ollama, custom endpoint
+- **5xx 자동 재시도** — 모든 클라이언트에서 HTTP 5xx/429/529 오류 시 지수 백오프 재시도(최대 2회)
 - **동적 모델 목록** — Provider API에서 실시간 가져오기
 - **Wiki 출력 언어** — 인터페이스와 독립적인 8개 언어(영어/중국어/일본어/한국어/독일어/프랑스어/스페인어/포르투갈어), custom 입력 지원
 - **🌍 전면 UI 국제화** — 플러그인 UI 8개 언어 지원(EN/ZH/JA/KO/DE/FR/ES/PT), 269+ UI 필드 완전 번역, 자연스러운 로컬 표현
@@ -126,7 +126,7 @@
 - **병렬 페이지 생성** — 구성 가능한 1–5개 동시 페이지, 기본값 3(병렬), 큰 source에서 2–3× 속도 향상, 페이지별 오류 격리
 - **반복적 배치 추출** — 적응형 배치 크기, 긴 문서의 max_tokens 병목을 해소합니다
 - **3계층 아키텍처** — `sources/`(읽기 전용) → `wiki/`(LLM 생성) → `schema/`(공동 진화 구성)
-- **모듈형 코드베이스** — `src/`의 13개 초점 모듈
+- **모듈형 코드베이스** — `src/`의 20+개 초점 모듈
 
 ### 🔒 개인정보 보호 및 보안
 
@@ -136,10 +136,6 @@
 - **최소한의 권한.** Vault 파일 접근은 Wiki 관리에 필요합니다(노트 읽기, 페이지 생성, 데드 링크 감지). 네트워크 접근은 설정한 제공자와의 LLM API 호출에만 사용됩니다. 클립보드 접근은 Query 모달의 "복사" 버튼으로 제한됩니다——클릭할 때만입니다.
 
 ---
-
-
----
-
 ## ⌨️ 명령어
 
 | 명령어 | 설명 |
@@ -173,7 +169,7 @@ Machine learning uses algorithms to learn from data.
 ```markdown
 ---
 type: entity
-created: 2026-05-15
+created: 2025-12-01
 updated: 2026-05-15
 sources: ["[[sources/machine-learning]]"]
 tags: [method]
@@ -216,16 +212,20 @@ Supervised learning(지도 학습)은 레이블이 있는 훈련 데이터에서
 | **🌟 가성비 최고** | **DeepSeek V4-Flash** | 1M tokens | 최저가($0.14/M), 284B MoE, 배치 처리에 최적 |
 | **🌟 가성비 최고** | **Gemini-3.5-Flash** | 1M tokens | GPT-5.5보다 4배 빠른 출력, 에이전트 작업 우수 |
 | **🌟 가성비 최고** | **Qwen3.6-Plus** | 1M tokens | 코딩 및 에이전트 능력 강력, 경쟁력 있는 가격 |
-| **🌟 가성비 최고** | **Grok-4** | 2M tokens | 2M 초장문 컨텍스트, 초대형 Wiki에 최적 |
+| **🌟 가성비 최고** | **Grok-4** | 2M tokens | xAI 2025-07 flagship, 2M context, strong reasoning & code tasks |
 | **균형형** | **Claude Sonnet 4.6** | 1M tokens | 품질과 비용의 좋은 균형, $3/$15 per 1M tokens |
 | **경량형** | **Claude Haiku 4.5** | 200K tokens | 고속 경제, 소형 Wiki에 적합 |
-| **경제형** | **MiMo-V2.5-Flash** | 1M tokens | Xiaomi의 고가성비 선택, 309B MoE 아키텍처 |
+| **경제형** | **Xiaomi MiMo-V2.5** | 1M tokens | Xiaomi 310B/15B MoE, 2026-04 MIT 오픈소스, Agent·멀티모달 |
 | **플래그십형** | Claude Opus 4.7 | 1M tokens | 최고 품질, 비용 높음 — 선택적으로 사용 |
 | **플래그십형** | GPT-5.5 | 1M tokens | 최고 수준 추론, 비용 높음 — 선택적으로 사용 |
 
 로컬 모델(Ollama): 컨텍스트 창이 일반적으로 작습니다(8K–128K). 수집에는 cloud provider를, 조회에는 로컬 모델을 사용하는 것을 권장합니다.
 
 **🔌 Anthropic Compatible(Coding Plan):** Provider가 Anthropic 호환 API 엔드포인트를 제공하는 경우, "Anthropic Compatible"을 선택하고 Provider의 Base URL과 API Key를 입력하세요.
+
+**🦙 Ollama (로컬, API 키 불필요):** [Ollama](https://ollama.com)를 설치하고 모델을 pull(`ollama pull gemma4` 또는 `ollama pull qwen3.5:27b`)한 다음 Provider 드롭다운에서 "Ollama (Local)"을 선택하세요.
+
+**🎛️ LM Studio (로컬, API 키 불필요):** [LM Studio](https://lmstudio.ai)를 설치하고 로컬 서버(기본 `http://localhost:1234/v1`)를 시작한 다음 Provider 드롭다운에서 "LM Studio (Local)"을 선택하세요. LM Studio는 OpenAI 호환 서버를 내장하고 있어 API 키 필드는 선택사항입니다.
 
 > 💡 **구독 플랜:** Coding Plan, OpenAI Pro, Anthropic Pro 등의 구독 플랜은 빈번한 사용 시 비용 관리에 탁월한 선택입니다. 본 플러그인은 이러한 서비스들을 지원합니다.
 
@@ -256,6 +256,7 @@ wiki/               # 📄 Wiki 엔진 모듈
   lint/             # Lint 하위 모듈
     duplicate-detection.ts  # 🔄 프로그램 기반 중복 후보 생성
     fix-runners.ts          # ⚡ 배치 수정 실행 헬퍼
+    scanners.ts            # 🔍 Scanners (dead links, orphans, aliases)
   contradictions.ts # ⚠️ 모순 감지
   system-prompts.ts # 🗣️ 언어 지시 + 섹션 레이블
 schema/             # Schema 공동 진화
@@ -328,13 +329,13 @@ v1.7.10 이전에는 Alias 인식 중복 감지가 없었습니다. **Lint Wiki*
 ### ⚡ 성능 및 비용 관리
 
 **수집 속도를 높이려면 어떻게 하나요?**
-**설정 → Ingestion Acceleration**에서: **Page Generation Concurrency**를 3~5로 증가(병렬 페이지 생성), **Batch Delay**를 100~300ms로 낮춤(속도 제한 주의). "최소", "굵음" 또는 "표준" **추출 세분화**를 선택하면 페이지 수를 줄이고 API 비용을 절약할 수 있습니다.
+**설정 → LLM Configuration**에서: **Page Generation Concurrency**를 3~5로 증가(병렬 페이지 생성), **Batch Delay**를 100~300ms로 낮춤(속도 제한 주의). "최소", "굵음" 또는 "표준" **추출 세분화**를 선택하면 페이지 수를 줄이고 API 비용을 절약할 수 있습니다.
 
 **HTTP 429 오류가 발생하는 이유는 무엇인가요?**
 플러그인이 자동으로 속도 제한을 감지하고 제안합니다: 동시성을 1~2로 낮춤, Batch Delay를 500~800ms로 증가, 또는 더 높은 제한의 Provider로 전환.
 
 **API 비용을 어떻게 제어하나요?**
-- Auto-Maintenance는 기본 OFF (필요할 때만 활성화)
+- Auto-Maintenance는 기본 OFF (Startup Quick Fixes만 기본 ON; 필요할 때만 활성화)
 - Smart Batch Skip이 이미 수집된 파일을 자동 건너뜀
 - "Standard" 또는 "Coarse" 세분화 = 더 적은 LLM 호출
 - Batch Delay > 500ms는 호출 간격만 벌리고 토큰 소비는 증가하지 않음
@@ -389,7 +390,7 @@ MIT License — [LICENSE](LICENSE)를 참조하세요.
 
 - **💡 개념:** [Andrej Karpathy](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) — 원본 LLM Wiki 개념
 - **🛠️ 플랫폼:** Obsidian 팀 — 플러그인 플랫폼 및 API
-- **🔌 LLM SDK:** Anthropic, OpenAI, Google, DeepSeek, Kimi, GLM, OpenRouter, Ollama — LLM provider
+- **🔌 LLM transport:** Obsidian `requestUrl` (Anthropic) + OpenAI SDK (3rd-party OpenAI 호환 Provider)
 
 ---
 

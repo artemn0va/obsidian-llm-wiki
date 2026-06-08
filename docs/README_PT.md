@@ -6,7 +6,7 @@
 >
 > **Pontuação oficial Obsidian 95/100** | Suporte nativo a 8 idiomas | Manutenção ativa, evolução contínua
 
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/green-dalii/obsidian-llm-wiki) [![Release Obsidian plugin](https://github.com/green-dalii/obsidian-llm-wiki/actions/workflows/release.yml/badge.svg)](https://github.com/green-dalii/obsidian-llm-wiki/actions/workflows/release.yml) ![Version](https://img.shields.io/github/v/release/green-dalii/obsidian-llm-wiki?style=flat-square) ![Author](https://img.shields.io/badge/author-Greener--Dalii-blue?style=flat-square) ![License](https://img.shields.io/badge/license-MIT-green?style=flat-square) ![Maintenance](https://img.shields.io/badge/maintenance-actively%20maintained-brightgreen?style=flat-square) ![Build Status](https://img.shields.io/github/actions/workflow/status/green-dalii/obsidian-llm-wiki/release.yml?style=flat-square) ![Obsidian Compatibility](https://img.shields.io/badge/obsidian-1.6.6%2B-purple?style=flat-square) ![GitHub Stars](https://img.shields.io/github/stars/green-dalii/obsidian-llm-wiki?style=flat-square) ![Downloads](https://img.shields.io/badge/dynamic/json?logo=obsidian&color=483699&label=downloads&query=$[karpathywiki].downloads&url=https://raw.githubusercontent.com/obsidianmd/obsidian-releases/master/community-plugin-stats.json&style=flat-square) ![Languages](https://img.shields.io/badge/languages-8-informational?style=flat-square) ![Providers](https://img.shields.io/badge/providers-8%2B-cyan?style=flat-square)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/green-dalii/obsidian-llm-wiki) [![Release Obsidian plugin](https://github.com/green-dalii/obsidian-llm-wiki/actions/workflows/release.yml/badge.svg)](https://github.com/green-dalii/obsidian-llm-wiki/actions/workflows/release.yml) ![Version](https://img.shields.io/github/v/release/green-dalii/obsidian-llm-wiki?style=flat-square) ![Author](https://img.shields.io/badge/author-Greener--Dalii-blue?style=flat-square) ![License](https://img.shields.io/badge/license-MIT-green?style=flat-square) ![Maintenance](https://img.shields.io/badge/maintenance-actively%20maintained-brightgreen?style=flat-square) ![Build Status](https://img.shields.io/github/actions/workflow/status/green-dalii/obsidian-llm-wiki/release.yml?style=flat-square) ![Obsidian Compatibility](https://img.shields.io/badge/obsidian-1.6.6%2B-purple?style=flat-square) ![GitHub Stars](https://img.shields.io/github/stars/green-dalii/obsidian-llm-wiki?style=flat-square) ![Downloads](https://img.shields.io/badge/dynamic/json?logo=obsidian&color=483699&label=downloads&query=$[karpathywiki].downloads&url=https://raw.githubusercontent.com/obsidianmd/obsidian-releases/master/community-plugin-stats.json&style=flat-square) ![Languages](https://img.shields.io/badge/languages-8-informational?style=flat-square) ![Providers](https://img.shields.io/badge/providers-12%2B-cyan?style=flat-square)
 
 [English](../README.md) | [中文文档](README_CN.md) | [日本語](README_JA.md) | [한국어](README_KO.md) | [Deutsch](README_DE.md) | [Français](README_FR.md) | [Español](README_ES.md) | [Português](README_PT.md)
 
@@ -102,7 +102,7 @@ Esta **versão de hotfix** completa o lote de correções de bugs P0 da v1.16.2.
 - **🎯 Detecção de Duplicados por Camada Semântica** — Camada 1 (correspondências diretas de nome: entre idiomas, abreviações, títulos de alta similaridade) sempre verificada; Camada 2 (sinais indiretos: links compartilhados, similaridade moderada) preenche o orçamento de tokens
 - **⚡ Smart Fix All** — Correção em lote ordenada por causalidade: duplicados mesclados → dead links resolvidos → órfãos vinculados → páginas vazias expandidas
 - **🏷️ Completude de Aliases** — Geração em lote paralela de aliases ausentes em um clique, melhorando a detecção futura de duplicados
-- **🔄 Auto-Manutenção** — Observador de arquivos multi-pasta, lint periódico, verificação de saúde na inicialização (todos opcionais)
+- **🔄 Auto-Manutenção** — Observador de arquivos multi-pasta, lint periódico, verificação de saúde na inicialização (Startup Quick Fixes ativado por padrão, File Watcher e Periodic Lint desativados por padrão)
 - **⚠️ Máquina de Estados de Contradição** — `detected → review_ok → resolved` (correção por IA) ou `detected → pending_fix` (manual)
 
 ### 💬 Consulta e Feedback
@@ -113,8 +113,8 @@ Esta **versão de hotfix** completa o lote de correções de bugs P0 da v1.16.2.
 
 ### 🌐 LLM e Idioma
 
-- **🔌 Multi-Provider** — Anthropic, Anthropic Compatible (Coding Plan), Gemini, OpenAI, DeepSeek, Kimi, GLM, OpenRouter, Ollama, endpoints custom
-- **🔄 5xx Retry** — Tentativa automática de exponential backoff (máx. 2) em erros HTTP 5xx/429/529/529 em todos os clientes
+- **🔌 Multi-Provider** — Anthropic, Anthropic Compatible (Coding Plan), Gemini, OpenAI, DeepSeek, Kimi, GLM, MiniMax, LM Studio, OpenRouter, Ollama, endpoints custom
+- **🔄 5xx Retry** — Tentativa automática de exponential backoff (máx. 2) em erros HTTP 5xx/429/529 em todos os clientes
 - **📋 Lista Dinâmica de Modelos** — Busca em tempo real das APIs dos providers
 - **🌐 Idioma de Saída Wiki** — 8 idiomas independentes da UI (EN/ZH/JA/KO/DE/FR/ES/PT), com entrada customizada
 - **🌍 Internacionalização completa da UI** — Interface do plugin em 8 idiomas (EN/ZH/JA/KO/DE/FR/ES/PT), 269+ campos UI totalmente traduzidos, expressões locais naturais
@@ -126,7 +126,7 @@ Esta **versão de hotfix** completa o lote de correções de bugs P0 da v1.16.2.
 - **⚡ Geração de Páginas Paralela** — 1–5 páginas simultâneas configuráveis, padrão 3 (paralelo), 2–3× mais rápido para sources grandes, isolamento de erro por página
 - **📚 Extração em Lote Iterativa** — Dimensionamento adaptativo de lotes elimina o gargalo de max_tokens para documentos longos
 - **🏛️ Arquitetura de Três Camadas** — `sources/` (read-only) → `wiki/` (gerado por LLM) → `schema/` (config co-evoluída)
-- **🧩 Código Modular** — 13 módulos focados em `src/`
+- **🧩 Código Modular** — 20+ módulos focados em `src/`
 
 ### 🔒 Privacidade e segurança
 
@@ -173,7 +173,7 @@ Machine learning usa algoritmos para aprender com dados.
 ```markdown
 ---
 type: entity
-created: 2026-05-15
+created: 2025-12-01
 updated: 2026-05-15
 sources: ["[[sources/machine-learning]]"]
 tags: [method]
@@ -216,16 +216,20 @@ Este plugin segue a filosofia de Karpathy: **alimente o LLM com contexto Wiki co
 | **🌟 Custo-benefício** | **DeepSeek V4-Flash** | 1M tokens | Preço mais baixo ($0.14/M), 284B MoE, ideal para ingestão batch |
 | **🌟 Custo-benefício** | **Gemini-3.5-Flash** | 1M tokens | 4× mais rápido que GPT-5.5, excelente para tarefas agent |
 | **🌟 Custo-benefício** | **Qwen3.6-Plus** | 1M tokens | Forte capacidade coding & agent, preço competitivo |
-| **🌟 Custo-benefício** | **Grok-4** | 2M tokens | 2M contexto, ideal para wikis muito grandes |
+| **🌟 Custo-benefício** | **Grok-4** | 2M tokens | xAI 2025-07 flagship, 2M context, strong reasoning & code tasks |
 | **Balanceado** | **Claude Sonnet 4.6** | 1M tokens | Bom equilíbrio qualidade/custo, $3/$15 por milhão de tokens |
 | **Leve** | **Claude Haiku 4.5** | 200K tokens | Rápido e econômico, para wikis pequenos |
-| **Econômico** | **MiMo-V2.5-Flash** | 1M tokens | Opção econômica da Xiaomi, arquitetura MoE 309B |
+| **Econômico** | **Xiaomi MiMo-V2.5** | 1M tokens | Xiaomi 310B/15B MoE, open-source MIT 2026-04, agente e multimodal |
 | **Flagship** | Claude Opus 4.7 | 1M tokens | Qualidade máxima, custo alto — usar seletivamente |
 | **Flagship** | GPT-5.5 | 1M tokens | Raciocínio top, custo alto — usar seletivamente |
 
 Para modelos locais (Ollama): janelas de contexto tipicamente menores (8K–128K). Considere usar um provider em nuvem para ingestão + modelo local para query.
 
 **🔌 Anthropic Compatible (Coding Plan):** Se seu provider oferece um endpoint de API compatível com Anthropic, selecione "Anthropic Compatible" e insira o Base URL e API Key do seu provider.
+
+**🦙 Ollama (local, sem chave API):** Instale o [Ollama](https://ollama.com), baixe um modelo (`ollama pull gemma4` ou `ollama pull qwen3.5:27b`), selecione "Ollama (Local)" no menu de providers.
+
+**🎛️ LM Studio (local, sem chave API):** Instale o [LM Studio](https://lmstudio.ai), inicie seu servidor local (padrão `http://localhost:1234/v1`), selecione "LM Studio (Local)" no menu de providers. O LM Studio executa um servidor compatível com OpenAI integrado — o campo de chave API é opcional.
 
 > 💡 **Planos de assinatura:** Se você tem planos tipo Coding Plan, OpenAI Pro ou Anthropic Pro, são excelentes opções para controlar custos com uso frequente. O plugin é compatível com esses serviços.
 
@@ -256,6 +260,7 @@ wiki/               # Módulos do motor Wiki
   lint/             # Submódulos de Lint
     duplicate-detection.ts  # 🔄 Geração programática de candidatos
     fix-runners.ts          # ⚡ Helpers de execução de correção em lote
+    scanners.ts            # 🔍 Scanners (dead links, orphans, aliases)
   contradictions.ts # ⚠️ Detecção de contradições
   system-prompts.ts # 🗣️ Diretiva de idioma + rótulos de seção
 schema/             # Co-evolução de Schema
@@ -328,7 +333,7 @@ Páginas com prefixos de pasta acidentalmente incorporados nos nomes de arquivo 
 ### ⚡ Performance e Controle de custos
 
 **Como acelerar a ingestão?**
-Em **Configurações → Ingestion Acceleration**: aumente **Page Generation Concurrency** para 3–5, reduza **Batch Delay** para 100–300ms (cuidado com rate limiting). Escolha granularidade "Mínima", "Grossa" ou "Padrão" para reduzir o número de páginas e economizar custos de API.
+Em **Configurações → LLM Configuration**: aumente **Page Generation Concurrency** para 3–5, reduza **Batch Delay** para 100–300ms (cuidado com rate limiting). Escolha granularidade "Mínima", "Grossa" ou "Padrão" para reduzir o número de páginas e economizar custos de API.
 
 **Por que recebo erros HTTP 429?**
 O plugin detecta automaticamente rate limiting e sugere: reduzir concorrência para 1–2, aumentar Batch Delay para 500–800ms, ou mudar para um provider com limites mais altos.
@@ -363,7 +368,6 @@ O plugin nunca modifica seus arquivos fonte. Faça backup de `wiki/` → atualiz
 **Como obter ajuda?**
 - [GitHub Issues](https://github.com/green-dalii/obsidian-llm-wiki/issues) — relatar bugs
 - [GitHub Discussions](https://github.com/green-dalii/obsidian-llm-wiki/discussions) — perguntas e feedback
-5. 🛠️ Aplique correções seletivamente — você não precisa consertar tudo de uma vez
 
 ---
 
@@ -388,4 +392,4 @@ Licença MIT — veja [LICENSE](LICENSE).
 
 - **💡 Conceito:** [LLM Wiki de Andrej Karpathy](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) — a visão original que inspirou este plugin
 - **🛠️ Plataforma:** [Obsidian Plugin API](https://docs.obsidian.md/Plugins/Getting+started/Build+a+plugin)
-- **🔌 LLM SDKs:** Anthropic SDK, OpenAI SDK
+- **🔌 Transporte LLM:** `requestUrl` do Obsidian (Anthropic) + OpenAI SDK (provedores terceiros compatíveis com OpenAI)

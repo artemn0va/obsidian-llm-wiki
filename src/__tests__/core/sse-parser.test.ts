@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseSSEEvents } from '../core/sse-parser';
+import { parseSSEEvents } from '../../core/sse-parser';
 
 describe('parseSSEEvents — Anthropic format', () => {
   it('extracts text from content_block_delta events', () => {

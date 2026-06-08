@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { createMockContext, createMockFile } from './__mocks__/engine-context';
-import { SourceAnalyzer } from '../wiki/source-analyzer';
+import { createMockContext, createMockFile } from '../__support__/engine-context';
+import { SourceAnalyzer } from '../../wiki/source-analyzer';
 import { TFile } from 'obsidian';
 
 // We can't instantiate TFile without Obsidian, so we test SourceAnalyzer
@@ -25,7 +25,7 @@ function mockAnalyze(
 function run(
   analyzer: SourceAnalyzer,
   path: string
-): Promise<import('../types').SourceAnalysis | null> {
+): Promise<import('../../types').SourceAnalysis | null> {
   // The SourceAnalyzer only reads file.path and file.basename from the TFile.
   // Our mock provides both fields, so the cast is safe for testing.
   // eslint-disable-next-line obsidianmd/no-tfile-tfolder-cast

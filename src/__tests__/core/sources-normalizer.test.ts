@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { normalizeSourcePath, normalizeSourcesField, scanPollutedSources, fixPollutedSources } from '../core/sources-normalizer';
+import { normalizeSourcePath, normalizeSourcesField, scanPollutedSources, fixPollutedSources } from '../../core/sources-normalizer';
 
 /**
  * Tests for Issue #81: sources field normalize

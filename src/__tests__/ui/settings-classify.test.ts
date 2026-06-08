@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { classifyFetchError } from '../ui/settings-helpers';
+import { classifyFetchError } from '../../ui/settings-helpers';
 
 describe('classifyFetchError', () => {
   describe('Empty', () => {

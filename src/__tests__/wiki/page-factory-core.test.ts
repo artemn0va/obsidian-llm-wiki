@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { PageFactory } from '../wiki/page-factory';
-import { createMockContext, createMockFile } from './__mocks__/engine-context';
-import { createMockEntity } from './factories';
-import { SourceAnalysis } from '../types';
+import { PageFactory } from '../../wiki/page-factory';
+import { createMockContext, createMockFile } from '../__support__/engine-context';
+import { createMockEntity } from '../__support__/factories';
+import type { SourceAnalysis } from '../../types';
 
 // Helper: create minimal valid SourceAnalysis for tests
 function createMockAnalysis(

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { requestUrl } from 'obsidian';
 
-import { AnthropicClient, AnthropicCompatibleClient, OpenAICompatibleClient } from '../llm-client';
+import { AnthropicClient, AnthropicCompatibleClient, OpenAICompatibleClient } from '../../llm-client';
 
 const mockRequestUrl = vi.mocked(requestUrl);
 

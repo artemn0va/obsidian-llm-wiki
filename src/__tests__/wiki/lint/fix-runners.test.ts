@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { Notice } from 'obsidian';
-import { runAliasCompletion, runDeadLinkFixes, runEmptyPageFixes, runOrphanFixes, runDuplicateMerges } from '../wiki/lint/fix-runners';
-import type { LintContext } from '../wiki/lint-controller';
+import { runAliasCompletion, runDeadLinkFixes, runEmptyPageFixes, runOrphanFixes, runDuplicateMerges } from '../../../wiki/lint/fix-runners';
+import type { LintContext } from '../../../wiki/lint-controller';
 
 // NoticeMock in setup.ts adds a static `instances` array. Cast the imported
 // Notice to access the mock-side field for test introspection.

@@ -14,7 +14,7 @@ import {
   TOKENS_QUERY_PAGE_SELECT,
   TOKENS_QUERY_SAVE_DEDUP,
   TOKENS_SCHEMA_SUGGESTION,
-} from '../constants';
+} from '../../constants';
 
 /**
  * Tests for Issue #75: token budget constants.
@@ -69,7 +69,7 @@ describe('Dead code removed (Issue #75)', () => {
   // These constants had no callers and have been removed. Importing them now
   // would fail, so we document the removal via a passing test.
   it('TOKENS_PAGE_MERGE and TOKENS_RELATED_UPDATE are not exported', async () => {
-    const constants = await import('../constants');
+    const constants = await import('../../constants');
     expect(constants).not.toHaveProperty('TOKENS_PAGE_MERGE');
     expect(constants).not.toHaveProperty('TOKENS_RELATED_UPDATE');
   });

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { withTruncationRetry } from '../core/truncation-retry';
+import { withTruncationRetry } from '../../core/truncation-retry';
 
 /**
  * Pure function tests for withTruncationRetry helper.

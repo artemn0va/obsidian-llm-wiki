@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { slugify, computeSlug, parseFrontmatter, detectRateLimitFailures, formatRateLimitNotice, cleanMarkdownResponse, enforceFrontmatterConstraints, parseJsonResponse, mergeFrontmatter, preserveFrontmatterReviewTag, extractBody, getText, filterRedundantAliases, coerceToArray } from '../utils';
-import { getGranularityInstruction, getGranularityFixLimits, appendGranularityToPrompt } from '../wiki/system-prompts';
-import { LLMWikiSettings } from '../types';
+import { slugify, computeSlug, parseFrontmatter, detectRateLimitFailures, formatRateLimitNotice, cleanMarkdownResponse, enforceFrontmatterConstraints, parseJsonResponse, mergeFrontmatter, preserveFrontmatterReviewTag, extractBody, getText, filterRedundantAliases, coerceToArray } from '../../utils';
+import { getGranularityInstruction, getGranularityFixLimits, appendGranularityToPrompt } from '../../wiki/system-prompts';
+import { LLMWikiSettings } from '../../types';
 
 describe('slugify', () => {
   it('returns "untitled" for empty input', () => {
@@ -1022,7 +1022,7 @@ describe('filterRedundantAliases', () => {
 
 import {
   normalizeBatchResponse,
-} from '../wiki/source-analyzer';
+} from '../../wiki/source-analyzer';
 
 describe('normalizeBatchResponse', () => {
   it('returns unusable for null input', () => {

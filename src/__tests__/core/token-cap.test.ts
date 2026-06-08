@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { capMaxTokens } from '../core/token-cap';
+import { capMaxTokens } from '../../core/token-cap';
 
 /**
  * Tests for Issue #75: maxTokensPerCall cap helper.

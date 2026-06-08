@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { bodyWordSet, computeJaccard } from '../wiki/lint/duplicate-detection';
+import { bodyWordSet, computeJaccard } from '../../../wiki/lint/duplicate-detection';
 
 // ── bodyWordSet ────────────────────────────────────────────────────────────────
 

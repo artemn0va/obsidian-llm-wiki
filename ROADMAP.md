@@ -102,25 +102,25 @@ Production-critical performance release. Extraction fundamentally rearchitected 
 
 ### Next: v1.17.0 — Cleanup & Technical Debt
 
-**P1 — Required for stability**
-| # | Item | Effort | Source |
-|---|------|--------|--------|
-| 1 | page-factory resolvePagePath LLM fallback + merge + append tests | 1d | Audit consensus |
-| 2 | runLintWiki phase extraction (762 -> 6 x ~130 lines) | 0.5d | ROADMAP |
-| 3 | Fix thinkingControlCache key mismatch when baseUrl is empty | 1h | Issue #243 |
-| 4 | Fix deleteEmptyStubs callback error handling | 1h | Issue #244 |
-| 5 | Update thinkingControlSupported after successful 400 fallback | 1h | Issue #245 |
+**P1 — Required for stability** (actual remaining after v1.16.3 absorbed #3-#5)
+| # | Item | Effort | Source | Status |
+|---|------|--------|--------|--------|
+| 1 | Lint 3 missing cancel paths (polluted pages, delete empty stubs, schema analyze) | 2h | User audit 2026-06-07 | ✅ Done (Polluted + Delete Stubs wired in v1.16.3 commit 0015de7; Schema Analyze extracted to `src/wiki/schema-analyze.ts` runSchemaAnalyze with 9 unit tests) |
+| 2 | page-factory resolvePagePath LLM fallback + merge + append tests | 1d | Audit consensus | ⏳ TODO |
+| 3 | runLintWiki phase extraction (762 -> 6 x ~130 lines) | 0.5d | ROADMAP | ⏳ TODO |
+| ~~4~~ | ~~Fix thinkingControlCache key mismatch when baseUrl is empty~~ | ~~1h~~ | Issue #243 | ✅ Done in v1.16.3 (commit fc8a228) |
+| ~~5~~ | ~~Fix deleteEmptyStubs callback error handling~~ | ~~1h~~ | Issue #244 | ✅ Done in v1.16.3 (commit fc8a228) |
+| ~~6~~ | ~~Update thinkingControlSupported after successful 400 fallback~~ | ~~1h~~ | Issue #245 | ✅ Done in v1.16.3 (commit fc8a228) |
 
 **P2 — Quality improvements**
-| # | Item | Effort |
-|---|------|--------|
-| 6 | Skip unnecessary thinking probe for Anthropic clients | 30min |
-| 7 | Broaden isThinkingControlError detection patterns | 30min |
-| 8 | Fix test name contradicting assertion (said 'omits' but asserts 'sends') | 10min |
-| 9 | **Duplicate detection Tier 1 budget override** (3-tier Plan A + rotation offset for permanent miss prevention) | 4h | User vault analysis 2026-06-07 |
-| 10 | Worker pool for dedup batches (replace sequential round loop with persistent N worker slots) | 2h | User feedback 2026-06-07 |
-| 11 | Lint Notice progress granularity (split L1 vs L3 verify; add orphan detect notice; i18n completeness) | 2h | User feedback 2026-06-07 |
-| 12 | Lint 3 missing cancel paths (polluted pages, delete empty stubs, schema analyze — none wire signal currently) | 2h | User audit 2026-06-07 |
+| # | Item | Effort | Status |
+|---|------|--------|--------|
+| 7 | Skip unnecessary thinking probe for Anthropic clients | 30min | ⏳ TODO |
+| 8 | Broaden isThinkingControlError detection patterns | 30min | ⏳ TODO |
+| 9 | Fix test name contradicting assertion (said 'omits' but asserts 'sends') | 10min | ⏳ TODO |
+| 10 | **Duplicate detection Tier 1 budget override** (3-tier Plan A + rotation offset for permanent miss prevention) | 4h | ⏳ TODO (User vault analysis 2026-06-07) |
+| 11 | Worker pool for dedup batches (replace sequential round loop with persistent N worker slots) | 2h | ⏳ TODO (User feedback 2026-06-07) |
+| 12 | Lint Notice progress granularity (split L1 vs L3 verify; add orphan detect notice; i18n completeness) | 2h | ⏳ TODO (User feedback 2026-06-07) |
 
 **P3 — Deferred (high complexity, low ROI)**
 | # | Item | Effort | Reason |

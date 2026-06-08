@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildKnownTargets, detectAliasDeficiency, scanDeadLinks, scanOrphans, ScannerPage } from '../wiki/lint/scanners';
+import { buildKnownTargets, detectAliasDeficiency, scanDeadLinks, scanOrphans, ScannerPage } from '../../../wiki/lint/scanners';
 
 // ── buildKnownTargets ─────────────────────────────────────────
 

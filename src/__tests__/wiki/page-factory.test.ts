@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { createMockContext } from './__mocks__/engine-context';
-import { PageFactory } from '../wiki/page-factory';
+import { createMockContext } from '../__support__/engine-context';
+import { PageFactory } from '../../wiki/page-factory';
 
 function makeFactory(vaultFiles: Record<string, string>) {
   const { ctx, vault } = createMockContext({ vaultFiles });

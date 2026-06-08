@@ -1,7 +1,7 @@
 // Test data factories — standardized mock data construction
 // Eliminates repetitive mock setup across test files
 
-import type { EntityInfo, ConceptInfo } from '../types';
+import type { EntityInfo, ConceptInfo } from '../../types';
 
 /**
  * Create a standard EntityInfo for tests

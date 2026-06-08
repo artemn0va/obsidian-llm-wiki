@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   ConflictResolver,
-} from '../core/conflict-resolver';
+} from '../../core/conflict-resolver';
 
 const WIKI_FOLDER = 'wiki';
 

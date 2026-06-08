@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- **Schema analyze cancel wiring** (ROADMAP v1.17.0 P1 #1): Extracted `runSchemaAnalyze()` to `src/wiki/schema-analyze.ts` with proper `startLintOperation` / `endLintOperation` lifecycle. The status bar's "click to cancel" now works during "Suggest Schema Updates" (both command palette and Lint Report Modal entry points). User-initiated cancel suppresses stale result Notice; LLM errors during cancel are silent. 9 unit tests in `src/__tests__/schema-analyze.test.ts`.
+
 ## [1.16.3] - 2026-06-07
 
 ### Fixed

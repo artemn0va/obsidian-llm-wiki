@@ -143,6 +143,7 @@ export interface LLMWikiSettings {
   // 'lower' preserves backwards-compatible all-lowercase filenames.
   // 'preserve' keeps the casing the LLM produces — required for languages
   // where lowercase is grammatically wrong (e.g. German nouns).
+  // Note: switching affects new files only — existing lowercase files keep their names.
   slugCase: 'lower' | 'preserve';
 }
 

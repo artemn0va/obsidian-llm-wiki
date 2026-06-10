@@ -1672,6 +1672,7 @@ describe('buildActiveTagVocabularySection (Issue #85 v6 — prompt injection)', 
     tagVocabularyMode: 'default',
     customEntityTags: '',
     customConceptTags: '',
+    slugCase: 'lower' as const,
   };
 
   it('in default mode, lists the hardcoded VALID_ENTITY_TAGS', () => {
@@ -1747,6 +1748,7 @@ describe('appendTagVocabularyToPrompt (Issue #85 v6 — end-to-end prompt inject
     tagVocabularyMode: 'default',
     customEntityTags: '',
     customConceptTags: '',
+    slugCase: 'lower' as const,
   };
 
   it('appends active tag vocabulary section after the base prompt', () => {
@@ -1821,6 +1823,7 @@ describe('enforceFrontmatterConstraints (Issue #85 v6 — preserve LLM intent)',
     tagVocabularyMode: 'default',
     customEntityTags: '',
     customConceptTags: '',
+    slugCase: 'lower' as const,
   };
 
   it('retains out-of-vocab tags (does NOT silently drop them)', () => {
@@ -1928,6 +1931,7 @@ describe('getActiveSourceTags (Issue #85 v7)', () => {
     tagVocabularyMode: 'default',
     customEntityTags: '',
     customConceptTags: '',
+    slugCase: 'lower' as const,
   };
 
   it('returns the hardcoded VALID_SOURCE_TAGS list', () => {

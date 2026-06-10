@@ -193,6 +193,7 @@ describe('scanTagViolations', () => {
     tagVocabularyMode: 'default',
     customEntityTags: '',
     customConceptTags: '',
+    slugCase: 'lower' as const,
   };
 
   function makeEntityPage(path: string, tags: string[] | string, withTitle = false): ScannerPage {

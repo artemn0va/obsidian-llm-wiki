@@ -465,6 +465,18 @@ export class LLMWikiSettingTab extends PluginSettingTab {
         .setValue(this.tempSettings.wikiFolder)
         .onChange((value) => { this.tempSettings.wikiFolder = value; }));
 
+    new Setting(containerEl)
+      .setName(this.getText('slugCaseName'))
+      .setDesc(this.getText('slugCaseDesc'))
+      .addDropdown(dropdown => {
+        dropdown.addOption('lower', this.getText('slugCaseLower'));
+        dropdown.addOption('preserve', this.getText('slugCasePreserve'));
+        dropdown.setValue(this.tempSettings.slugCase || 'lower');
+        dropdown.onChange((value: string) => {
+          this.tempSettings.slugCase = value as 'lower' | 'preserve';
+        });
+      });
+
     // Granularity setting with conditional custom inputs
     let customEntitySetting: Setting | null = null;
     let customConceptSetting: Setting | null = null;

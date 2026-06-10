@@ -55,6 +55,11 @@ export const ZH_TEXTS = {
     maxTokensPerCallName: '上下文窗口',
     maxTokensPerCallDesc: '限制生成 Token 以适配模型上下文窗口。0 = 无限制（云端默认）。',
 
+    slugCaseName: '文件名大小写',
+    slugCaseDesc: '控制生成的 Wiki 文件名是否转为小写。对于大小写有语义的语言（如德语名词），建议选择“保留”。',
+    slugCaseLower: '小写（默认）',
+    slugCasePreserve: '保留大小写',
+
     // 模型选择
     modelSection: '模型选择',
     fetchModelsName: '获取可用模型',

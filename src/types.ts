@@ -138,6 +138,12 @@ export interface LLMWikiSettings {
   // Issue #75: cap max_tokens per LLM call. 0 = no cap.
   // Recommended for local models with small context windows.
   maxTokensPerCall: number;
+
+  // Issue #111: slug casing for generated filenames.
+  // 'lower' preserves backwards-compatible all-lowercase filenames.
+  // 'preserve' keeps the casing the LLM produces — required for languages
+  // where lowercase is grammatically wrong (e.g. German nouns).
+  slugCase: 'lower' | 'preserve';
 }
 
 export interface QueryHistoryMessage {
@@ -473,4 +479,6 @@ export const DEFAULT_SETTINGS: LLMWikiSettings = {
   // wiring complete. Users with non-thinking models can leave true;
   // users with thinking models wanting CoT can set false.
   disableThinking: true,
+  // Issue #111: default to 'lower' for backwards compatibility.
+  slugCase: 'lower',
 };

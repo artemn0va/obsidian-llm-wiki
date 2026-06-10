@@ -55,6 +55,11 @@ export const FR_TEXTS = {
     maxTokensPerCallName: 'Fenêtre de contexte',
     maxTokensPerCallDesc: 'Limiter les tokens à la fenêtre de contexte du modèle. 0 = aucune limite (cloud).',
 
+    slugCaseName: 'Casse des noms de fichiers',
+    slugCaseDesc: "Contrôle si les noms de fichiers Wiki générés sont mis en minuscules. 'Conserver' recommandé pour les langues où la casse est significative (ex. noms allemands).",
+    slugCaseLower: 'Minuscules (défaut)',
+    slugCasePreserve: 'Conserver la casse',
+
     // Model Selection
     modelSection: 'Sélection du modèle',
     fetchModelsName: 'Récupérer les modèles disponibles',

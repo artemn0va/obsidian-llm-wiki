@@ -55,6 +55,11 @@ export const PT_TEXTS = {
     maxTokensPerCallName: 'Janela de contexto',
     maxTokensPerCallDesc: 'Limitar tokens à janela de contexto do modelo. 0 = sem limite (cloud).',
 
+    slugCaseName: 'Capitalização de nomes de arquivo',
+    slugCaseDesc: "Controla se os nomes de arquivo Wiki gerados são convertidos para minúsculas. Recomenda-se 'Preservar' para idiomas onde maiúsculas são significativas (ex. substantivos alemães).",
+    slugCaseLower: 'Minúsculas (padrão)',
+    slugCasePreserve: 'Preservar capitalização',
+
     // Model Selection
     modelSection: 'Seleção de modelo',
     fetchModelsName: 'Buscar modelos disponíveis',

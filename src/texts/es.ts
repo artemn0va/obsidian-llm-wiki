@@ -55,6 +55,11 @@ export const ES_TEXTS = {
     maxTokensPerCallName: 'Ventana de contexto',
     maxTokensPerCallDesc: 'Limitar tokens a la ventana de contexto del modelo. 0 = sin límite (cloud).',
 
+    slugCaseName: 'Mayúsculas en nombres de archivo',
+    slugCaseDesc: "Controla si los nombres de archivo Wiki generados se ponen en minúsculas. Se recomienda 'Conservar' para idiomas donde las mayúsculas son significativas (p. ej. sustantivos alemanes).",
+    slugCaseLower: 'Minúsculas (predeterminado)',
+    slugCasePreserve: 'Conservar mayúsculas',
+
     // Model Selection
     modelSection: 'Selección del modelo',
     fetchModelsName: 'Obtener modelos disponibles',

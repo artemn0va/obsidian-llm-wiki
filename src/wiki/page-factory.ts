@@ -95,7 +95,7 @@ export class PageFactory {
   ): Promise<PageCreationResult> {
     const folder = pageType === 'entity' ? WIKI_SUBFOLDERS.entities : WIKI_SUBFOLDERS.concepts;
     const otherFolder = pageType === 'entity' ? WIKI_SUBFOLDERS.concepts : WIKI_SUBFOLDERS.entities;
-    const slug = slugify(name);
+    const slug = slugify(name, this.ctx.settings.slugCase === 'preserve');
     const slugPath = `${this.ctx.settings.wikiFolder}/${folder}/${slug}.md`;
 
     // Fast path: exact slug match (same type folder)

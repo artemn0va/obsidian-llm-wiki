@@ -264,11 +264,12 @@ export class WikiEngine {
       let step = 1;
 
       const plannedPaths: string[] = [];
+      const preserveCase = this.settings.slugCase === 'preserve';
       for (const entity of analysis.entities) {
-        plannedPaths.push(normalizePath(`${this.settings.wikiFolder}/entities/${slugify(entity.name)}.md`));
+        plannedPaths.push(normalizePath(`${this.settings.wikiFolder}/entities/${slugify(entity.name, preserveCase)}.md`));
       }
       for (const concept of analysis.concepts) {
-        plannedPaths.push(normalizePath(`${this.settings.wikiFolder}/concepts/${slugify(concept.name)}.md`));
+        plannedPaths.push(normalizePath(`${this.settings.wikiFolder}/concepts/${slugify(concept.name, preserveCase)}.md`));
       }
 
       this.onProgress?.(`[${step}/${totalSteps}] Creating summary...`);
@@ -633,7 +634,8 @@ export class WikiEngine {
   }
 
   async createSummaryPage(file: TFile, analysis: SourceAnalysis, plannedPaths: string[] = []): Promise<string> {
-    const slug = slugify(file.basename);
+    const preserveCase = this.settings.slugCase === 'preserve';
+    const slug = slugify(file.basename, preserveCase);
     const path = normalizePath(`${this.settings.wikiFolder}/sources/${slug}.md`);
     const content = await this.app.vault.read(file);
 
@@ -662,9 +664,9 @@ export class WikiEngine {
           const name = relPath.split('/').pop() || relPath;
           return `- [[${relPath}|${name}]]`;
         }).join('\n')
-      : analysis.entities.map(e => `- [[entities/${slugify(e.name)}|${e.name}]]`).join('\n') +
+      : analysis.entities.map(e => `- [[entities/${slugify(e.name, preserveCase)}|${e.name}]]`).join('\n') +
         '\n' +
-        analysis.concepts.map(c => `- [[concepts/${slugify(c.name)}|${c.name}]]`).join('\n');
+        analysis.concepts.map(c => `- [[concepts/${slugify(c.name, preserveCase)}|${c.name}]]`).join('\n');
 
     const prompt = PROMPTS.generateSummaryPage
       .replace('{{source_title}}', analysis.source_title)

@@ -22,7 +22,7 @@ export function getText<K extends keyof typeof TEXTS.en>(
   return text;
 }
 
-export function slugify(text: string): string {
+export function slugify(text: string, preserveCase = false): string {
   console.debug('slugify input:', text, 'length:', text?.length);
 
   if (!text || text.trim().length === 0) {
@@ -30,14 +30,15 @@ export function slugify(text: string): string {
     return 'untitled';
   }
 
-  return computeSlug(text);
+  return computeSlug(text, preserveCase);
 }
 
-// Pure slug computation — no debug logs. Used for batch operations like
-// matchExtractedToExisting where thousands of slugify calls would flood the log.
 // Pure slug computation — no debug logs on normal path. Used for batch operations
 // where thousands of silent calls are needed (e.g. matching 2141 existing pages).
-export function computeSlug(text: string): string {
+// preserveCase skips the final toLowerCase() for file creation (Issue #111).
+// All comparison/matching callers must NOT pass preserveCase so slugs stay
+// case-insensitively comparable regardless of the user's slugCase setting.
+export function computeSlug(text: string, preserveCase = false): string {
   if (!text || text.trim().length === 0) return 'untitled';
 
   const trimmed = text.trim();
@@ -62,7 +63,7 @@ export function computeSlug(text: string): string {
 
   if (finalSlug.length === 0) return 'untitled-' + Date.now();
 
-  return finalSlug.toLowerCase();
+  return preserveCase ? finalSlug : finalSlug.toLowerCase();
 }
 
 // Filter out aliases that are redundant against a page's own filename.

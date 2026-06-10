@@ -182,17 +182,18 @@ CRITICAL RULES:
     this.ctx.onProgress?.('Creating summary page...');
     await this.orch.ensureWikiStructure();
 
-    const semanticSlug = slugify(parsed.source_title);
+    const preserveCase = this.ctx.settings.slugCase === 'preserve';
+    const semanticSlug = slugify(parsed.source_title, preserveCase);
     const summaryPath = `${this.ctx.settings.wikiFolder}/sources/${semanticSlug}.md`;
     console.debug('[Semantic file path]', summaryPath);
 
     // Build planned paths before summary so the LLM can reference them
     const convPlannedPaths: string[] = [summaryPath];
     for (const entity of parsed.entities) {
-      convPlannedPaths.push(`${this.ctx.settings.wikiFolder}/entities/${slugify(entity.name)}.md`);
+      convPlannedPaths.push(`${this.ctx.settings.wikiFolder}/entities/${slugify(entity.name, preserveCase)}.md`);
     }
     for (const concept of parsed.concepts) {
-      convPlannedPaths.push(`${this.ctx.settings.wikiFolder}/concepts/${slugify(concept.name)}.md`);
+      convPlannedPaths.push(`${this.ctx.settings.wikiFolder}/concepts/${slugify(concept.name, preserveCase)}.md`);
     }
 
     const createdPagesList = convPlannedPaths.length > 0

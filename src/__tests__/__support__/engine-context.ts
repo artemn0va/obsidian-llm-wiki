@@ -100,6 +100,7 @@ export const DEFAULT_SETTINGS: LLMWikiSettings = {
   tagVocabularyMode: 'default',
   customEntityTags: '',
   customConceptTags: '',
+  slugCase: 'lower' as const,
 };
 
 // ── Mock EngineContext ───────────────────────────────────────────

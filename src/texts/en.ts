@@ -58,6 +58,12 @@ export const EN_TEXTS = {
     maxTokensPerCallName: 'Context Window',
     maxTokensPerCallDesc: 'Limit generation tokens to fit your model\'s context window. 0 = no cap (cloud default).',
 
+    // Issue #111: slug casing
+    slugCaseName: 'File Name Casing',
+    slugCaseDesc: 'Controls whether generated wiki filenames are lowercased. "Preserve" is recommended for languages where lowercase changes meaning (e.g. German nouns).',
+    slugCaseLower: 'Lowercase (default)',
+    slugCasePreserve: 'Preserve case',
+
     // Model Selection
     modelSection: 'Model Selection',
     fetchModelsName: 'Fetch Available Models',

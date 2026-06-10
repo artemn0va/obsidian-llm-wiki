@@ -354,7 +354,7 @@ export default class LLMWikiPlugin extends Plugin {
   // ==================== Ingestion ====================
 
   private async isAlreadyIngested(sourceFile: TFile): Promise<boolean> {
-    const slug = slugify(sourceFile.basename);
+    const slug = slugify(sourceFile.basename, this.settings.slugCase === 'preserve');
     const wikiPath = `${this.settings.wikiFolder}/sources/${slug}.md`;
 
     try {

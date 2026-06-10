@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Configurable file name casing (Issue #111).** A new `File Name Casing` setting (`lower` / `preserve`) controls whether generated wiki filenames are lowercased. The default `lower` preserves backwards-compatible behaviour. `preserve` is recommended for languages where lowercase changes meaning — most notably German, where all nouns are capitalised (`Mitochondrien`, not `mitochondrien`). The setting applies consistently across all file-creation paths (ingest, lint stub creation, summary pages). Slug-based comparison for deduplication and conflict detection always uses lowercase internally, so matching remains correct regardless of the chosen casing mode. Available in all 8 interface languages.
+
 ### Fixed
 - **Tags silently lost on re-ingest and multi-source merge (Issue #114).** Two distinct failure modes caused manually-set `tags:` to be overwritten on every subsequent ingest:
   - `createSummaryPage()` regenerated source pages from scratch on every re-ingest without checking for existing content. Manually corrected tags were discarded. Fix: read existing source page frontmatter before generation; if `tags:` is already populated, carry it forward as the `tagsValue` injected into the LLM prompt (existing tags > source-note tags > LLM concept name fallback).

@@ -55,6 +55,11 @@ export const DE_TEXTS = {
     maxTokensPerCallName: 'Kontextfenster',
     maxTokensPerCallDesc: 'Tokens an das Kontextfenster des Modells anpassen. 0 = kein Limit (Cloud).',
 
+    slugCaseName: 'Dateinamen-Schreibweise',
+    slugCaseDesc: "Legt fest, ob generierte Wiki-Dateinamen kleingeschrieben werden. 'Beibehalten' empfohlen fuer Sprachen, in denen Gross-/Kleinschreibung bedeutungsrelevant ist (z. B. deutsche Substantive).",
+    slugCaseLower: 'Kleinschreibung (Standard)',
+    slugCasePreserve: 'Schreibweise beibehalten',
+
     // Model Selection
     modelSection: 'Modellauswahl',
     fetchModelsName: 'Verfügbare Modelle abrufen',

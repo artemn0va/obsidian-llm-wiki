@@ -55,6 +55,11 @@ export const JA_TEXTS = {
     maxTokensPerCallName: 'コンテキストウィンドウ',
     maxTokensPerCallDesc: '生成Tokenをモデルのコンテキストウィンドウに制限。0 = 無制限（クラウドデフォルト）。',
 
+    slugCaseName: 'ファイル名の大文字小文字',
+    slugCaseDesc: '生成される Wiki ファイル名を小文字化するかどうかを制御します。大文字小文字に意味のある言語（ドイツ語の名詞など）では「保持」を推奨。',
+    slugCaseLower: '小文字（デフォルト）',
+    slugCasePreserve: '大文字小文字を保持',
+
     // Model Selection
     modelSection: 'モデル選択',
     fetchModelsName: '利用可能なモデルを取得',

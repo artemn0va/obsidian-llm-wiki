@@ -212,7 +212,7 @@ export class LintFixer {
         concept: WIKI_SUBFOLDERS.concepts,
       };
       const stubDir = pluralMap[stubType] || `${stubType}s`;
-      const stubSlug = slugify(sanitizedTitle);
+      const stubSlug = slugify(sanitizedTitle, this.ctx.settings.slugCase === 'preserve');
       const stubPath = `${this.ctx.settings.wikiFolder}/${stubDir}/${stubSlug}.md`;
       const sourceRel = sourcePath
         .replace(this.ctx.settings.wikiFolder + '/', '')
@@ -289,7 +289,7 @@ tags: [${stubType === 'entity' ? 'other' : 'term'}]
         ? 'entity'
         : 'concept';
       const stubDir = stubType === 'entity' ? 'entities' : 'concepts';
-      const stubSlug = slugify(cleanBasename);
+      const stubSlug = slugify(cleanBasename, this.ctx.settings.slugCase === 'preserve');
       const stubPath = `${this.ctx.settings.wikiFolder}/${stubDir}/${stubSlug}.md`;
       const sourceRel = sourcePath
         .replace(this.ctx.settings.wikiFolder + '/', '')

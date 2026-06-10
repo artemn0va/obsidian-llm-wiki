@@ -55,6 +55,11 @@ export const KO_TEXTS = {
     maxTokensPerCallName: '컨텍스트 창',
     maxTokensPerCallDesc: '컨텍스트 창에 맞게 토큰 제한. 0 = 제한 없음(클라우드 기본값).',
 
+    slugCaseName: '파일명 대소문자',
+    slugCaseDesc: '생성되는 Wiki 파일명을 소문자로 변환할지 제어합니다. 대소문자가 의미 있는 언어(예: 독일어 명사)는 "유지" 권장.',
+    slugCaseLower: '소문자(기본값)',
+    slugCasePreserve: '대소문자 유지',
+
     // Model Selection
     modelSection: '모델 선택',
     fetchModelsName: '사용 가능한 모델 가져오기',

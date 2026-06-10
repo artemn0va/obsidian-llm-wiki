@@ -911,6 +911,7 @@ describe('getGranularityInstruction', () => {
     tagVocabularyMode: 'default',
     customEntityTags: '',
     customConceptTags: '',
+    slugCase: 'lower' as const,
   };
 
   it('injects concrete entity and concept limits for custom mode', () => {
@@ -964,6 +965,7 @@ describe('appendGranularityToPrompt', () => {
     tagVocabularyMode: 'default',
     customEntityTags: '',
     customConceptTags: '',
+    slugCase: 'lower' as const,
   };
 
   it('appends granularity instruction to existing prompt', () => {
@@ -1014,6 +1016,7 @@ describe('getGranularityFixLimits', () => {
     tagVocabularyMode: 'default',
     customEntityTags: '',
     customConceptTags: '',
+    slugCase: 'lower' as const,
   };
 
   it('returns user-defined limits for custom mode', () => {

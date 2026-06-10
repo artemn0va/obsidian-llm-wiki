@@ -252,6 +252,21 @@ export const JA_TEXTS = {
     customConceptLimitName: 'カスタム概念上限',
     customConceptLimitDesc: 'ソースファイルごとの最大概念抽出数（1-500）',
 
+    // Issue #85 v2: タグ語彙 (chip 入力 UI, Wiki 設定内に埋め込み)
+    tagVocabularyInlineDesc: 'entity/concept フロントマターのタグを管理語彙で制御します。"/" を含むネストタグは保持されます。',
+    tagVocabularyModeName: 'タグ語彙設定',
+    tagVocabularyModeDescDefault: 'デフォルトは組み込みタグを使用: {}。「カスタム」に切り替えると独自の語彙を定義できます。',
+    tagVocabularyModeDescCustom: 'カスタム: 下で chip 入力を使って独自の entity/concept タグを定義します。Enter またはカンマで追加、× で削除。',
+    tagVocabularyModeDefault: 'デフォルト (組み込みサブタイプタグ)',
+    tagVocabularyModeCustom: 'カスタム (ユーザー定義)',
+    customEntityTagsName: 'カスタムエンティティタグ',
+    customEntityTagsDesc: 'Enter またはカンマで chip 追加、× で削除。"/" を含むネストタグは保持されます。',
+    customEntityTagsPlaceholder: 'person, organization, project',
+    customConceptTagsName: 'カスタム概念タグ',
+    customConceptTagsDesc: 'Enter またはカンマで chip 追加、× で削除。"/" を含むネストタグは保持されます。',
+    customConceptTagsPlaceholder: 'theory, method, technology',
+    chipDuplicateHint: '重複タグをスキップしました',
+
     // Ingestion Acceleration
     accelerationSectionTitle: '取り込み高速化',
     pageGenerationConcurrencyName: 'LLM 並列度',

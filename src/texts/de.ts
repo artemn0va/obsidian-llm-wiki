@@ -252,6 +252,21 @@ export const DE_TEXTS = {
     customConceptLimitName: 'Benutzerdefiniertes Konzeptlimit',
     customConceptLimitDesc: 'Maximale Anzahl zu extrahierender Konzepte pro Quelldatei (1-500)',
 
+    // Issue #85 v2: Tag-Vokabular (Chip-Eingabe, in Wiki-Konfiguration eingebettet)
+    tagVocabularyInlineDesc: 'Kontrolliertes Vokabular für entity- und concept-Frontmatter-Tags. Verschachtelte Obsidian-Tags mit „/" bleiben erhalten.',
+    tagVocabularyModeName: 'Tag-Vokabular-Konfiguration',
+    tagVocabularyModeDescDefault: 'Standard verwendet eingebaute Tags: {}. Wechseln Sie zu „Benutzerdefiniert", um Ihr eigenes Vokabular zu definieren.',
+    tagVocabularyModeDescCustom: 'Benutzerdefiniert: Definieren Sie unten Ihre eigenen entity- und concept-Tags per Chip-Eingabe — Enter oder Komma zum Hinzufügen, × zum Entfernen.',
+    tagVocabularyModeDefault: 'Standard (eingebaute Subtyp-Tags)',
+    tagVocabularyModeCustom: 'Benutzerdefiniert (eigene)',
+    customEntityTagsName: 'Benutzerdefinierte Entitäts-Tags',
+    customEntityTagsDesc: 'Enter oder Komma zum Hinzufügen eines Chips, × zum Entfernen. Verschachtelte Tags mit „/" bleiben erhalten.',
+    customEntityTagsPlaceholder: 'person, organization, project',
+    customConceptTagsName: 'Benutzerdefinierte Konzept-Tags',
+    customConceptTagsDesc: 'Enter oder Komma zum Hinzufügen eines Chips, × zum Entfernen. Verschachtelte Tags mit „/" bleiben erhalten.',
+    customConceptTagsPlaceholder: 'theory, method, technology',
+    chipDuplicateHint: 'Doppeltes Tag übersprungen',
+
     // Ingestion Acceleration
     accelerationSectionTitle: 'Aufnahmen-Beschleunigung',
     pageGenerationConcurrencyName: 'LLM-Parallelität',

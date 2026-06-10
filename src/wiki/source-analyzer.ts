@@ -14,7 +14,7 @@ import { PROMPTS } from '../prompts';
 import { parseJsonResponse, matchExtractedToExisting, coerceToArray } from '../utils';
 import { MAX_TOKENS_BATCH, TOKENS_PER_ITEM_BUDGET, SOURCE_ANALYZER_RETRY_MULTIPLIER } from '../constants';
 import { getExistingWikiPages } from './lint-fixes';
-import { getGranularityInstruction } from './system-prompts';
+import { getGranularityInstruction, buildActiveTagVocabularySection } from './system-prompts';
 import { calculateBatchLimits, adjustBatchSizeForResponse, getCustomTypeCaps } from '../core/batch-limits';
 import { detectConvergence, checkCumulativeLimits, checkEmptyBatch, formatConvergenceStatus } from '../core/convergence-detector';
 import { createEmptyAccumulation, mergeBatchResults, buildSourceAnalysis, calculateBatchStats } from '../core/batch-merger';
@@ -132,6 +132,12 @@ export class SourceAnalyzer {
     // Build granularity instruction from shared definitions
     const granularityInstruction = getGranularityInstruction(this.ctx.settings)
 
+    // Issue #85 v6: inject the active tag vocabulary so the LLM knows
+    // exactly which entity/concept types are accepted by the frontmatter
+    // validator. Without this, the LLM invents its own types that get
+    // silently dropped at write time.
+    const tagVocabularySection = buildActiveTagVocabularySection(this.ctx.settings)
+
     // ⚡ Page list removed from extraction prompt — PageFactory.resolvePagePath
     // handles deduplication via slug/alias/LLM matching. Programmatic
     // related_pages matching runs after extraction instead.
@@ -180,7 +186,11 @@ export class SourceAnalyzer {
         .replace(/{{batch_size}}/g, String(currentBatchSize));
 
       const langHint = `\n\nCRITICAL LANGUAGE REQUIREMENT: Summaries, descriptions, source_title, and key_points in your JSON output MUST be written in ${WIKI_LANGUAGES[this.ctx.settings.wikiLanguage || 'en'] || this.ctx.settings.wikiLanguage || 'English'}. HOWEVER: entity names and concept names MUST be preserved in their original source language — NEVER translate names. mentions_in_source MUST be verbatim quotes from the source (preserve original language).`;
-      const finalPrompt = prompt + langHint;
+      // Issue #85 v6: inject the active tag vocabulary so the LLM emits
+      // type values that match the user's custom vocabulary (or the
+      // hardcoded defaults). Without this, the LLM invents its own types
+      // and the frontmatter validator silently drops them.
+      const finalPrompt = prompt + langHint + '\n\n' + tagVocabularySection;
 
       console.debug(`[Batch ${batchNum + 1}/${limits.maxBatches}] LLM call started (batch_size=${currentBatchSize})...`);
       console.debug(`[Batch ${batchNum + 1}] Prompt length:`, prompt.length);

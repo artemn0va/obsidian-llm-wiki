@@ -253,6 +253,21 @@ export const ZH_TEXTS = {
     customConceptLimitName: '自定义概念上限',
     customConceptLimitDesc: '每篇源文件最多提取的概念数量（1-500）',
 
+    // Issue #85 v2: 标签词汇表 (chip input 交互, 嵌入 Wiki 配置)
+    tagVocabularyInlineDesc: '为 entity 和 concept frontmatter 标签设置受控词汇。Obsidian 嵌套标签 "/" 会被保留。',
+    tagVocabularyModeName: '标签（Tags)词汇表配置',
+    tagVocabularyModeDescDefault: '默认使用内置标签: {}。切换到"自定义"可定义您自己的词汇。',
+    tagVocabularyModeDescCustom: '自定义：在下方使用 chip 输入定义您自己的 entity 与 concept 标签。回车或逗号添加, × 删除。',
+    tagVocabularyModeDefault: '默认 (内置子类型标签)',
+    tagVocabularyModeCustom: '自定义 (用户定义)',
+    customEntityTagsName: '自定义实体标签',
+    customEntityTagsDesc: '按回车或逗号添加 chip, 点 × 删除。嵌套标签 "/" 会被保留。',
+    customEntityTagsPlaceholder: 'person, organization, project',
+    customConceptTagsName: '自定义概念标签',
+    customConceptTagsDesc: '按回车或逗号添加 chip, 点 × 删除。嵌套标签 "/" 会被保留。',
+    customConceptTagsPlaceholder: 'theory, method, technology',
+    chipDuplicateHint: '重复标签已跳过',
+
     // 摄入加速
     accelerationSectionTitle: '摄入加速',
     pageGenerationConcurrencyName: 'LLM 并发度',

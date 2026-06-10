@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.18.0] - 2026-06-10
+
+### Added
+- **User-Controlled Tag Vocabulary (Issue #85) — chip input UX + end-to-end pipeline (v6).** Wiki admins in medical, legal, R&D, and other professional domains can now define a controlled vocabulary for entity/concept frontmatter tags and the LLM actually uses it. The new "Tag Vocabulary" sub-block (embedded in Wiki Configuration — no separate heading) has a **Vocabulary Mode** dropdown:
+  - **Default** — preserves the original hardcoded subtype tags (`person`/`organization`/… for entities, `theory`/`method`/… for concepts). The dropdown description now shows the concrete default list inline: `Default uses built-in tags: person, organization, project, … (entities) / theory, method, … (concepts).`
+  - **Custom** — two chip inputs (Custom Entity Tags + Custom Concept Tags). Add via Enter / `,` / `;`, remove via × click or Backspace on empty input. Nested tags with `/` (e.g. `Arzneimittel/Neurologie`) are preserved. Whitespace is trimmed, empty entries filtered, duplicates (case-insensitive) are silently skipped with a brief shake animation. CJK IME composition is respected (`event.isComposing` guard). Defaults are editable baseline (not preview) — when the persisted custom CSV is empty, the chip input materializes the default vocabulary as fully-editable chips.
+- **🔴 v6: End-to-end prompt injection.** New `buildActiveTagVocabularySection()` + `appendTagVocabularyToPrompt()` helpers inject the active vocabulary into ingestion (source-analyzer), page generation (page-factory × 3 sites: new page, merge, rebuild), and lint analyze (lint-controller). The LLM now knows exactly which entity/concept types are valid and stops inventing its own. Before v6, the user-defined vocabulary was only used for *post-hoc validation*; the LLM kept inventing subtype names that got silently dropped at write time.
+- **🔴 v6: Preserve LLM intent on write.** `enforceFrontmatterConstraints` no longer silently drops out-of-vocab tags. It retains all LLM-emitted tags (with a `console.debug` note when the vocabulary diverges) so the user can see exactly what the model produced and can decide whether to expand their custom vocabulary. Fallback to `DEFAULT_ENTITY_TAG` / `DEFAULT_CONCEPT_TAG` only when the tags array is genuinely empty.
+- **v1 → v2 migration runs on `onload()`.** New `cleanupVocabularyTags()` reads `customEntityTags` / `customConceptTags`, normalizes them via `normalizeVocabularyCsv` (trim, dedupe case-insensitively, drop empty), and writes back to `data.json` so existing users see clean chips on first reload.
+- **`getActiveEntityTags` / `getActiveConceptTags` pure helpers** in `utils.ts` — the single source of truth for "which tags are valid right now". All call-sites (page-factory, lint-fixes × 2) pass `this.ctx.settings`.
+
+### Changed
+- 8-language i18n: rewritten 2 descs (`customEntityTagsDesc` / `customConceptTagsDesc` now describe chip input semantics), added 5 new keys (`tagVocabularyInlineName/Desc`, `tagVocabularyModeDescDefault/Custom`, `chipDuplicateHint`), removed 1 key (`tagVocabularySection`). Mirrored in all 8 locales.
+- **`minAppVersion` bumped 1.6.6 → 1.11.0** to use `Setting.addComponent()` (the only Obsidian API for mounting custom DOM into a Setting row).
+- **New devDep `jsdom@29.1.1`** for the chip input test environment (does NOT affect production bundle; only used by vitest under jsdom env).
+
+### Tests
+- +16 jsdom-based chip input tests (rendering, keyboard handling, IME composition, a11y, dedupe, getValue/onChange).
+- +7 pure `normalizeVocabularyCsv` tests (trim, dedupe, nested tag, idempotency, v1 leftover CSV).
+- +7 `buildActiveTagVocabularySection` tests (default vs custom, nested tags, fallback semantics).
+- +4 `appendTagVocabularyToPrompt` tests (composes with granularity injection, end-to-end custom tags flow).
+- +6 enforceFrontmatterConstraints preserve-LLM-intent tests (retain out-of-vocab, dedupe, nested tag, fallback).
+- Updated 5 legacy tests to reflect the new "preserve LLM intent" behavior.
+- 654 tests passing (605 → 654, +49), 0 regressions.
+
 ## [1.17.0] - 2026-06-08
 
 ### Added

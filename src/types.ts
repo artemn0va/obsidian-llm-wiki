@@ -89,6 +89,11 @@ export interface LLMWikiSettings {
   // Schema
   enableSchema: boolean;
 
+  // Issue #85: tag vocabulary mode (Issue #85 — user-configurable tag vocabulary)
+  tagVocabularyMode: 'default' | 'custom';
+  customEntityTags: string;
+  customConceptTags: string;
+
   // Extraction
   extractionGranularity: ExtractionGranularity;
   customEntityLimit?: number;
@@ -405,6 +410,11 @@ export const DEFAULT_SETTINGS: LLMWikiSettings = {
 
   // Schema
   enableSchema: true,
+
+  // Issue #85: tag vocabulary
+  tagVocabularyMode: 'default',
+  customEntityTags: '',
+  customConceptTags: '',
 
   // Extraction
   extractionGranularity: 'standard',

@@ -402,7 +402,8 @@ tags: [${stubType === 'entity' ? 'other' : 'term'}]
     const dateStr = new Date().toISOString().split('T')[0];
     const withDates = normalizeFrontmatterDates(stubFree, dateStr);
     const pageTypeSingular = pageType === WIKI_SUBFOLDERS.entities ? 'entity' : pageType === WIKI_SUBFOLDERS.concepts ? 'concept' : 'source';
-    const enforced = enforceFrontmatterConstraints(withDates, pageTypeSingular);
+    // Issue #85: pass settings so custom tag vocabulary is honored
+    const enforced = enforceFrontmatterConstraints(withDates, pageTypeSingular, this.ctx.settings);
 
     await this.ctx.createOrUpdateFile(pagePath, enforced);
 
@@ -685,7 +686,8 @@ tags: [${stubType === 'entity' ? 'other' : 'term'}]
 
     // 4. Enforce frontmatter constraints (tag validation, etc.)
     const pageType = (targetFm?.type as 'entity' | 'concept' | 'source' | undefined) || 'entity';
-    const validated = enforceFrontmatterConstraints(finalContent, pageType);
+    // Issue #85: pass settings so custom tag vocabulary is honored
+    const validated = enforceFrontmatterConstraints(finalContent, pageType, this.ctx.settings);
 
     // 5. Write merged target
     await this.ctx.createOrUpdateFile(targetPath, validated);

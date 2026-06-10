@@ -7,7 +7,7 @@ import { LintFixCallbacks, LintCounts, LintReportModal, FixReportModal, FixRepor
 import { TEXTS } from '../texts';
 import { PROMPTS } from '../prompts';
 import { cleanMarkdownResponse, parseJsonResponse, detectRateLimitFailures, formatRateLimitNotice, getText, nestReportUnderParent } from '../utils';
-import { appendGranularityToPrompt } from './system-prompts';
+import { appendGranularityToPrompt, appendTagVocabularyToPrompt } from './system-prompts';
 import { TOKENS_LINT_DEDUP_LLM, NOTICE_NORMAL, NOTICE_RATE_LIMIT } from '../constants';
 import { isPageEmpty, detectPollutedPages, fixDoubleNestedWikiLinks } from './lint-fixes';
 import { fixPollutedSources, scanPollutedSources } from '../core/sources-normalizer';
@@ -529,13 +529,19 @@ export async function runLintWiki(ctx: LintContext, signal?: AbortSignal): Promi
 
     // Issue #96: honor user's extractionGranularity setting in the LLM
     // analysis step (was previously unconstrained).
-    const prompt = appendGranularityToPrompt(
-      t.lintAnalysisPrompt
-        .replace('{index}', indexContent)
-        .replace('{total}', String(wikiFiles.length))
-        .replace('{sample}', String(samplePages.length))
-        .replace('{contentSample}', contentSample)
-        .replace('{progReport}', progReport || 'No issues detected by programmatic checks.'),
+    // Issue #85 v6: also append the active tag vocabulary so the LLM
+    // knows which entity/concept types are valid when suggesting fixes
+    // for pages with non-conforming tags.
+    const prompt = appendTagVocabularyToPrompt(
+      appendGranularityToPrompt(
+        t.lintAnalysisPrompt
+          .replace('{index}', indexContent)
+          .replace('{total}', String(wikiFiles.length))
+          .replace('{sample}', String(samplePages.length))
+          .replace('{contentSample}', contentSample)
+          .replace('{progReport}', progReport || 'No issues detected by programmatic checks.'),
+        ctx.settings
+      ),
       ctx.settings
     );
 

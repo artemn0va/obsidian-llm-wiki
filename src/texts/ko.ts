@@ -253,6 +253,21 @@ export const KO_TEXTS = {
     customConceptLimitName: '사용자 지정 컨셉 상한',
     customConceptLimitDesc: '소스 파일당 최대 컨셉 추출 수 (1-500)',
 
+    // Issue #85 v2: 태그 어휘 (chip 입력 UI, Wiki 설정에 임베드)
+    tagVocabularyInlineDesc: 'entity/concept frontmatter 태그의 관리 어휘입니다. "/"가 있는 중첩 태그는 보존됩니다.',
+    tagVocabularyModeName: '태그 어휘 설정',
+    tagVocabularyModeDescDefault: '기본값은 내장 태그 사용: {}. "사용자 지정"으로 전환하면 자체 어휘를 정의할 수 있습니다.',
+    tagVocabularyModeDescCustom: '사용자 지정: 아래에서 chip 입력을 사용해 자체 entity/concept 태그를 정의하세요. Enter 또는 쉼표로 추가, ×로 삭제.',
+    tagVocabularyModeDefault: '기본 (내장 서브타입 태그)',
+    tagVocabularyModeCustom: '사용자 지정 (사용자 정의)',
+    customEntityTagsName: '사용자 지정 엔티티 태그',
+    customEntityTagsDesc: 'Enter 또는 쉼표로 chip 추가, ×로 삭제. "/"가 있는 중첩 태그는 보존됩니다.',
+    customEntityTagsPlaceholder: 'person, organization, project',
+    customConceptTagsName: '사용자 지정 컨셉 태그',
+    customConceptTagsDesc: 'Enter 또는 쉼표로 chip 추가, ×로 삭제. "/"가 있는 중첩 태그는 보존됩니다.',
+    customConceptTagsPlaceholder: 'theory, method, technology',
+    chipDuplicateHint: '중복 태그 건너뜀',
+
     // Ingestion Acceleration
     accelerationSectionTitle: '수집 가속화',
     pageGenerationConcurrencyName: 'LLM 동시성',

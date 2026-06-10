@@ -2,11 +2,29 @@
 
 > Feature planning and improvement proposals
 
-**Version:** 1.17.0 | **Updated:** 2026-06-08
+**Version:** 1.18.0 | **Updated:** 2026-06-10
 
 ---
 
 ## Current Status
+
+### Implemented (v1.18.0) — User-Controlled Tag Vocabulary (Issue #85 v6 — end-to-end customTags pipeline)
+
+Closes the long-standing #85 (P3) tag-vocabulary request. v2 ships a chip-input UX (GitHub Issue Labels style) that replaces v1's textarea CSV. Headline wins:
+
+- **Chip input replaces the textarea CSV.** Each tag renders as a discrete chip (rounded pill + × button) inside the input area. Add via Enter / `,` / `;`; remove via × click or Backspace on empty input. Duplicate tags (case-insensitive) are silently skipped with a brief shake animation. CJK IME composition is respected (`event.isComposing` guard). Nested tags with `/` are preserved verbatim.
+- **No more standalone "Tag Vocabulary" heading.** The settings sub-block is now embedded inside the Wiki Configuration section as a `setName()` row (no `.setHeading()`), making the visual hierarchy reflect the conceptual hierarchy.
+- **Default-mode description enumerates the actual defaults.** When mode = Default, the dropdown description shows `Default uses built-in tags: person, organization, project, product, event, location, other (entities) / theory, method, technology, term, other (concepts).` so users know what they will get without switching modes.
+- **v1 → v2 migration runs on `onload()`.** `cleanupVocabularyTags()` normalizes any pre-v2 CSV (trim, dedupe case-insensitively, drop empty entries) and writes back to `data.json` so existing users see clean chips immediately.
+- **Eight-language i18n.** 8 new keys per language: `tagVocabularyInlineName/Desc`, `tagVocabularyModeDescDefault/Custom`, `chipDuplicateHint`, plus rewritten `customEntityTagsDesc` / `customConceptTagsDesc` describing chip semantics.
+- **🔴 v6: End-to-end customTags pipeline (the actual fix).** Before v6, the user-defined vocabulary was only used for *post-hoc validation* — the LLM was never told about it, so it kept inventing its own subtype names that got silently dropped at write time. v6 closes the loop:
+  - **Prompt injection** via new `buildActiveTagVocabularySection()` + `appendTagVocabularyToPrompt()` helpers. The active vocabulary is now injected into ingestion (source-analyzer), page generation (page-factory × 3 sites: new page, merge, rebuild), and lint analyze (lint-controller). The LLM knows exactly which entity/concept types are valid and stops inventing new ones.
+  - **Preserve LLM intent on write.** `enforceFrontmatterConstraints` no longer silently drops out-of-vocab tags. It retains all LLM-emitted tags (with a `console.debug` note when the vocabulary diverges) so the user can see what the model produced and decide whether to expand their custom vocabulary. Fallback to `DEFAULT_ENTITY_TAG` / `DEFAULT_CONCEPT_TAG` only when the tags array is genuinely empty.
+- **Default tags as editable baseline (v4).** When the persisted custom CSV is empty, the chip input materializes the default vocabulary as fully-editable chips (same `.llm-wiki-tag-chip` class, same × button). No "preview" / read-only distinction.
+- **Two-row layout (v5).** Chips on the top row, input on its own row below — natural reading flow, no awkward left-alignment.
+- **49 new tests, 0 regressions.** 16 chip input (jsdom), 7 normalize vocabulary, 7 buildActiveTagVocabularySection, 4 appendTagVocabularyToPrompt, 6 preserve-LLM-intent, plus updated legacy tests. 605 → 654 tests passing.
+- **`minAppVersion` bumped 1.6.6 → 1.11.0** to use `Setting.addComponent()` (the only Obsidian API that mounts custom DOM into a Setting row).
+- **New devDep `jsdom@29.1.1`** for chip input test environment (does NOT affect production bundle).
 
 ### Implemented (v1.17.0) — Long-Document Ingestion & Source Attribution
 
@@ -48,7 +66,7 @@ Focused on closing technical debt and adding integration tests for previously un
 ### P3 — Backlog
 
 - Good First Issue tagging
-- Tag vocabulary ecosystem (Issues #85/#91) — design discussion pending
+- ~~Tag vocabulary ecosystem (Issues #85/#91)~~ — #85 implemented in v1.18.0; #91 (nested-tag UI visualization) still open
 - Restore true streaming for 3rd-party providers (requires Obsidian native streaming support)
 - **Missing Concept Pages tracker** (v1.18.0+): The LLM lint analysis currently flags missing concept pages ("缺少\"纪传体\"概念页") in prose. Future-work: parse these into structured reports, persist to `wiki-folder/lint/missing-concepts.json`, add a "Create missing concept pages" command, and diff against previous runs. Design intent documented in code (`lint-controller.ts` TODO marker).
 
@@ -86,7 +104,8 @@ Design intent + specific code pointers documented inline in `src/wiki/lint-contr
 
 | Version | Date | Headline |
 |---------|------|----------|
-| **1.17.0** | 2026-06-08 | Long-document ingestion + source attribution (Closes #90) |
+| **1.18.0** | 2026-06-10 | Tag controlled vocabulary (Closes #85) |
+| 1.17.0 | 2026-06-08 | Long-document ingestion + source attribution (Closes #90) |
 | 1.16.3 | 2026-06-07 | v1.16.2 P0 hotfix completion |
 | 1.16.2 | 2026-06-07 | Lint cancel + thinking token bleeding + delete empty stubs |
 | 1.16.0 | 2026-06-04 | Sources normalization + Context Window + LMStudio |

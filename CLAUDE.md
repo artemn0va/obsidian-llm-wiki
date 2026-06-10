@@ -1,18 +1,20 @@
 # LLM Wiki Plugin Project Development Standards
 
-**Last Updated:** 2026-06-07
+**Last Updated:** 2026-06-10
 
 ---
 
-## Current Phase: v1.16.3 — Released (v1.16.2 P0 hotfix completion)
+## Current Phase: v1.18.0 — User-Controlled Tag Vocabulary (Issue #85)
 
-### Completed (v1.16.3) — Released 2026-06-07
-- ✅ **Issue #94 (regression fix)**: Each fix phase now manages its own lint-operation lifecycle (startLintOperation + endLintOperation) so the status bar persists across fix phases. Modal closes immediately (preserving original UX); the user gets a top-right progress notice and the bottom-right status bar for cancellation.
-- ✅ **#243 thinkingControlCache key fix**: extracted `getThinkingControlCacheKey()` helper so read and write paths use the same key. Predefined providers without baseUrl override no longer cause permanent cache miss.
-- ✅ **#244 deleteEmptyStubs resilience**: returns `{deleted, failed, errors}` instead of throwing on the first failure. Each file wrapped in try/catch.
-- ✅ **#245 thinkingControlSupported cache after fallback**: `OpenAICompatibleClient` sets `thinkingControlSupported = false` after successful 400-fallback to skip the redundant probe-and-fail round-trip.
-- ✅ **#248 isThinkingControlError tightening**: now requires both HTTP 400 status AND a rejected-field keyword.
-- ✅ **i18n cleanup**: 3 hardcoded English progress strings replaced with i18n keys in 8 locales.
+### Completed (v1.18.0) — Released 2026-06-10
+- ✅ **Issue #85 v2 (chip input UX)**: replaced v1's textarea CSV with GitHub-Issue-Labels-style chip input. Each tag renders as a discrete chip + × button. Add via Enter / `,` / `;`; remove via × click or Backspace on empty input. Duplicate tags (case-insensitive) are silently skipped with a brief shake animation. CJK IME composition is respected.
+- ✅ **No standalone "Tag Vocabulary" heading**: settings sub-block is now embedded inside Wiki Configuration as a `setName()` row (no `.setHeading()`), reflecting the conceptual hierarchy.
+- ✅ **Default-mode description enumerates actual defaults**: shows the concrete default list inline (`person, organization, project, … (entities) / theory, method, … (concepts)`) so users know what they will get.
+- ✅ **v1 → v2 migration on `onload()`**: `cleanupVocabularyTags()` normalizes any pre-v2 CSV (trim, dedupe case-insensitively, drop empty) and writes back to `data.json`.
+- ✅ **`enforceFrontmatterConstraints` honors the active vocabulary** via new `getActiveEntityTags` / `getActiveConceptTags` helpers. Three call-sites (page-factory, lint-fixes × 2) pass `this.ctx.settings`.
+- ✅ **`minAppVersion` bumped 1.6.6 → 1.11.0** to use `Setting.addComponent()`.
+- ✅ **8-language i18n**: rewritten 2 descs, added 5 new keys, removed 1 key. Mirrored in all 8 locales.
+- ✅ **Tests**: 628 tests passing (605 → 628, +23 new), 0 regressions. New `jsdom@29.1.1` devDep for chip input tests.
 - ✅ **de.ts trailing-comma fix**: 6 other language files had the same issue — all fixed in lockstep.
 - ✅ **Tests**: 549/549 passing. 4-Gate clean.
 

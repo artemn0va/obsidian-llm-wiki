@@ -377,3 +377,84 @@
 .llm-wiki-status-bar-hidden {
   display: none;
 }
+
+/* Issue #85 v2: Tag chip input (GitHub Issue Labels style) */
+.llm-wiki-tag-container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;       /* chips top-aligned; input on its own row */
+  align-content: flex-start;
+  gap: 4px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  padding: 4px 6px;
+  min-height: 32px;
+  width: 100%;
+  background: var(--background-primary);
+  /* No left-padding from the input's border-box; chips start at padding-left. */
+  box-sizing: border-box;
+}
+.llm-wiki-tag-container:focus-within {
+  border-color: var(--interactive-accent);
+}
+.llm-wiki-tag-container--duplicate {
+  animation: llm-wiki-tag-shake 0.4s ease;
+}
+@keyframes llm-wiki-tag-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); border-color: var(--color-orange); }
+  75% { transform: translateX(4px); border-color: var(--color-orange); }
+}
+.llm-wiki-tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--background-modifier-hover);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 12px;
+  padding: 2px 8px;
+  font-size: 12px;
+  color: var(--text-normal);
+  font-family: var(--font-text);
+}
+.llm-wiki-tag-chip-remove {
+  cursor: pointer;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  padding: 0 2px;
+  font-size: 14px;
+  line-height: 1;
+}
+.llm-wiki-tag-chip-remove:hover {
+  color: var(--color-orange);
+}
+.llm-wiki-tag-input {
+  border: none;
+  outline: none;
+  /* Force the input onto its own row below the chips. flex-basis:100%
+     makes it span the full container width regardless of how many
+     chips exist; flex-shrink:1 lets it shrink when the container is
+     narrow (Obsidian narrow settings pane). */
+  flex: 0 0 100%;
+  order: 99;             /* always last, after all chips */
+  min-height: 22px;
+  background: transparent;
+  color: var(--text-normal);
+  font-family: var(--font-text);
+  font-size: 13px;
+}
+.llm-wiki-tag-sr-live {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+/* Issue #85 v4: Default-reference fallback tags. When the persisted
+   custom CSV is empty, the chip input materializes the default
+   vocabulary (e.g. person/organization/…) as fully-editable chips —
+   visually identical to user-added ones, with a × remove button.
+   They are an editable baseline, not a read-only preview. */

@@ -2,6 +2,7 @@
 // Pure functions with no Obsidian vault dependencies.
 
 import { LLMWikiSettings, WIKI_LANGUAGES, ExtractionGranularity } from '../types';
+import { getActiveEntityTags, getActiveConceptTags } from '../utils';
 
 export function buildWikiLanguageDirective(settings: LLMWikiSettings): string {
   const lang = settings.wikiLanguage || 'en';
@@ -174,6 +175,16 @@ export function applySectionLabels(prompt: string, settings: LLMWikiSettings): s
   return result;
 }
 
+/**
+ * Issue #85 v6: Append the active tag vocabulary section to a prompt
+ * (page-generation / lint-analyze). Centralizes the call so callers
+ * don't all duplicate the `${prompt}\n\n${section}` template.
+ */
+export function appendTagVocabularyToPrompt(prompt: string, settings: LLMWikiSettings): string {
+  const section = buildActiveTagVocabularySection(settings);
+  return `${prompt}\n\n${section}`;
+}
+
 export async function buildSystemPrompt(
   settings: LLMWikiSettings,
   getSchemaContext: (task: string) => Promise<string | undefined>,
@@ -185,4 +196,40 @@ export async function buildSystemPrompt(
   const schemaContext = await getSchemaContext(task);
   if (schemaContext) parts.push(schemaContext);
   return parts.length > 0 ? parts.join('\n\n') : undefined;
+}
+
+/**
+ * Issue #85 v6: Build the active tag-vocabulary section for the LLM
+ * prompt. When `tagVocabularyMode === 'custom'` the section lists the
+ * user-defined CSV (so the LLM emits matching types); in `default` mode
+ * it lists the hardcoded VALID_*_TAGS so the LLM has a concrete enum
+ * to choose from instead of inventing new subtype names.
+ *
+ * The output is a plain-text section (no markdown) that can be appended
+ * to ingestion / page-generation / lint-analyze prompts. Designed to be
+ * language-neutral so the surrounding prompt can stay in the wiki
+ * language.
+ */
+export function buildActiveTagVocabularySection(
+  settings: LLMWikiSettings
+): string {
+  const entities = getActiveEntityTags(settings);
+  const concepts = getActiveConceptTags(settings);
+  const lines: string[] = [];
+  lines.push('## Active Tag Vocabulary (Issue #85 — user-controlled)');
+  lines.push('');
+  lines.push(
+    'When assigning `type` to an entity or concept, you MUST use one of the following allowed values. Do NOT invent new types.'
+  );
+  lines.push('');
+  lines.push('**Entity types** (entity_type field — one of):');
+  for (const t of entities) lines.push(`- ${t}`);
+  lines.push('');
+  lines.push('**Concept types** (concept_type field — one of):');
+  for (const t of concepts) lines.push(`- ${t}`);
+  lines.push('');
+  lines.push(
+    'If a discovered item does not clearly fit any of the above, choose the closest match. Do NOT emit a free-form type string — the frontmatter validator will reject it.'
+  );
+  return lines.join('\n');
 }

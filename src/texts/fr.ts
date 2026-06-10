@@ -252,6 +252,21 @@ export const FR_TEXTS = {
     customConceptLimitName: 'Limite personnalisée de concepts',
     customConceptLimitDesc: 'Nombre maximum de concepts à extraire par fichier source (1-500)',
 
+    // Issue #85 v2 : Vocabulaire des tags (saisie par chip, intégré à la configuration Wiki)
+    tagVocabularyInlineDesc: 'Vocabulaire contrôlé pour les tags frontmatter entity et concept. Les tags imbriqués Obsidian avec « / » sont conservés.',
+    tagVocabularyModeName: 'Configuration du vocabulaire des tags',
+    tagVocabularyModeDescDefault: 'Par défaut utilise les tags intégrés : {}. Basculez sur « Personnalisé » pour définir votre propre vocabulaire.',
+    tagVocabularyModeDescCustom: 'Personnalisé : définissez ci-dessous vos propres tags entity et concept via la saisie par chip — Entrée ou virgule pour ajouter, × pour retirer.',
+    tagVocabularyModeDefault: 'Par défaut (sous-types intégrés)',
+    tagVocabularyModeCustom: 'Personnalisé (défini par l\'utilisateur)',
+    customEntityTagsName: 'Tags d\'entité personnalisés',
+    customEntityTagsDesc: 'Entrée ou virgule pour ajouter un chip, × pour retirer. Les tags imbriqués « / » sont conservés.',
+    customEntityTagsPlaceholder: 'person, organization, project',
+    customConceptTagsName: 'Tags de concept personnalisés',
+    customConceptTagsDesc: 'Entrée ou virgule pour ajouter un chip, × pour retirer. Les tags imbriqués « / » sont conservés.',
+    customConceptTagsPlaceholder: 'theory, method, technology',
+    chipDuplicateHint: 'Tag en double ignoré',
+
     // Ingestion Acceleration
     accelerationSectionTitle: 'Accélération de l\'import',
     pageGenerationConcurrencyName: 'Parallélisme LLM',

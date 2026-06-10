@@ -1,6 +1,6 @@
 // Utility functions for Wiki processing
 
-import { VALID_ENTITY_TAGS, VALID_CONCEPT_TAGS } from './types';
+import { VALID_ENTITY_TAGS, VALID_CONCEPT_TAGS, DEFAULT_ENTITY_TAG, DEFAULT_CONCEPT_TAG, LLMWikiSettings } from './types';
 import { TEXTS } from './texts';
 
 // Type-safe i18n accessor. Falls back to EN_TEXTS when key is missing in target language.
@@ -686,7 +686,11 @@ export function cleanMarkdownResponse(response: string): string {
  *
  * This is a safety net in case LLM doesn't follow the prompt instructions.
  */
-export function enforceFrontmatterConstraints(content: string, pageType: 'entity' | 'concept' | 'source'): string {
+export function enforceFrontmatterConstraints(
+  content: string,
+  pageType: 'entity' | 'concept' | 'source',
+  settings?: LLMWikiSettings
+): string {
   if (!content.startsWith('---')) return content;
 
   const fmEnd = content.indexOf('\n---\n', 3);
@@ -796,19 +800,45 @@ export function enforceFrontmatterConstraints(content: string, pageType: 'entity
 
   // Add tags line
   if (foundTags || collectedTags.length > 0) {
-    // Validate against schema-defined subtype ranges
-    const validSubtypes = pageType === 'entity'
-      ? VALID_ENTITY_TAGS
-      : pageType === 'concept'
-        ? VALID_CONCEPT_TAGS
-        : [];
-    const validTags = collectedTags.filter((v, i, a) =>
-      a.indexOf(v) === i && v && v !== pageType && validSubtypes.includes(v)
-    );
-    if (validTags.length > 0) {
-      result.push(`tags: [${validTags.join(', ')}]`);
+    // Validate against the active vocabulary (Issue #85: user-configurable).
+    // Default vocabulary is hardcoded VALID_*_TAGS; custom vocabulary comes
+    // from settings.customEntityTags / customConceptTags. Falls back to default
+    // when settings is omitted or when the mode is not 'custom'.
+    //
+    // Issue #85 v6: preserve LLM intent — keep ALL LLM-emitted tags in
+    // the frontmatter. Tags inside the active vocabulary are accepted
+    // outright; tags outside it are still written (the user can edit
+    // them or expand their vocabulary later) but are flagged in
+    // console.debug so the divergence is visible. Previously the
+    // validator silently dropped out-of-vocab tags, which erased
+    // legitimate LLM output when the user's vocabulary was too narrow.
+    const validSubtypes = (pageType === 'entity' || pageType === 'concept')
+      ? (pageType === 'entity'
+          ? (settings ? getActiveEntityTags(settings) : VALID_ENTITY_TAGS)
+          : (settings ? getActiveConceptTags(settings) : VALID_CONCEPT_TAGS))
+      : [];
+    const dedupedTags: string[] = [];
+    const outOfVocab: string[] = [];
+    for (const tag of collectedTags) {
+      if (!tag || tag === pageType) continue;
+      if (dedupedTags.includes(tag)) continue;
+      dedupedTags.push(tag);
+      if (!validSubtypes.includes(tag)) outOfVocab.push(tag);
+    }
+    if (outOfVocab.length > 0) {
+      // Issue #85 v6: surface the divergence to the user via console.debug
+      // (no Notice — the user already saw a success Notice from the
+      // ingestion; we don't want to spam a separate "tag mismatch"
+      // pop-up. The debug log is enough to diagnose in DevTools.)
+      console.debug(
+        `[enforceFrontmatterConstraints] ${pageType} page retained ${outOfVocab.length} tag(s) not in active vocabulary (${validSubtypes.length} entries):`,
+        outOfVocab
+      );
+    }
+    if (dedupedTags.length > 0) {
+      result.push(`tags: [${dedupedTags.join(', ')}]`);
     } else {
-      const fallback = pageType === 'entity' ? 'other' : pageType === 'concept' ? 'term' : '';
+      const fallback = pageType === 'entity' ? DEFAULT_ENTITY_TAG : pageType === 'concept' ? DEFAULT_CONCEPT_TAG : '';
       result.push(`tags: [${fallback}]`);
     }
   }
@@ -977,6 +1007,64 @@ export function extractSourceTags(content: string): string[] {
     return raw.map(t => String(t).trim()).filter(t => t.length > 0);
   }
   return [];
+}
+
+// ── Tag vocabulary (Issue #85) ────────────────────────────────
+// User-configurable controlled vocabulary. When tagVocabularyMode is 'default'
+// the hard-coded VALID_*_TAGS arrays from types.ts are used (preserves backward
+// compatibility for users who never set the mode). When 'custom', the user's
+// customEntityTags / customConceptTags CSV strings are used (with default
+// fallback if the user clears the input).
+//
+// Nested tag syntax (e.g. "Arzneimittel/Neurologie") is preserved verbatim;
+// Obsidian's tag parser splits on "/" at display time.
+
+/**
+ * Active entity tag vocabulary for ingest / lint / fix-runners.
+ * Falls back to the hardcoded defaults when settings.tagVocabularyMode is
+ * not 'custom', or when the user has cleared the custom field.
+ */
+export function getActiveEntityTags(settings: LLMWikiSettings): string[] {
+  const custom = (settings.customEntityTags ?? '').trim();
+  if (settings.tagVocabularyMode === 'custom' && custom.length > 0) {
+    const userTags = custom.split(',').map(t => t.trim()).filter(t => t.length > 0);
+    return Array.from(new Set(userTags));
+  }
+  return [...VALID_ENTITY_TAGS];
+}
+
+/**
+ * Active concept tag vocabulary. See getActiveEntityTags for behavior.
+ */
+export function getActiveConceptTags(settings: LLMWikiSettings): string[] {
+  const custom = (settings.customConceptTags ?? '').trim();
+  if (settings.tagVocabularyMode === 'custom' && custom.length > 0) {
+    const userTags = custom.split(',').map(t => t.trim()).filter(t => t.length > 0);
+    return Array.from(new Set(userTags));
+  }
+  return [...VALID_CONCEPT_TAGS];
+}
+
+/**
+ * Normalize a custom-vocabulary CSV string to canonical form.
+ * Trims whitespace, drops empty entries, dedupes case-insensitively
+ * (keeping the first casing seen), joins with ", " for human-readable
+ * persistence. Idempotent: normalizing an already-canonical string
+ * returns it unchanged.
+ */
+export function normalizeVocabularyCsv(csv: string): string {
+  if (!csv) return '';
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const raw of csv.split(',')) {
+    const trimmed = raw.trim();
+    if (!trimmed) continue;
+    const key = trimmed.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(trimmed);
+  }
+  return result.join(', ');
 }
 
 // ── Index parsing & local keyword matching ─────────────────────

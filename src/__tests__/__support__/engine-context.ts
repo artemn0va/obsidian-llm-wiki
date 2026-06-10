@@ -82,6 +82,9 @@ export const DEFAULT_SETTINGS: LLMWikiSettings = {
   batchDelayMs: 0,
   llmReady: true,
   maxTokensPerCall: 0,
+  tagVocabularyMode: 'default',
+  customEntityTags: '',
+  customConceptTags: '',
 };
 
 // ── Mock EngineContext ───────────────────────────────────────────

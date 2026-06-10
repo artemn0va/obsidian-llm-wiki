@@ -252,6 +252,21 @@ export const ES_TEXTS = {
     customConceptLimitName: 'Límite personalizado de conceptos',
     customConceptLimitDesc: 'Número máximo de conceptos a extraer por archivo fuente (1-500)',
 
+    // Issue #85 v2: Vocabulario de etiquetas (entrada por chips, integrado en Configuración Wiki)
+    tagVocabularyInlineDesc: 'Vocabulario controlado para etiquetas frontmatter de entity y concept. Las etiquetas anidadas de Obsidian con «/» se conservan.',
+    tagVocabularyModeName: 'Configuración del vocabulario de etiquetas',
+    tagVocabularyModeDescDefault: 'Por defecto usa etiquetas integradas: {}. Cambie a «Personalizado» para definir su propio vocabulario.',
+    tagVocabularyModeDescCustom: 'Personalizado: defina abajo sus propias etiquetas de entity y concept con la entrada por chips — Enter o coma para añadir, × para eliminar.',
+    tagVocabularyModeDefault: 'Por defecto (subtipos integrados)',
+    tagVocabularyModeCustom: 'Personalizado (definido por el usuario)',
+    customEntityTagsName: 'Etiquetas de entidad personalizadas',
+    customEntityTagsDesc: 'Enter o coma para añadir un chip, × para eliminar. Las etiquetas anidadas con «/» se conservan.',
+    customEntityTagsPlaceholder: 'person, organization, project',
+    customConceptTagsName: 'Etiquetas de concepto personalizadas',
+    customConceptTagsDesc: 'Enter o coma para añadir un chip, × para eliminar. Las etiquetas anidadas con «/» se conservan.',
+    customConceptTagsPlaceholder: 'theory, method, technology',
+    chipDuplicateHint: 'Etiqueta duplicada omitida',
+
     // Ingestion Acceleration
     accelerationSectionTitle: 'Aceleración de ingestión',
     pageGenerationConcurrencyName: 'Concurrencia LLM',

@@ -258,6 +258,21 @@ export const EN_TEXTS = {
     customConceptLimitName: 'Custom Concept Limit',
     customConceptLimitDesc: 'Maximum number of concepts to extract per source file (1-500)',
 
+    // Issue #85 v2: Tag Vocabulary (chip input UX, embedded in Wiki Configuration)
+    tagVocabularyInlineDesc: 'Controlled vocabulary for entity and concept frontmatter tags. Obsidian nested tags with "/" are preserved.',
+    tagVocabularyModeName: 'Tag Vocabulary Configuration',
+    tagVocabularyModeDescDefault: 'Default uses built-in tags: {}. Switch to Custom to define your own.',
+    tagVocabularyModeDescCustom: 'Custom: define your own entity and concept tags below. Use the chip input — Enter or comma to add, × to remove.',
+    tagVocabularyModeDefault: 'Default (built-in subtype tags)',
+    tagVocabularyModeCustom: 'Custom (user-defined)',
+    customEntityTagsName: 'Custom Entity Tags',
+    customEntityTagsDesc: 'Press Enter or comma to add a chip. Click × to remove. Nested tags with "/" are preserved.',
+    customEntityTagsPlaceholder: 'person, organization, project',
+    customConceptTagsName: 'Custom Concept Tags',
+    customConceptTagsDesc: 'Press Enter or comma to add a chip. Click × to remove. Nested tags with "/" are preserved.',
+    customConceptTagsPlaceholder: 'theory, method, technology',
+    chipDuplicateHint: 'Duplicate tag skipped',
+
     // Ingestion Acceleration
     accelerationSectionTitle: 'Ingestion Acceleration',
     pageGenerationConcurrencyName: 'LLM Concurrency',

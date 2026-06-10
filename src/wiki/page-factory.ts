@@ -24,7 +24,7 @@ import {
   filterRedundantAliases,
 } from '../utils';
 import { UNIVERSAL_LINK_CONSTRAINTS } from './prompts/constraints';
-import { applySectionLabels } from './system-prompts';
+import { applySectionLabels, appendTagVocabularyToPrompt } from './system-prompts';
 import { getExistingWikiPages } from './lint-fixes';
 
 // Wrap errors with entity/concept context for better diagnostics
@@ -348,7 +348,7 @@ export class PageFactory {
       .replace('{{date}}', new Date().toISOString().split('T')[0])
       .replace('{{source_file}}', sourceFile.path);
 
-    const finalPrompt = applySectionLabels(prompt, this.ctx.settings);
+    const finalPrompt = appendTagVocabularyToPrompt(applySectionLabels(prompt, this.ctx.settings), this.ctx.settings);
 
     const pageContent = await client.createMessage({
       model: this.ctx.settings.model,
@@ -358,7 +358,8 @@ export class PageFactory {
     });
 
     const cleanedContent = cleanMarkdownResponse(pageContent);
-    const enforcedContent = enforceFrontmatterConstraints(cleanedContent, pageType);
+    // Issue #85: pass settings so custom tag vocabulary is honored
+    const enforcedContent = enforceFrontmatterConstraints(cleanedContent, pageType, this.ctx.settings);
     await this.ctx.createOrUpdateFile(path, enforcedContent);
     return path;
     } catch (error) {
@@ -395,7 +396,7 @@ export class PageFactory {
       .replace('{{key_details}}', info.mentions_in_source?.slice(0, 2).join('; ') || '')
       .replace('{{existing_pages}}', await this.buildPagesListForPrompt(extraPagePaths));
 
-    const finalPrompt = applySectionLabels(prompt, this.ctx.settings);
+    const finalPrompt = appendTagVocabularyToPrompt(applySectionLabels(prompt, this.ctx.settings), this.ctx.settings);
 
     const mergedBody = await client.createMessage({
       model: this.ctx.settings.model,
@@ -442,7 +443,7 @@ export class PageFactory {
       .replace('{{key_details}}', info.mentions_in_source?.slice(0, 2).join('; ') || '')
       .replace('{{constraints}}', UNIVERSAL_LINK_CONSTRAINTS);
 
-    const finalPrompt = applySectionLabels(prompt, this.ctx.settings);
+    const finalPrompt = appendTagVocabularyToPrompt(applySectionLabels(prompt, this.ctx.settings), this.ctx.settings);
 
     const newContent = await client.createMessage({
       model: this.ctx.settings.model,

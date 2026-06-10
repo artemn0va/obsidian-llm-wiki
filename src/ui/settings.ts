@@ -1,12 +1,13 @@
 import { NOTICE_NORMAL, NOTICE_ERROR, NOTICE_SHORT, CUSTOM_LIMIT_MAX, CUSTOM_LIMIT_MIN } from '../constants';
 // Settings panel UI for LLM Wiki Plugin
 
-import { App, PluginSettingTab, Setting, Notice, TFile, requestUrl } from 'obsidian';
+import { App, PluginSettingTab, Setting, Notice, TFile, requestUrl, BaseComponent } from 'obsidian';
 import LLMWikiPlugin from '../main';
-import { PREDEFINED_PROVIDERS, LLMWikiSettings, WIKI_LANGUAGES } from '../types';
+import { PREDEFINED_PROVIDERS, LLMWikiSettings, WIKI_LANGUAGES, VALID_ENTITY_TAGS, VALID_CONCEPT_TAGS } from '../types';
 import { TEXTS } from '../texts';
 import { FolderSuggestModal } from './modals';
 import { classifyFetchError } from './settings-helpers';
+import { TagChipInputComponent } from './tag-chip-input';
 
 export class LLMWikiSettingTab extends PluginSettingTab {
   plugin: LLMWikiPlugin;
@@ -553,6 +554,76 @@ export class LLMWikiSettingTab extends PluginSettingTab {
       });
     customConceptSetting.settingEl.style.display =
       this.tempSettings.extractionGranularity === 'custom' ? 'flex' : 'none';
+
+    // Issue #85 v2: Tag Vocabulary (chip input UX, no separate heading)
+    // The single setting below fuses the previously-separate name
+    // ("Tag Vocabulary") and the mode-toggle row. The desc text is
+    // dynamic: default mode shows the concrete default list inline;
+    // custom mode is terse. Both modes prefix the same lead sentence
+    // that explains what tag vocabulary is.
+    let customEntityTagsSetting: Setting | null = null;
+    let customConceptTagsSetting: Setting | null = null;
+
+    const updateTagVocabularyVisibility = (mode: 'default' | 'custom') => {
+      const isCustom = mode === 'custom';
+      if (customEntityTagsSetting) {
+        customEntityTagsSetting.settingEl.style.display = isCustom ? 'flex' : 'none';
+      }
+      if (customConceptTagsSetting) {
+        customConceptTagsSetting.settingEl.style.display = isCustom ? 'flex' : 'none';
+      }
+    };
+
+    // Default-mode desc shows the concrete default list inline.
+    // Custom-mode desc is terse (no defaults — user is configuring).
+    const defaultListDesc = `${VALID_ENTITY_TAGS.join(', ')} (entities) / ${VALID_CONCEPT_TAGS.join(', ')} (concepts)`;
+    const leadDesc = this.getText('tagVocabularyInlineDesc');
+    const modeDesc = this.tempSettings.tagVocabularyMode === 'custom'
+      ? `${leadDesc}\n${this.getText('tagVocabularyModeDescCustom')}`
+      : `${leadDesc}\n${this.getText('tagVocabularyModeDescDefault').replace('{}', defaultListDesc)}`;
+
+    new Setting(containerEl)
+      .setName(this.getText('tagVocabularyModeName'))
+      .setDesc(modeDesc)
+      .addDropdown(dropdown => {
+        dropdown
+          .addOption('default', this.getText('tagVocabularyModeDefault'))
+          .addOption('custom', this.getText('tagVocabularyModeCustom'))
+          .setValue(this.tempSettings.tagVocabularyMode || 'default')
+          .onChange((value: string) => {
+            this.tempSettings.tagVocabularyMode = value as 'default' | 'custom';
+            // Re-render so the desc text refreshes and chip inputs re-init.
+            this.display();
+          });
+      });
+
+    customEntityTagsSetting = new Setting(containerEl)
+      .setName(this.getText('customEntityTagsName'))
+      .setDesc(this.getText('customEntityTagsDesc'))
+      .addComponent(el => new TagChipInputComponent({
+        controlEl: el,
+        initialTags: this.tempSettings.customEntityTags || '',
+        placeholder: this.getText('customEntityTagsPlaceholder'),
+        ariaLabel: this.getText('customEntityTagsName'),
+        duplicateHint: this.getText('chipDuplicateHint'),
+        defaultTags: VALID_ENTITY_TAGS,
+        onChange: (csv) => { this.tempSettings.customEntityTags = csv; },
+      }) as unknown as BaseComponent);
+
+    customConceptTagsSetting = new Setting(containerEl)
+      .setName(this.getText('customConceptTagsName'))
+      .setDesc(this.getText('customConceptTagsDesc'))
+      .addComponent(el => new TagChipInputComponent({
+        controlEl: el,
+        initialTags: this.tempSettings.customConceptTags || '',
+        placeholder: this.getText('customConceptTagsPlaceholder'),
+        ariaLabel: this.getText('customConceptTagsName'),
+        duplicateHint: this.getText('chipDuplicateHint'),
+        defaultTags: VALID_CONCEPT_TAGS,
+        onChange: (csv) => { this.tempSettings.customConceptTags = csv; },
+      }) as unknown as BaseComponent);
+
+    updateTagVocabularyVisibility(this.tempSettings.tagVocabularyMode || 'default');
 
     // Max Conversation History
     new Setting(containerEl)

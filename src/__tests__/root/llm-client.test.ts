@@ -625,3 +625,94 @@ describe('OpenAICompatibleClient.createMessageStream — disableThinking', () =>
     expect(body.thinking).toEqual({ type: 'disabled' });
   });
 });
+
+describe('AnthropicCompatibleClient — disableThinking fallback', () => {
+  beforeEach(() => {
+    mockRequestUrl.mockClear();
+  });
+
+  it('AnthropicCompat falls back on 400 error (Fable 5 case)', async () => {
+    mockRequestUrl.mockRejectedValueOnce(
+      new Error('status 400: thinking field not supported')
+    );
+    mockRequestUrl.mockResolvedValueOnce({
+      status: 200,
+      text: JSON.stringify({ content: [{ type: 'text', text: 'ok after fallback' }] }),
+      json: { content: [{ type: 'text', text: 'ok after fallback' }] },
+      headers: {},
+      arrayBuffer: async () => new ArrayBuffer(0),
+    } as unknown as Awaited<ReturnType<typeof requestUrl>>);
+
+    const client = new AnthropicCompatibleClient('test-key', 'https://api.anthropic.com/v1');
+    const result = await client.createMessage({
+      model: 'claude-fable-5-5',
+      max_tokens: 100,
+      messages: [{ role: 'user', content: 'hi' }],
+      disableThinking: true,
+    });
+
+    expect(result).toBe('ok after fallback');
+    expect(mockRequestUrl).toHaveBeenCalledTimes(2);
+    const firstBody = JSON.parse((mockRequestUrl.mock.calls[0][0] as {body: unknown}).body as string) as { thinking?: unknown };
+    expect(firstBody.thinking).toEqual({ type: 'disabled' });
+    const secondBody = JSON.parse((mockRequestUrl.mock.calls[1][0] as {body: unknown}).body as string) as { thinking?: unknown };
+    expect(secondBody.thinking).toBeUndefined();
+  });
+
+  it('AnthropicCompat caches thinkingControlSupported=false', async () => {
+    mockRequestUrl.mockRejectedValueOnce(
+      new Error('status 400: Unknown field: thinking')
+    );
+    mockRequestUrl.mockResolvedValueOnce({
+      status: 200,
+      text: JSON.stringify({ content: [{ type: 'text', text: 'ok' }] }),
+      json: { content: [{ type: 'text', text: 'ok' }] },
+      headers: {},
+      arrayBuffer: async () => new ArrayBuffer(0),
+    } as unknown as Awaited<ReturnType<typeof requestUrl>>);
+
+    const client = new AnthropicCompatibleClient('test-key', 'https://api.anthropic.com/v1');
+    await client.createMessage({
+      model: 'claude-fable-5-5',
+      max_tokens: 100,
+      messages: [{ role: 'user', content: 'hi' }],
+      disableThinking: true,
+    });
+
+    expect((client as unknown as { thinkingControlSupported: boolean }).thinkingControlSupported).toBe(false);
+  });
+});
+
+describe('AnthropicClient — disableThinking fallback', () => {
+  beforeEach(() => {
+    mockRequestUrl.mockClear();
+  });
+
+  it('AnthropicClient falls back on 400 error (Fable 5 case)', async () => {
+    mockRequestUrl.mockRejectedValueOnce(
+      new Error('status 400: thinking field not supported')
+    );
+    mockRequestUrl.mockResolvedValueOnce({
+      status: 200,
+      text: JSON.stringify({ content: [{ type: 'text', text: 'ok after fallback' }] }),
+      json: { content: [{ type: 'text', text: 'ok after fallback' }] },
+      headers: {},
+      arrayBuffer: async () => new ArrayBuffer(0),
+    } as unknown as Awaited<ReturnType<typeof requestUrl>>);
+
+    const client = new AnthropicClient('test-key');
+    const result = await client.createMessage({
+      model: 'claude-fable-5-5',
+      max_tokens: 100,
+      messages: [{ role: 'user', content: 'hi' }],
+      disableThinking: true,
+    });
+
+    expect(result).toBe('ok after fallback');
+    expect(mockRequestUrl).toHaveBeenCalledTimes(2);
+    const firstBody = JSON.parse((mockRequestUrl.mock.calls[0][0] as {body: unknown}).body as string) as { thinking?: unknown };
+    expect(firstBody.thinking).toEqual({ type: 'disabled' });
+    const secondBody = JSON.parse((mockRequestUrl.mock.calls[1][0] as {body: unknown}).body as string) as { thinking?: unknown };
+    expect(secondBody.thinking).toBeUndefined();
+  });
+});

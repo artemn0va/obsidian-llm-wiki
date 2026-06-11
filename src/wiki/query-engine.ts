@@ -277,8 +277,9 @@ export class QueryModal extends Modal {
         model: this.plugin.settings.model,
         max_tokens: TOKENS_QUERY_SAVE_DEDUP,
         messages: [{ role: 'user', content: prompt }],
-        response_format: { type: 'json_object' }
-      });
+        response_format: { type: 'json_object' },
+      disableThinking: this.plugin.settings.disableThinking,
+    });
 
       const parsed = await parseJsonResponse(response) as { valuable?: boolean; reason?: string } | null;
       if (parsed?.valuable) {
@@ -388,7 +389,8 @@ export class QueryModal extends Modal {
               this.accumulatedResponse += chunk;
               this.renderMarkdownContent(this.accumulatedResponse, contentDiv);
               this.scrollToBottom();
-            }
+            },
+            disableThinking: this.plugin.settings.disableThinking,
           });
           cleanupTimer();
         } catch (streamErr) {
@@ -448,7 +450,6 @@ export class QueryModal extends Modal {
             timestamp: Date.now()
           });
         }
-
       } else {
         statusTemplate = foundPagesInfo
           ? `${foundPagesInfo}, ${texts.queryPhaseNonStreaming}`
@@ -457,7 +458,8 @@ export class QueryModal extends Modal {
           model: this.plugin.settings.model,
           max_tokens: TOKENS_QUERY_LLM_SELECT,
           system: wikiContext,
-          messages: conversationMessages
+          messages: conversationMessages,
+          disableThinking: this.plugin.settings.disableThinking,
         });
 
         if (this.aborted) {
@@ -831,8 +833,9 @@ Important:
         model: this.plugin.settings.model,
         max_tokens: TOKENS_QUERY_PAGE_SELECT,
         messages: [{ role: 'user', content: prompt }],
-        response_format: { type: 'json_object' }
-      });
+        response_format: { type: 'json_object' },
+      disableThinking: this.plugin.settings.disableThinking,
+    });
 
       console.debug('[LLM] Raw response:', response);
 

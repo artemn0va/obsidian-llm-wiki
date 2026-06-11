@@ -56,6 +56,9 @@ export class AnthropicCompatibleClient implements LLMClient {
   private baseUrl: string;
   private apiVersion: string;
 
+  // Cached result from fallback — same semantics as OpenAICompatibleClient.
+  thinkingControlSupported?: boolean;
+
   constructor(apiKey: string, baseUrl: string) {
     this.apiKey = apiKey;
     // Normalize: strip trailing /v1 and trailing slashes
@@ -91,17 +94,21 @@ export class AnthropicCompatibleClient implements LLMClient {
       body.thinking = { type: 'disabled' };
     }
 
-    return withRetry(async () => {
-      const response = await requestUrl({
-        url: this.baseUrl + '/messages',
-        method: 'POST',
-        headers: {
-          'x-api-key': this.apiKey,
-          'Anthropic-Version': this.apiVersion,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(body)
-      });
+    // Issue #99 v2: Anthropic-compatible fallback when the provider rejects
+    // thinking.type='disabled' (e.g. Claude Fable 5 / Mythos 5 where thinking
+    // is mandatory). Try with thinking disabled; on 400, retry without it.
+    const anthropicDoRequest = async (requestBody: Record<string, unknown>): Promise<string> =>
+      withRetry(async () => {
+        const response = await requestUrl({
+          url: this.baseUrl + '/messages',
+          method: 'POST',
+          headers: {
+            'x-api-key': this.apiKey,
+            'Anthropic-Version': this.apiVersion,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(requestBody)
+        });
 
       const data = response.json as {
         content?: Array<{ type: string; text?: string }>;
@@ -150,6 +157,27 @@ export class AnthropicCompatibleClient implements LLMClient {
       }
       return text;
     }, 3, 'Anthropic-compatible API');
+
+    try {
+      return await anthropicDoRequest(body);
+    } catch (e) {
+      if (params.disableThinking && isThinkingControlError(e)) {
+        this.thinkingControlSupported = false;
+        console.debug(`[AnthropicCompat] thinking.type='disabled' not supported by ${this.baseUrl}, falling back`);
+        const fallbackBody: Record<string, unknown> = {
+          model: params.model,
+          max_tokens: params.max_tokens,
+          messages: params.system
+            ? [{ role: 'system' as const, content: params.system }, ...params.messages]
+            : params.messages,
+        };
+        if (params.response_format?.type === 'json_object') {
+          fallbackBody.messages = [...(fallbackBody.messages as Array<Record<string, unknown>>), { role: 'assistant', content: '{' }];
+        }
+        return await anthropicDoRequest(fallbackBody);
+      }
+      throw e;
+    }
   }
 
   async createMessageStream(params: {
@@ -253,6 +281,9 @@ export class AnthropicClient implements LLMClient {
   private baseUrl: string;
   private apiVersion = '2023-06-01';
 
+  // Cached result from fallback — same semantics as OpenAICompatibleClient.
+  thinkingControlSupported?: boolean;
+
   constructor(apiKey: string, baseUrl?: string) {
     this.apiKey = apiKey;
     this.baseUrl = baseUrl || 'https://api.anthropic.com';
@@ -295,63 +326,87 @@ export class AnthropicClient implements LLMClient {
       body.thinking = { type: 'disabled' };
     }
 
-    return withRetry(async () => {
-      const response = await requestUrl({
-        url: `${this.baseUrl}/messages`,
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': this.apiKey,
-          'Anthropic-Version': this.apiVersion,
-        },
-        body: JSON.stringify(body),
-      });
+    // Issue #99 v2: try with thinking disabled; on 400 (thinking-mandatory
+    // models like Claude Fable 5 / Mythos 5), retry without thinking field.
+    const anthropicDoRequest = async (requestBody: Record<string, unknown>): Promise<string> =>
+      withRetry(async () => {
+        const response = await requestUrl({
+          url: `${this.baseUrl}/messages`,
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': this.apiKey,
+            'Anthropic-Version': this.apiVersion,
+          },
+          body: JSON.stringify(requestBody),
+        });
 
-      const data = response.json as {
-        content?: Array<{ type: string; text?: string }>;
-        stop_reason?: string;
-        error?: { message: string };
-      };
+        const data = response.json as {
+          content?: Array<{ type: string; text?: string }>;
+          stop_reason?: string;
+          error?: { message: string };
+        };
 
-      if (data.error) throw new Error(`status ${response.status}: ${data.error.message}`);
+        if (data.error) throw new Error(`status ${response.status}: ${data.error.message}`);
 
-      const text = await withTruncationRetry({
-        initialFn: async () => data,
-        retryFn: async (retryTokens) => {
-          const retryResponse = await requestUrl({
-            url: `${this.baseUrl}/messages`,
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-api-key': this.apiKey,
-              'Anthropic-Version': this.apiVersion,
-            },
-            body: JSON.stringify({ ...body, max_tokens: retryTokens }),
-          });
-          const retryData = retryResponse.json as {
-            content?: Array<{ type: string; text?: string }>;
-            stop_reason?: string;
-            error?: { message: string };
-          };
-          if (retryData.error) throw new Error(`status ${retryResponse.status}: ${retryData.error.message}`);
-          return retryData;
-        },
-        isTruncated: (r) => r.stop_reason === 'max_tokens',
-        extractText: (r) => {
-          const block = r.content?.find(c => c.type === 'text');
-          return block && 'text' in block ? block.text || '' : '';
-        },
-        getMaxTokens: () => params.max_tokens,
-        getStopReason: (r) => r.stop_reason,
-        maxCap: params.maxTokensPerCall || MAX_TOKENS_BATCH,
-        label: 'Anthropic API',
-      });
+        const text = await withTruncationRetry({
+          initialFn: async () => data,
+          retryFn: async (retryTokens) => {
+            const retryResponse = await requestUrl({
+              url: `${this.baseUrl}/messages`,
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': this.apiKey,
+                'Anthropic-Version': this.apiVersion,
+              },
+              body: JSON.stringify({ ...requestBody, max_tokens: retryTokens }),
+            });
+            const retryData = retryResponse.json as {
+              content?: Array<{ type: string; text?: string }>;
+              stop_reason?: string;
+              error?: { message: string };
+            };
+            if (retryData.error) throw new Error(`status ${retryResponse.status}: ${retryData.error.message}`);
+            return retryData;
+          },
+          isTruncated: (r) => r.stop_reason === 'max_tokens',
+          extractText: (r) => {
+            const block = r.content?.find(c => c.type === 'text');
+            return block && 'text' in block ? block.text || '' : '';
+          },
+          getMaxTokens: () => params.max_tokens,
+          getStopReason: (r) => r.stop_reason,
+          maxCap: params.maxTokensPerCall || MAX_TOKENS_BATCH,
+          label: 'Anthropic API',
+        });
 
-      if (params.response_format?.type === 'json_object' && text.length > 0 && text[0] !== '{') {
-        return '{' + text;
+        if (params.response_format?.type === 'json_object' && text.length > 0 && text[0] !== '{') {
+          return '{' + text;
+        }
+        return text;
+      }, 3, 'Anthropic API');
+
+    try {
+      return await anthropicDoRequest(body);
+    } catch (e) {
+      if (params.disableThinking && isThinkingControlError(e)) {
+        this.thinkingControlSupported = false;
+        console.debug(`[AnthropicClient] thinking.type='disabled' not supported, falling back`);
+        const fallbackBody: Record<string, unknown> = {
+          model: params.model,
+          max_tokens: params.max_tokens,
+          messages: params.system
+            ? [{ role: 'system' as const, content: params.system }, ...params.messages]
+            : [...params.messages],
+        };
+        if (params.response_format?.type === 'json_object') {
+          fallbackBody.messages = [...(fallbackBody.messages as Array<Record<string, unknown>>), { role: 'assistant', content: '{' }];
+        }
+        return await anthropicDoRequest(fallbackBody);
       }
-      return text;
-    }, 3, 'Anthropic API');
+      throw e;
+    }
   }
 
   async createMessageStream(params: {

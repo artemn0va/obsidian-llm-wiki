@@ -671,7 +671,8 @@ export class WikiEngine {
       model: this.settings.model,
       max_tokens: TOKENS_PAGE_GENERATION,
       system: await this.buildSystemPrompt('summary'),
-      messages: [{ role: 'user', content: finalPrompt }]
+      messages: [{ role: 'user', content: finalPrompt }],
+      disableThinking: this.settings.disableThinking,
     });
 
     const cleanedContent = cleanMarkdownResponse(pageContent);

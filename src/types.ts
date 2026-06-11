@@ -122,6 +122,19 @@ export interface LLMWikiSettings {
   // false → provider returned 400; subsequent calls skip thinking control
   thinkingControlCache?: Record<string, boolean>;
 
+  // Issue #99 v2: disable thinking-mode for thinking-capable models.
+  // When true, all createMessage calls send `thinking: { type: 'disabled' }`
+  // so the LLM outputs final answer only — no mid-response CoT or
+  // duplicated body. Layer A of the v1.16.2 3-layer defense (commit 8c520cf)
+  // added the parameter, but the production call sites never passed it.
+  // This setting makes the wiring complete. DEFAULT_SETTINGS provides
+  // the default (true) so thinking-capable models (Gemma 4, DeepSeek-R1,
+  // QwQ) output final answers without preamble/mid-stream reasoning.
+  // Users with non-thinking models can leave true; users with thinking
+  // models wanting CoT can set false. Optional in the interface for
+  // backward compat with existing test fixtures.
+  disableThinking?: boolean;
+
   // Issue #75: cap max_tokens per LLM call. 0 = no cap.
   // Recommended for local models with small context windows.
   maxTokensPerCall: number;
@@ -452,4 +465,12 @@ export const DEFAULT_SETTINGS: LLMWikiSettings = {
   // Local model users can set this when the provider is Ollama, LM Studio,
   // custom, or anthropic-compatible.
   maxTokensPerCall: 0,
+
+  // Issue #99 v2: default ON so thinking-capable models (Gemma 4,
+  // DeepSeek-R1, QwQ) output final answer only — no mid-response CoT
+  // or duplicated body. The v1.16.2 Layer A parameter existed but the
+  // production call sites never passed it; this default makes the
+  // wiring complete. Users with non-thinking models can leave true;
+  // users with thinking models wanting CoT can set false.
+  disableThinking: true,
 };

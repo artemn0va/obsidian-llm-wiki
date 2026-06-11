@@ -6,7 +6,7 @@
 
 ## Current Phase: v1.18.0 — User-Controlled Tag Vocabulary (Issue #85)
 
-### Completed (v1.18.0) — Released 2026-06-10
+### Completed (v1.18.0) — Code complete 2026-06-10 (release pending push)
 - ✅ **Issue #85 v2 (chip input UX)**: replaced v1's textarea CSV with GitHub-Issue-Labels-style chip input. Each tag renders as a discrete chip + × button. Add via Enter / `,` / `;`; remove via × click or Backspace on empty input. Duplicate tags (case-insensitive) are silently skipped with a brief shake animation. CJK IME composition is respected.
 - ✅ **No standalone "Tag Vocabulary" heading**: settings sub-block is now embedded inside Wiki Configuration as a `setName()` row (no `.setHeading()`), reflecting the conceptual hierarchy.
 - ✅ **Default-mode description enumerates actual defaults**: shows the concrete default list inline (`person, organization, project, … (entities) / theory, method, … (concepts)`) so users know what they will get.
@@ -236,6 +236,10 @@ If any dimension regresses between commit and release time, Gate 6
 - "I'll add tests later" → Tests must accompany the change
 - "The PR review will catch it" → The reviewer has less context than you
 - "ESLint passes, TypeScript errors are fine" → ESLint does NOT check type safety
+
+## ⚠️ Editor Discipline — No Bulk Scripts for Code
+
+Every code change via `Read` + `Edit`. No sed/awk/python AST for code. (2026-06-11: a brace-matching script broke 3 sites that 4-Gate still passed — wrong lexical block in `query-engine.ts`, unsafe `this: any` in `lint-controller.ts`.)
 
 ## ⚠️ Git Safety Protocol
 

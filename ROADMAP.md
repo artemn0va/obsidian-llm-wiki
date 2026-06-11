@@ -50,6 +50,29 @@ Major quality release addressing previously-unprocessable large sources and a cl
 
 Focused on closing technical debt and adding integration tests for previously untested core paths.
 
+### v1.18.0 hotfix 1 — Community Contribution Merge (2026-06-11 planned)
+
+A targeted hotfix consolidating community-submitted bug fixes and UX improvements, without bumping the version digit. Scope is the set of PRs that pass 4-gate verification after rebase. Source: 2026-06-11 issue/PR triage.
+
+**P0 — Real data loss / silent overwrite**
+
+| Item | Author | Status | Block | Note |
+|------|--------|--------|-------|------|
+| **#115 fix(Issue #114): tags preserve on re-ingest** | @DocTpoint | PR open | none | Fixes `mergeFrontmatter` always-emit-tags + `createSummaryPage` reads existing source frontmatter. Sister bug in `enforceFrontmatterConstraints:833` (hardcoded `tags: [DEFAULT_*_TAG]` fallback) flagged in reply — author may fold in |
+| **#113 feat(Issue #111): configurable slug casing** | @DocTpoint | PR open | rebase conflict on `utils.ts:36-40` | New `slugCase: 'lower' \| 'preserve'` setting; `computeSlug` always-lowercase-internally for matching, file-creation points optionally preserve case. Doc tweak: warn existing-lowercase-vaults may collide after switch |
+
+**P1 — UX consistency**
+
+| Item | Author | Status | Block | Note |
+|------|--------|--------|-------|------|
+| **#109 feat: Auto Smart Fix setting** | @dmarchevsky | PR open | rebase + CHANGELOG | Skip Lint modal, run Smart Fix All hands-free. default `false`. Merge first. |
+| **#110 feat: status bar mirror** | @dmarchevsky | PR open | rebase + CHANGELOG + dependent on #109 | `makeMirroredNotice()` wrapper for popup+status bar sync. `onFixAll: () => Promise<void>` lets it join AbortSignal. Merge after #109. |
+
+**Out of scope (defer to v1.19.0+):**
+- **#112 (event type + 4-layer architecture)** — design unconverged; reply asks @HolyPotatoes1 to clarify arc+sequence vs full type
+- **#97 (one-click apply schema suggestions)** — already deferred by owner 2026-06-06
+- **#91 (nested tags)** — awaiting #85 in-the-wild feedback
+
 ### P1 — Cleanup
 
 | Item | Effort |

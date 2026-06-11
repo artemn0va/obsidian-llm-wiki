@@ -187,6 +187,7 @@ ${contradiction.source_page}
         'full'
       ),
       messages: [{ role: 'user', content: finalPrompt }],
+      disableThinking: this.ctx.settings.disableThinking,
     });
 
     const cleaned = cleanMarkdownResponse(fixedContent);

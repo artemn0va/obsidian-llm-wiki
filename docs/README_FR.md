@@ -26,7 +26,7 @@
   - [🔑 Configuration d'un Provider LLM](#-configuration-dun-provider-llm)
   - [🎮 Utilisation](#-utilisation)
   - [⚠️ Mise à niveau depuis une version antérieure ?](#️-mise-à-niveau-depuis-une-version-antérieure-)
-- [⚡ Quoi de neuf dans la v1.18.0](#-quoi-de-neuf-dans-la-v1180)
+- [⚡ Quoi de neuf dans la v1.18.1](#-quoi-de-neuf-dans-la-v1181)
 - [✨ Fonctionnalités](#-fonctionnalités)
   - [📊 Qualité des connaissances](#-qualité-des-connaissances)
   - [🛠️ Maintenance](#️-maintenance)
@@ -61,7 +61,16 @@ Vous écrivez. L'IA organise. Vous interrogez. Rien de plus.
 
 ---
 
-## ⚡ Nouveautés de la v1.18.0
+## ⚡ Nouveautés de la v1.18.1
+
+v1.18.1 est un **hotfix de type PATCH** résolvant un problème de conformité avec la révision du code source du plugin de la communauté Obsidian. La version v1.18.0 a été rejetée lors de la révision car le code de production contenait `document` (la variable globale) ainsi que des commentaires `eslint-disable` ciblant `obsidianmd/prefer-active-doc` — les deux sont interdits dans le flux de révision Obsidian. Ce hotfix supprime le fallback vers `document` et tous les commentaires `eslint-disable` associés ; le stub `activeDocument` est centralisé dans la configuration des tests. Aucun changement visible pour l'utilisateur.
+
+- **🛡️ Conformité à la révision Obsidian.** Le code de production utilise désormais exclusivement `activeDocument` (la référence au document avec prise en compte des fenêtres flottantes d'Obsidian). L'environnement de test jsdom reçoit `activeDocument` via un stub centralisé dans `setup.ts`, maintenant clairement séparées les préoccupations de test et de production.
+
+**Toutes les fonctionnalités de la v1.18.0 restent inchangées.** Si vous utilisez déjà la v1.18.0, ce hotfix ne contient aucune nouvelle fonctionnalité à adopter.
+
+**Nous recommandons vivement à tous les utilisateurs de passer à cette version.** Cette version garantit que le plugin passe la révision automatisée du code source d'Obsidian et soit disponible sur le Marché des Plugins Communautaires.
+
 v1.18.0 est une **version majeure** axée sur le vocabulaire de tags contrôlé par l'utilisateur — bouclant l'intégralité du cycle Issue #85 de l'interface utilisateur à l'injection d'invites, l'audit programmatique et la réparation assistée par LLM. Inclut également une correction complète de la régression des tokens de réflexion (Issue #99 v2), un garde-fou reviewed pour protéger les pages modifiées par l'utilisateur et une actualisation du vocabulaire de tags par défaut basée sur une analyse interdisciplinaire.
 
 **Points clés :**

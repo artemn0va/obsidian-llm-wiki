@@ -20,15 +20,8 @@ describe('TagChipInputComponent (Issue #85 v2)', () => {
   };
 
   beforeEach(() => {
-    // Use `document` (jsdom provides it) and let the production code's
-    // `doc()` helper prefer `activeDocument` when available. This keeps
-    // the test focused on the public behavior, not on Obsidian's
-    // popout-window shim. The lint rule is disabled per-line because
-    // jsdom does not expose `activeDocument`.
-    // eslint-disable-next-line obsidianmd/prefer-active-doc
-    container = document.createElement('div');
-    // eslint-disable-next-line obsidianmd/prefer-active-doc
-    document.body.appendChild(container);
+    container = activeDocument.createElement('div');
+    activeDocument.body.appendChild(container);
     onChangeMock = vi.fn();
     onChange = onChangeMock as unknown as (csv: string) => void;
     component = new TagChipInputComponent({
@@ -176,10 +169,8 @@ describe('TagChipInputComponent (Issue #85 v4) — default fallback tags', () =>
   };
 
   beforeEach(() => {
-    // eslint-disable-next-line obsidianmd/prefer-active-doc
-    container = document.createElement('div');
-    // eslint-disable-next-line obsidianmd/prefer-active-doc
-    document.body.appendChild(container);
+    container = activeDocument.createElement('div');
+    activeDocument.body.appendChild(container);
     onChangeMock = vi.fn();
     onChange = onChangeMock as unknown as (csv: string) => void;
     component = new TagChipInputComponent({
@@ -235,10 +226,8 @@ describe('TagChipInputComponent (Issue #85 v4) — default fallback tags', () =>
   });
 
   it('when initialTags is non-empty, defaultTags are ignored (user already customized)', () => {
-    // eslint-disable-next-line obsidianmd/prefer-active-doc
-    container = document.createElement('div');
-    // eslint-disable-next-line obsidianmd/prefer-active-doc
-    document.body.appendChild(container);
+    container = activeDocument.createElement('div');
+    activeDocument.body.appendChild(container);
     const c = new TagChipInputComponent({
       controlEl: container,
       initialTags: 'medical',

@@ -25,7 +25,7 @@
   - [🔑 Configure an LLM Provider](#-configure-an-llm-provider)
   - [🎮 Usage](#-usage)
   - [⚠️ Upgrading from an Older Version?](#️-upgrading-from-an-older-version)
-- [⚡ What's New in v1.18.0](#-whats-new-in-v1180)
+- [⚡ What's New in v1.18.1](#-whats-new-in-v1181)
 - [✨ Features](#-features)
   - [📊 Knowledge Quality](#-knowledge-quality)
   - [🛠️ Maintenance](#️-maintenance)
@@ -185,6 +185,16 @@ Settings → **LLM Configuration**:
 > **🛡️ Safety**: Parallel generation uses `Promise.allSettled` — if one page fails, others continue. Failed pages are retried individually with exponential backoff. Smart Batch Skip automatically detects already-ingested files to save time and API costs.
 
 ---
+
+## ⚡ What's New in v1.18.1
+
+v1.18.1 is a **PATCH hotfix** resolving an Obsidian Community Plugin review compliance issue. The v1.18.0 release was rejected during source-code review because production code contained `document` (the bare global) alongside `eslint-disable` comments targeting `obsidianmd/prefer-active-doc` — both are forbidden in the Obsidian review pipeline. This hotfix removes the `document` fallback and all related eslint-disable comments; the `activeDocument` stub is centralized in the test setup. No user-visible behavior change.
+
+- **🛡️ Obsidian review compliance.** Production code now exclusively uses `activeDocument` (Obsidian's popout-window-aware document reference). The jsdom test environment receives `activeDocument` via a centralized stub in `setup.ts`, keeping test and production concerns cleanly separated.
+
+**All v1.18.0 features remain unchanged.** If you are already on v1.18.0, this hotfix contains no new functionality for you to adopt.
+
+**We strongly recommend all users upgrade to this version.** This release ensures the plugin passes Obsidian's automated source-code review and is available on the Community Plugin Market.
 
 ## ⚡ What's New in v1.18.0
 

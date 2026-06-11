@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.18.1] - 2026-06-11
+
+### Fixed
+- **Obsidian Community Plugin review compliance.** Removed `document` fallback and `eslint-disable` comments referencing `obsidianmd/prefer-active-active-doc` from production code. The `activeDocument` stub is now centralized in the test setup file, keeping all production code strictly compliant with Obsidian's multi-window `activeDocument` requirement. No user-visible behavior change.
+
 ## [1.18.0] - 2026-06-11
 
 ### Added

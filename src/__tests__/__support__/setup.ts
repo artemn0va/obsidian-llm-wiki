@@ -80,6 +80,13 @@ vi.mock('obsidian', () => ({
   requestUrl: vi.fn(),
 }));
 
+// Stub activeDocument for jsdom test environment.
+// Production code uses activeDocument (Obsidian's popout-window-aware
+// document reference). jsdom only provides `document`, so we alias it
+// here so that tests don't need per-file eslint-disable comments.
+// eslint-disable-next-line obsidianmd/no-global-this
+(globalThis as Record<string, unknown>).activeDocument = globalThis.document;
+
 // Global test environment setup
 export function setup(): void {
   // Future: global test state initialization

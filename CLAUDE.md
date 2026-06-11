@@ -4,7 +4,12 @@
 
 ---
 
-## Current Phase: v1.18.0 — User-Controlled Tag Vocabulary (Issue #85) — Released 2026-06-11
+## Current Phase: v1.18.1 — Obsidian Review Compliance Hotfix — Released 2026-06-11
+
+### Completed (v1.18.1) — Released 2026-06-11
+- ✅ **Obsidian review compliance fix.** Removed `document` fallback and `eslint-disable` comments targeting `obsidianmd/prefer-active-doc` from production code. `activeDocument` stub centralized in test setup. Zero user-visible behavior change.
+
+## Completed (v1.18.0) — Released 2026-06-11
 
 ### Completed (v1.18.0) — Released 2026-06-11
 - ✅ **Issue #85 v2 (chip input UX)**: replaced v1's textarea CSV with GitHub-Issue-Labels-style chip input. Each tag renders as a discrete chip + × button. Add via Enter / `,` / `;`; remove via × click or Backspace on empty input. Duplicate tags (case-insensitive) are silently skipped with a brief shake animation. CJK IME composition is respected.
@@ -236,6 +241,23 @@ If any dimension regresses between commit and release time, Gate 6
 - "I'll add tests later" → Tests must accompany the change
 - "The PR review will catch it" → The reviewer has less context than you
 - "ESLint passes, TypeScript errors are fine" → ESLint does NOT check type safety
+
+### ⚠️ Obsidian Plugin Submission Rules — `document` is forbidden in production
+
+**`document`** (the bare global) is **strictly forbidden** in production code. Obsidian is a multi-window application — `document` may refer to the wrong window. The only valid document reference is **`activeDocument`** (Obsidian's popout-window-aware wrapper).
+
+**`obsidianmd/prefer-active-doc` is a no-disable rule** in the Obsidian Community Plugin review pipeline. You **cannot** use `// eslint-disable-next-line obsidianmd/prefer-active-doc` in any file that will be submitted for review — the review bot will reject it regardless of the comment's description.
+
+**Test-environment differences must be solved in test setup, not production code.** If jsdom lacks `activeDocument`, stub it in `src/__tests__/__support__/setup.ts`:
+
+```typescript
+// eslint-disable-next-line obsidianmd/no-global-this
+(globalThis as Record<string, unknown>).activeDocument = globalThis.document;
+```
+
+Production code then simply uses `activeDocument` directly — no fallback, no eslint-disable comments.
+
+This rule exists because Obsidian's review ruleset is stricter than the local ESLint config. **Local `pnpm lint` passing does NOT guarantee Obsidian review will pass.**
 
 ## ⚠️ Editor Discipline — No Bulk Scripts for Code
 

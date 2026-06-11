@@ -2,11 +2,15 @@
 
 > Feature planning and improvement proposals
 
-**Version:** 1.18.0 | **Updated:** 2026-06-11
+**Version:** 1.18.1 | **Updated:** 2026-06-11
 
 ---
 
 ## Current Status
+
+### Implemented (v1.18.1) — Obsidian Review Compliance Hotfix
+
+**Obsidian Community Plugin source-code review compliance.** The v1.18.0 release was rejected during automated source-code review because production code contained `document` (the bare global DOM reference) alongside `eslint-disable` comments targeting `obsidianmd/prefer-active-doc` — both are forbidden in the Obsidian review pipeline. This hotfix removes the `document` fallback and all related `eslint-disable` comments from production code; the `activeDocument` stub is centralized in the test setup file. No user-visible behavior change.
 
 ### Implemented (v1.18.0) — User-Controlled Tag Vocabulary (Issue #85 v6 — end-to-end customTags pipeline)
 

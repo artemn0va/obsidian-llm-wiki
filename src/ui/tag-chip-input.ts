@@ -48,15 +48,11 @@ export interface TagChipInputOptions {
 const DUPLICATE_FLASH_MS = 800;
 
 /**
- * Small DOM helpers — works in both Obsidian (where `activeDocument` is
- * the Obsidian-window wrapper) and jsdom (where only `document` exists).
- * The fallback chain: explicit `activeDocument` (Obsidian) → `document`
- * (jsdom / browser). We avoid `globalThis` to satisfy the
- * `obsidianmd/no-global-this` lint rule.
+ * Obsidian's `activeDocument` wrapper for popout-window awareness.
+ * Tests stub `activeDocument` in setup.ts so this works under jsdom too.
  */
 function doc(): Document {
-  // eslint-disable-next-line obsidianmd/prefer-active-doc
-  return typeof activeDocument !== 'undefined' ? activeDocument : document;
+  return activeDocument;
 }
 
 function createChild<K extends keyof HTMLElementTagNameMap>(

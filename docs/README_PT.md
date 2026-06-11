@@ -26,7 +26,7 @@
   - [🔑 Configurar um LLM Provider](#-configurar-um-llm-provider)
   - [🎮 Uso](#-uso)
   - [⚠️ Atualizando de uma Versão Anterior?](#️-atualizando-de-uma-versão-anterior)
-- [⚡ Novidades na v1.18.0](#-novidades-na-v1180)
+- [⚡ Novidades na v1.18.1](#-novidades-na-v1181)
 - [✨ Funcionalidades](#-funcionalidades)
   - [📊 Qualidade do Conhecimento](#-qualidade-do-conhecimento)
   - [🛠️ Manutenção](#️-manutenção)
@@ -61,7 +61,16 @@ Você escreve. A IA organiza. Você pergunta. Simples assim.
 
 ---
 
-## ⚡ Novidades da v1.18.0
+## ⚡ Novidades da v1.18.1
+
+v1.18.1 é um **hotfix de tipo PATCH** que resolve um problema de conformidade com a revisão de código-fonte do plugin da comunidade Obsidian. A versão v1.18.0 foi rejeitada durante a revisão porque o código de produção continha `document` (a variável global) junto com comentários `eslint-disable` direcionados a `obsidianmd/prefer-active-doc` — ambos são proibidos no fluxo de revisão da Obsidian. Este hotfix remove o fallback para `document` e todos os comentários `eslint-disable` relacionados; o stub de `activeDocument` é centralizado na configuração de testes. Sem alterações visíveis para o usuário.
+
+- **🛡️ Conformidade com a revisão da Obsidian.** O código de produção agora usa exclusivamente `activeDocument` (a referência ao documento com reconhecimento de janelas flutuantes da Obsidian). O ambiente de teste jsdom recebe `activeDocument` através de um stub centralizado em `setup.ts`, mantendo as preocupações de teste e produção claramente separadas.
+
+**Todos os recursos da v1.18.0 permanecem inalterados.** Se você já usa a v1.18.0, este hotfix não contém nova funcionalidade para adotar.
+
+**Recomendamos fortemente que todos os usuários atualizem para esta versão.** Esta versão garante que o plugin passe na revisão automatizada de código-fonte da Obsidian e esteja disponível no Mercado de Plugins da Comunidade.
+
 v1.18.0 é uma **versão principal focada em funcionalidades** com ênfase em vocabulários de tags controlados pelo usuário — fechando todo o ciclo da Issue #85 da interface até a injeção em prompts, auditoria programática e reparo assistido por LLM. Inclui também uma correção completa da regressão de tokens de raciocínio (Issue #99 v2), um guardião reviewed para proteger páginas editadas pelo usuário e uma atualização do vocabulário de tags padrão baseada em análise interdisciplinar.
 
 **Destaques:**

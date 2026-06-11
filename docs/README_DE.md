@@ -26,7 +26,7 @@
   - [🔑 LLM Provider konfigurieren](#-llm-provider-konfigurieren)
   - [🎮 Nutzung](#-nutzung)
   - [⚠️ Upgrade von einer älteren Version?](#️-upgrade-von-einer-älteren-version)
-- [⚡ Was ist neu in v1.18.0](#-was-ist-neu-in-v1180)
+- [⚡ Was ist neu in v1.18.1](#-was-ist-neu-in-v1181)
 - [✨ Funktionen](#-funktionen)
   - [📊 Knowledge Quality](#-knowledge-quality)
   - [🛠️ Maintenance](#️-maintenance)
@@ -68,7 +68,15 @@ Notizen schreiben. KI organisiert. Fragen stellen. Das ist alles.
 
 ---
 
-## ⚡ Was ist neu in v1.18.0
+## ⚡ Was ist neu in v1.18.1
+
+v1.18.1 ist ein **PATCH-Hotfix**, der ein Problem mit der Einhaltung der Obsidian Community Plugin Quellcode-Prüfung behebt. Die Version v1.18.0 wurde während der Prüfung abgelehnt, da der Produktionscode `document` (die globale Variable) zusammen mit `eslint-disable`-Kommentaren enthielt, die `obsidianmd/prefer-active-doc` betrafen — beides ist im Obsidian-Prüfprozess verboten. Dieser Hotfix entfernt den `document`-Fallback und alle zugehörigen `eslint-disable`-Kommentare; der `activeDocument`-Stub wird in die Testeinrichtung zentralisiert. Keine sichtbaren Verhaltensänderungen für den Benutzer.
+
+- **🛡️ Einhaltung der Obsidian-Prüfung.** Der Produktionscode verwendet jetzt ausschließlich `activeDocument` (Obsidians popout-fensterbewusste Dokumentreferenz). Die jsdom-Testumgebung erhält `activeDocument` über einen zentralisierten Stub in `setup.ts`, wodurch Test- und Produktionsbelange sauber getrennt bleiben.
+
+**Alle v1.18.0-Funktionen bleiben unverändert.** Wenn Sie bereits v1.18.0 verwenden, enthält dieser Hotfix keine neue Funktionalität.
+
+**Wir empfehlen allen Benutzern dringend, auf diese Version zu aktualisieren.** Diese Version stellt sicher, dass das Plugin die automatisierte Obsidian-Quellcode-Prüfung besteht und im Community Plugin Market verfügbar ist.
 
 v1.18.0 ist ein **großes Funktionsrelease** mit Fokus auf benutzerdefinierte Tag-Vokabulare — schließt den gesamten Issue #85-Zyklus von der UI über die Prompt-Injektion bis zur programmatischen Prüfung und LLM-gestützten Reparatur. Enthält außerdem eine vollständige Behebung der Thinking-Token-Regression (Issue #99 v2), eine reviewed-Sicherung zum Schutz benutzerbearbeiteter Seiten und eine Aktualisierung des Standardvokabulars basierend auf interdisziplinärer Analyse.
 

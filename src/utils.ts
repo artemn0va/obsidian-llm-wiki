@@ -1,6 +1,6 @@
 // Utility functions for Wiki processing
 
-import { VALID_ENTITY_TAGS, VALID_CONCEPT_TAGS, VALID_SOURCE_TAGS, DEFAULT_ENTITY_TAG, DEFAULT_CONCEPT_TAG, DEFAULT_SOURCE_TAG, LLMWikiSettings } from './types';
+import { VALID_ENTITY_TAGS, VALID_CONCEPT_TAGS, VALID_SOURCE_TAGS, LLMWikiSettings } from './types';
 import { TEXTS } from './texts';
 
 // Type-safe i18n accessor. Falls back to EN_TEXTS when key is missing in target language.
@@ -554,8 +554,13 @@ export function mergeFrontmatter(
     lines.push(`sources:${yamlStringify(mergedSources)}`);
   }
 
+  // Always emit tags: so the field is never silently dropped on merge.
+  // An empty tags: is preferable to a missing field — it signals that tags
+  // need to be set, rather than hiding the gap entirely (Issue #114).
   if (Array.isArray(fm.tags) && fm.tags.length > 0) {
     lines.push(`tags:${yamlStringify(fm.tags)}`);
+  } else {
+    lines.push('tags:');
   }
 
   if (fm.reviewed) {
@@ -864,14 +869,10 @@ export function enforceFrontmatterConstraints(
     if (dedupedTags.length > 0) {
       result.push(`tags: [${dedupedTags.join(', ')}]`);
     } else {
-      const fallback = pageType === 'entity'
-        ? DEFAULT_ENTITY_TAG
-        : pageType === 'concept'
-          ? DEFAULT_CONCEPT_TAG
-          : pageType === 'source'
-            ? DEFAULT_SOURCE_TAG
-            : '';
-      result.push(`tags: [${fallback}]`);
+      // Preserve empty tags field rather than forcing a default — user intent must win.
+      // Domain tags (e.g. "Mikrobiologie") survive here; they are outside the subtype
+      // whitelist but are not wrong. Configurable vocabulary is tracked in Issue #85.
+      result.push('tags:');
     }
   }
 

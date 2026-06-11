@@ -570,13 +570,13 @@ describe('enforceFrontmatterConstraints', () => {
     expect(result).not.toContain('tags: [term]');
   });
 
-  it('non-reviewed page with empty tags array still gets fallback (control test)', () => {
-    // For non-reviewed pages, the existing v1.18.0 behavior is
-    // preserved: explicit `tags: []` triggers the default fallback.
-    // The reviewed-guard is opt-in via `reviewed: true`.
+  it('non-reviewed page with empty tags array emits empty tags field, not fallback', () => {
+    // Fix #114: explicit `tags: []` emits `tags:` (empty) rather than
+    // silently overwriting with DEFAULT_ENTITY_TAG. User intent must win.
     const input = '---\ntype: entity\ntags: []\n---\n\nBody';
     const result = enforceFrontmatterConstraints(input, 'entity');
-    expect(result).toContain('tags: [other]');
+    expect(result).toMatch(/\ntags:\s*(\n|$)/);
+    expect(result).not.toContain('tags: [other]');
   });
 
   it('preserves created but forces updated to today', () => {
@@ -614,6 +614,15 @@ describe('enforceFrontmatterConstraints', () => {
     const input = '---\ntype: entity\ntags: [invalid_tag]\n---\n\nBody';
     const result = enforceFrontmatterConstraints(input, 'entity');
     expect(result).toContain('invalid_tag');
+    expect(result).not.toContain('tags: [other]');
+  });
+
+  it('emits empty tags field rather than forcing a default when tags array is empty', () => {
+    // When a page has tags: [] (genuinely empty), emit tags: (empty) rather than
+    // silently overwriting with DEFAULT_ENTITY_TAG. User intent must win. (#114)
+    const input = '---\ntype: entity\ntags: []\n---\n\nBody';
+    const result = enforceFrontmatterConstraints(input, 'entity');
+    expect(result).toMatch(/\ntags:\s*(\n|$)/);
     expect(result).not.toContain('tags: [other]');
   });
 
@@ -1889,7 +1898,8 @@ Body`;
     expect(result).toContain('organization');
   });
 
-  it('falls back to default tag when collectedTags is empty', () => {
+  it('emits empty tags field when collectedTags is empty, not fallback tag', () => {
+    // Fix #114: empty tags array → tags: (empty), not DEFAULT_ENTITY_TAG.
     const content = `---
 type: entity
 tags: []
@@ -1897,7 +1907,8 @@ tags: []
 
 Body`;
     const result = enforceFrontmatterConstraints(content, 'entity', baseSettings);
-    expect(result).toContain('tags: [other]'); // DEFAULT_ENTITY_TAG
+    expect(result).toMatch(/\ntags:\s*(\n|$)/);
+    expect(result).not.toContain('tags: [other]');
   });
 });
 

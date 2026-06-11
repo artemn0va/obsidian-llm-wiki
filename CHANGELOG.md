@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Tags silently lost on re-ingest and multi-source merge (Issue #114).** Two distinct failure modes caused manually-set `tags:` to be overwritten on every subsequent ingest:
+  - `createSummaryPage()` regenerated source pages from scratch on every re-ingest without checking for existing content. Manually corrected tags were discarded. Fix: read existing source page frontmatter before generation; if `tags:` is already populated, carry it forward as the `tagsValue` injected into the LLM prompt (existing tags > source-note tags > LLM concept name fallback).
+  - `mergeFrontmatter()` only emitted `tags:` when the field was a non-empty array. A page with `tags:` empty (common after first ingest) produced `fm.tags = undefined`, causing the field to be silently omitted from the merged output — permanently invisible to future merges. Fix: always emit `tags:` so the field is never dropped, even when empty.
+- **`enforceFrontmatterConstraints()` hardcodes fallback tag when deduped array is empty (Issue #114).** When the deduplication pass produced an empty tags array, the function silently replaced it with `[DEFAULT_ENTITY_TAG]` / `[DEFAULT_CONCEPT_TAG]`, overwriting the user's intent (e.g. intentionally empty `tags: []` on a reviewed page). Fix: preserve the empty array and only fall back to the default tag when `fm.reviewed` is not set.
+
 ## [1.18.1] - 2026-06-11
 
 ### Fixed

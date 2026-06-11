@@ -637,13 +637,24 @@ export class WikiEngine {
     const path = normalizePath(`${this.settings.wikiFolder}/sources/${slug}.md`);
     const content = await this.app.vault.read(file);
 
+    // Issue #114: if the source page already exists with manually-set tags,
+    // preserve them — re-ingesting a note must not overwrite corrections.
+    // Priority: existing source-page tags > source-note tags > LLM concept names.
+    const existingSource = await this.tryReadFile(path);
+    const existingFm = existingSource ? parseFrontmatter(existingSource) : null;
+    const existingTags = Array.isArray(existingFm?.tags) && existingFm.tags.length > 0
+      ? existingFm.tags
+      : null;
+
     // Issue #90: inherit tags from source note frontmatter when available,
     // so the generated summary page doesn't pollute the tag vocabulary with
     // LLM-derived concept names. Fallback to LLM-derived tags if source has none.
     const sourceTags = extractSourceTags(content);
-    const tagsValue = sourceTags.length > 0
-      ? sourceTags.join(', ')
-      : analysis.concepts.map(c => c.name).join(', ');
+    const tagsValue = existingTags
+      ? existingTags.join(', ')
+      : sourceTags.length > 0
+        ? sourceTags.join(', ')
+        : analysis.concepts.map(c => c.name).join(', ');
 
     const createdPagesList = plannedPaths.length > 0
       ? plannedPaths.map(p => {

@@ -389,6 +389,17 @@ export class SourceAnalyzer {
       }
     }
 
+    // Hard-cap accumulation to the configured custom limits (#120).
+    // The prompt instruction is a soft hint the LLM may exceed; the
+    // convergence detector only stops further batches. This slice ensures
+    // the user's limit is actually honoured regardless of LLM behaviour.
+    if (this.ctx.settings.extractionGranularity === 'custom') {
+      const eCap = this.ctx.settings.customEntityLimit ?? 5;
+      const cCap = this.ctx.settings.customConceptLimit ?? 5;
+      if (accumulation.entities.length > eCap) accumulation.entities = accumulation.entities.slice(0, eCap);
+      if (accumulation.concepts.length > cCap) accumulation.concepts = accumulation.concepts.slice(0, cCap);
+    }
+
     // Build final SourceAnalysis using pure function (Phase 3)
     const analysis = buildSourceAnalysis(
       file.path,

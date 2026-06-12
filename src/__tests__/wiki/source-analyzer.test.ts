@@ -100,4 +100,40 @@ describe('SourceAnalyzer', () => {
     const result = await run(a, EMPTY_PATH);
     expect(result).not.toBeNull();
   });
+
+  it('hard-caps entities and concepts to customEntityLimit / customConceptLimit (#120)', async () => {
+    // LLM returns 5 entities and 5 concepts, but limits are set to 2/2.
+    // The hard cap must slice the accumulation before buildSourceAnalysis —
+    // the prompt instruction alone is not enough since LLMs may ignore it.
+    const { ctx } = createMockContext({
+      vaultFiles: { [DOC_PATH]: '# Dense\nMany organisms and pathways.' },
+      llmResponses: [JSON.stringify({
+        source_title: 'Dense',
+        summary: 'Many items.',
+        entities: [
+          { name: 'Alpha', type: 'other', summary: 'a', mentions_in_source: [] },
+          { name: 'Beta',  type: 'other', summary: 'b', mentions_in_source: [] },
+          { name: 'Gamma', type: 'other', summary: 'c', mentions_in_source: [] },
+          { name: 'Delta', type: 'other', summary: 'd', mentions_in_source: [] },
+          { name: 'Epsilon', type: 'other', summary: 'e', mentions_in_source: [] },
+        ],
+        concepts: [
+          { name: 'One',   type: 'term', summary: '1', mentions_in_source: [], related_concepts: [] },
+          { name: 'Two',   type: 'term', summary: '2', mentions_in_source: [], related_concepts: [] },
+          { name: 'Three', type: 'term', summary: '3', mentions_in_source: [], related_concepts: [] },
+          { name: 'Four',  type: 'term', summary: '4', mentions_in_source: [], related_concepts: [] },
+          { name: 'Five',  type: 'term', summary: '5', mentions_in_source: [], related_concepts: [] },
+        ],
+      })],
+      settings: { extractionGranularity: 'custom', customEntityLimit: 2, customConceptLimit: 2 },
+    });
+    const analyzer = new SourceAnalyzer(ctx);
+    // eslint-disable-next-line obsidianmd/no-tfile-tfolder-cast
+    const result = await analyzer.analyzeSource(createMockFile(DOC_PATH) as unknown as TFile);
+    expect(result).not.toBeNull();
+    expect(result!.entities).toHaveLength(2);
+    expect(result!.concepts).toHaveLength(2);
+    expect(result!.entities[0].name).toBe('Alpha');
+    expect(result!.concepts[0].name).toBe('One');
+  });
 });

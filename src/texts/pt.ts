@@ -386,6 +386,11 @@ export const PT_TEXTS = {
     // Ingestion status bar
     ingestionStatusBar: 'Ingerindo... clique para cancelar',
     lintStatusBar: 'Verificando... clique para cancelar',
+    ingestStatusAnalyzing: 'Ingerindo… (clique para cancelar)',
+    lintStatusReading: 'Verificando… (clique para cancelar)',
+    lintStatusDuplicates: 'Verificando… (clique para cancelar)',
+    lintStatusScanningLinks: 'Verificando… (clique para cancelar)',
+    lintStatusAnalyzing: 'Verificando… (clique para cancelar)',
     ingestionCancelling: 'Cancelando — irá parar após o lote atual',
     ingestionCancelled: 'Ingestão cancelada',
     crossTypeCollisionNotice: '{count} elementos fundidos como alias cross-type (duplicatas entidade ↔ conceito evitadas)',

@@ -61,6 +61,7 @@ export class WikiEngine {
   private onIngestionEnd: (() => void) | null = null;
   private onLintStart: (() => void) | null = null;
   private onLintEnd: (() => void) | null = null;
+  private onStatusBarUpdate: ((text: string) => void) | null = null;
   private pagesCache: Array<{path: string; title: string; wikiLink: string; aliases?: string[]}> | null = null;
   private pagesCacheTime = 0;
   private readonly PAGES_CACHE_TTL_MS = PAGES_CACHE_TTL_MS;
@@ -98,7 +99,7 @@ export class WikiEngine {
         getExistingWikiPages(this.app, this.settings.wikiFolder),
       getSchemaContext: t => this.schemaManager.getSchemaContext(t as SchemaTask),
       onFileWrite: path => this.onFileWrite?.(path),
-      onProgress: msg => this.onProgress?.(msg),
+      onProgress: msg => this.notifyProgress(msg),
       onDone: report => this.onDone?.(report),
     };
 
@@ -127,6 +128,19 @@ export class WikiEngine {
 
   getProgressCallback(): ((message: string) => void) | null {
     return this.onProgress;
+  }
+
+  setStatusBarUpdateCallback(cb: ((text: string) => void) | null): void {
+    this.onStatusBarUpdate = cb;
+  }
+
+  updateStatusBar(text: string): void {
+    this.onStatusBarUpdate?.(text);
+  }
+
+  private notifyProgress(msg: string): void {
+    this.onProgress?.(msg);
+    this.updateStatusBar(msg);
   }
 
   setDoneCallback(cb: ((report: IngestReport) => void) | null): void {

@@ -386,6 +386,11 @@ export const JA_TEXTS = {
     // Ingestion status bar
     ingestionStatusBar: '取り込み中... クリックでキャンセル',
     lintStatusBar: 'チェック中... クリックでキャンセル',
+    ingestStatusAnalyzing: '取り込み中… (クリックでキャンセル)',
+    lintStatusReading: 'チェック中… (クリックでキャンセル)',
+    lintStatusDuplicates: 'チェック中… (クリックでキャンセル)',
+    lintStatusScanningLinks: 'チェック中… (クリックでキャンセル)',
+    lintStatusAnalyzing: 'チェック中… (クリックでキャンセル)',
     ingestionCancelling: 'キャンセル中 — 現在のバッチ完了後に停止します',
     ingestionCancelled: '取り込みがキャンセルされました',
     crossTypeCollisionNotice: '{count}件がクロスタイプ別名として統合（エンティティ ↔ コンセプト重複を防止）',

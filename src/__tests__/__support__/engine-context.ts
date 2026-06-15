@@ -17,6 +17,7 @@
 //     expect(result.entities).toHaveLength(1);
 //   });
 
+import { TFile } from 'obsidian'; // mocked in setup.ts
 import { EngineContext, LLMClient, LLMWikiSettings } from '../../types';
 
 // ── Mock File ────────────────────────────────────────────────────
@@ -132,6 +133,14 @@ export function createMockContext(opts: MockContextOptions = {}): { ctx: EngineC
           extension: 'md',
           parent: null,
         })),
+        getAbstractFileByPath: (path: string) => {
+          if (!vault.has(path)) return null;
+          return Object.assign(new TFile(), {
+            path,
+            basename: path.split('/').pop()?.replace('.md', '') || '',
+            extension: 'md',
+          });
+        },
       },
     } as unknown as EngineContext['app'],
     settings,

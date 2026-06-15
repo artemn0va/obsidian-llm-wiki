@@ -387,6 +387,11 @@ export const KO_TEXTS = {
     // Ingestion status bar
     ingestionStatusBar: '수집 중... 클릭하여 취소',
     lintStatusBar: '점검 중... 클릭하여 취소',
+    ingestStatusAnalyzing: '수집 중… (클릭하여 취소)',
+    lintStatusReading: '점검 중… (클릭하여 취소)',
+    lintStatusDuplicates: '점검 중… (클릭하여 취소)',
+    lintStatusScanningLinks: '점검 중… (클릭하여 취소)',
+    lintStatusAnalyzing: '점검 중… (클릭하여 취소)',
     ingestionCancelling: '취소 중 — 현재 배치 완료 후 중지됩니다',
     ingestionCancelled: '수집이 취소되었습니다',
     crossTypeCollisionNotice: '{count}개 항목이 크로스타입 별칭으로 병합됨（엔티티 ↔ 컨셉 중복 방지）',

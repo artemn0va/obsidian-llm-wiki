@@ -12,7 +12,7 @@ import { TOKENS_LINT_DEDUP_LLM, NOTICE_NORMAL, NOTICE_RATE_LIMIT } from '../cons
 import { isPageEmpty, detectPollutedPages, fixDoubleNestedWikiLinks } from './lint-fixes';
 import { fixPollutedSources, scanPollutedSources } from '../core/sources-normalizer';
 import { generateDuplicateCandidates, DuplicateCandidate } from './lint/duplicate-detection';
-import { runAliasCompletion, runDeadLinkFixes, runEmptyPageFixes, runOrphanFixes, runDuplicateMerges, runRetagViolations } from './lint/fix-runners';
+import { runAliasCompletion, runDeadLinkFixes, runEmptyPageFixes, runOrphanFixes, runDuplicateMerges, runRetagViolations, makeMirroredNotice } from './lint/fix-runners';
 import { buildKnownTargets, detectAliasDeficiency, scanDeadLinks, scanOrphans, scanTagViolations } from './lint/scanners';
 import { WikiEngine } from './wiki-engine';
 
@@ -58,6 +58,7 @@ export async function runLintWiki(ctx: LintContext, signal?: AbortSignal): Promi
     const pageMap = new Map<string, { path: string; content: string; basename: string }>();
     stageNotice = new Notice('', 0);
     stageNotice.setMessage(t.lintReadingPages.replace('{count}', String(wikiFiles.length)));
+    ctx.wikiEngine.updateStatusBar(getText(ctx.settings.language, 'lintStatusReading'));
     console.debug(`lintWiki: reading ${wikiFiles.length} wiki pages in parallel`);
 
     const totalPages = wikiFiles.length;
@@ -165,6 +166,7 @@ export async function runLintWiki(ctx: LintContext, signal?: AbortSignal): Promi
       //      a threshold AND no new entries appeared since the last lint.
       //
       // See ROADMAP.md "Lint performance" section for the larger picture.
+      ctx.wikiEngine.updateStatusBar(getText(ctx.settings.language, 'lintStatusDuplicates'));
       stageNotice.setMessage(t.lintCheckingDuplicates);
       try {
         const pagesForDedup: Array<{ path: string; content: string; title: string }> = [];
@@ -319,6 +321,7 @@ export async function runLintWiki(ctx: LintContext, signal?: AbortSignal): Promi
 
     // Dead links
     stageNotice.setMessage(t.lintScanningLinks);
+    ctx.wikiEngine.updateStatusBar(getText(ctx.settings.language, 'lintStatusScanningLinks'));
     console.debug('lintWiki: scanning dead links');
     const deadLinks = scanDeadLinks(pageMap, knownTargets, knownTargetsLower, ctx.settings.wikiFolder);
     stageNotice.setMessage(t.lintScanningLinksProgress
@@ -566,6 +569,7 @@ export async function runLintWiki(ctx: LintContext, signal?: AbortSignal): Promi
     );
 
     stageNotice.setMessage(t.lintAnalyzingLLM);
+    ctx.wikiEngine.updateStatusBar(getText(ctx.settings.language, 'lintStatusAnalyzing'));
     checkCancelled();
     const llmReport = await ctx.llmClient.createMessage({
       model: ctx.settings.model,
@@ -660,7 +664,7 @@ export async function runLintWiki(ctx: LintContext, signal?: AbortSignal): Promi
       fixCallbacks.onFixPollutedPages = () => {
         void runFixPhase(async (signal) => {
           let fixed = 0;
-          const fixNotice = new Notice('', 0);
+          const fixNotice = makeMirroredNotice(ctx);
           try {
             for (const pp of pollutedPages) {
               if (signal?.aborted) break;
@@ -826,7 +830,7 @@ export async function runLintWiki(ctx: LintContext, signal?: AbortSignal): Promi
           const signal = ctx.wikiEngine.startLintOperation();
           try {
           const allResults: string[] = [];
-          const fixAllNotice = new Notice('', 0);
+          const fixAllNotice = makeMirroredNotice(ctx);
 
           // Track per-phase counts for final summary
           let pollutedFixed = 0;

@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **Auto Smart Fix (new setting).** When enabled, lint automatically runs all Smart Fix phases (alias cleanup, duplicate merges, dead-link removal, orphan fixes, empty-stub deletion, tag retag) after analysis completes, without showing the report modal. A before/after Notice summarises what changed. Default: off — existing users see no behaviour change.
+- **Status bar mirrors popup progress during ingest and lint.** All ingestion progress messages (batch counts, per-entity steps) now update both the popup Notice and the Obsidian status bar simultaneously. Lint shows four dedicated status-bar checkpoints: reading pages, checking duplicates, scanning links, and AI analysis. Fix-runner Notices (alias completion, dead links, empty pages, orphan fixes, duplicate merges) mirror every `setMessage()` call to the status bar via the new `makeMirroredNotice()` wrapper in `fix-runners.ts`. Status bar always shows a cancel hint ("click to cancel") so users retain the cancellation affordance throughout. `onFixAll` callback type corrected to `() => Promise<void>` so it properly participates in the AbortSignal / `runFixPhase` lifecycle.
 
 ## [1.18.2] - 2026-06-12
 

@@ -22,6 +22,20 @@ function checkCancelled(signal: AbortSignal | undefined): void {
   }
 }
 
+// Returns a Notice-like object whose setMessage() also mirrors the text to the
+// status bar. Keeps popup and status bar in sync without manual updateStatusBar
+// calls at every progress site.
+export function makeMirroredNotice(ctx: LintContext): { setMessage: (msg: string) => void; hide: () => void } {
+  const notice = new Notice('', 0);
+  return {
+    setMessage(msg: string) {
+      notice.setMessage(msg);
+      ctx.wikiEngine.updateStatusBar(msg);
+    },
+    hide() { notice.hide(); ctx.wikiEngine.updateStatusBar(''); }
+  };
+}
+
 export async function runAliasCompletion(
   ctx: LintContext,
   signal: AbortSignal | undefined,

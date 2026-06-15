@@ -170,7 +170,7 @@ export const DE_TEXTS = {
     lintTagViolationFailed: 'Retag failed for {path}: {error}',
     lintTagViolationFixed: 'Retag complete. Fixed {fixed}/{total} page(s).',
     lintTagViolationFixedNone: 'Retag complete. No pages needed fixing (LLM kept current tags).',
-    lintTagViolationSection: 'Pages with out-of-vocabulary tags [{count}]',
+    lintTagViolationSection: 'Tags außerhalb des Vokabulars (erkannt) [{count}]',
     lintTagViolationItem: '- [[{path}]] — invalid: {tags}',
     lintTagViolationRetagBtn: '🏷️ Retag {count} page(s) with LLM',
     lintAliasesFillFailed: 'Alias-Generierung fehlgeschlagen: {page} — {error}',
@@ -331,14 +331,14 @@ export const DE_TEXTS = {
     wikiHealthStats: 'Wiki-Gesundheit: {pages} Seiten ({entities} Entitäten, {concepts} Konzepte, {sources} Quellen){indexStatus}',
 
     // Startup quick fixes detail (Issue #81)
-    startupCheckTitle: '✅ Wiki-Schnellkorrekturen abgeschlossen',
-    startupCheckStructureLabel: '📁 Wiki-Struktur',
-    startupCheckStructureOk: '✓ vollständig',
-    startupCheckStructureMissing: '⚠️ unvollständig — wird beim ersten Ingest automatisch erstellt',
-    startupCheckSourcesLabel: '🔧 Sources normalisiert',
-    startupCheckSourcesClean: '✓ bereits sauber',
-    startupCheckSourcesCleaned: '⚠️ {files} Datei(en), {entries} Eintrag/Einträge bereinigt',
-    startupCheckDisableHint: '💡 Zum Deaktivieren: Einstellungen → Auto-Wartung → Schnellkorrekturen beim Start ausführen',
+    startupCheckTitle: 'Wiki-Schnellkorrekturen abgeschlossen',
+    startupCheckStructureLabel: 'Wiki-Struktur',
+    startupCheckStructureOk: 'vollständig',
+    startupCheckStructureMissing: 'unvollständig — wird beim ersten Ingest automatisch erstellt',
+    startupCheckSourcesLabel: 'Sources normalisiert',
+    startupCheckSourcesClean: 'bereits sauber',
+    startupCheckSourcesCleaned: '{files} Datei(en), {entries} Eintrag/Einträge bereinigt',
+    startupCheckDisableHint: 'Zum Deaktivieren: Einstellungen → Auto-Wartung → Schnellkorrekturen beim Start ausführen',
     lintWikiStart: 'Wiki-Prüfung wird gestartet...',
     lintWikiComplete: 'Wiki-Prüfung abgeschlossen',
     lintWikiFailed: 'Wiki-Prüfung fehlgeschlagen',
@@ -397,7 +397,7 @@ export const DE_TEXTS = {
 
     // Lint Report
     lintReportTitle: 'Wiki-Prüfbericht',
-    lintReportSummary: 'Wiki-Statusübersicht: {total} Seiten gesamt, {aliasesMissing} Seiten ohne Aliase, {duplicates} Duplikate, {deadLinks} defekte Links ({deadLinkFromDup} betreffen Duplikate), {orphans} verwaiste Seiten ({orphanFromDup} sind Duplikate), {emptyPages} leere Seiten. Lint-Dauer: {elapsedSeconds}s',
+    lintReportSummary: 'Wiki-Statusübersicht: {total} Seiten gesamt, {aliasesMissing} Seiten ohne Aliase, {duplicates} Duplikate, {deadLinks} defekte Links ({deadLinkFromDup} betreffen Duplikate), {orphans} verwaiste Seiten ({orphanFromDup} sind Duplikate), {emptyPages} leere Seiten, {ungroundedQuotes} unbelegte Zitate, {tagViolations} Tags außerhalb des Vokabulars. Lint-Dauer: {elapsedSeconds}s',
 
     // Advanced LLM Settings (Issues #99 / #128)
     advancedSettingsModeName: 'Erweiterte Parametereinstellungen',
@@ -418,7 +418,9 @@ export const DE_TEXTS = {
     lintOrphanSection: 'Verwaiste Seiten (erkannt) [{count}]',
     lintContradictionSection: 'Widersprüche (erkannt)',
     lintDuplicateSection: 'Doppelte Seiten (erkannt)',
-    lintNoIssuesFound: 'Keine Duplikate, defekten Links, leeren Seiten oder verwaisten Seiten erkannt.',
+    lintNoIssuesFound: 'Keine Duplikate, defekten Links, leeren Seiten, verwaisten Seiten oder unbelegten Zitate erkannt.',
+    lintQuoteGroundingSection: 'Unbelegte Zitate (erkannt) [{count}]',
+    lintQuoteGroundingItem: '- [[{page}]]{sourceHint}: "{quote}"',
     lintDeadLinkItem: '- [[{source}]] → **{target}** (Seite existiert nicht){dupFlag}',
     lintDeadLinkMore: '- ... {count} weitere defekte Links',
     lintEmptyPageItem: '- [[{page}]] — weniger als 50 Zeichen substanziellen Inhalts',

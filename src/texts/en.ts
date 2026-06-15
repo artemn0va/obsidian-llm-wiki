@@ -334,14 +334,14 @@ export const EN_TEXTS = {
     watchIngestNotice: 'Wiki: {count} file(s) changed in sources/. Run "Ingest Sources" to process.',
 
     // Startup quick fixes detail (Issue #81)
-    startupCheckTitle: '✅ Wiki quick fixes complete',
-    startupCheckStructureLabel: '📁 Wiki structure',
-    startupCheckStructureOk: '✓ complete',
-    startupCheckStructureMissing: '⚠️ incomplete — will auto-create on first ingestion',
-    startupCheckSourcesLabel: '🔧 Sources normalized',
-    startupCheckSourcesClean: '✓ already clean',
-    startupCheckSourcesCleaned: '⚠️ cleaned {files} file(s), {entries} entry(ies)',
-    startupCheckDisableHint: '💡 To disable, go to Settings → Auto Maintenance → Run quick fixes on startup',
+    startupCheckTitle: 'Wiki quick fixes complete',
+    startupCheckStructureLabel: 'Wiki structure',
+    startupCheckStructureOk: 'complete',
+    startupCheckStructureMissing: 'incomplete — will auto-create on first ingestion',
+    startupCheckSourcesLabel: 'Sources normalized',
+    startupCheckSourcesClean: 'already clean',
+    startupCheckSourcesCleaned: 'cleaned {files} file(s), {entries} entry(ies)',
+    startupCheckDisableHint: 'To disable, go to Settings → Auto Maintenance → Run quick fixes on startup',
     autoIngestRunning: 'Auto-ingesting {count} changed file(s)...',
     autoIngestComplete: 'Auto-ingest complete: {success} succeeded, {fail} failed',
     scheduledLintRunning: 'Running scheduled wiki lint...',
@@ -405,7 +405,7 @@ export const EN_TEXTS = {
 
     // Lint Report
     lintReportTitle: 'Wiki lint report',
-    lintReportSummary: 'Wiki status overview: {total} pages total, {aliasesMissing} pages missing aliases, {duplicates} duplicate pages, {deadLinks} dead links ({deadLinkFromDup} involve duplicates), {orphans} orphan pages ({orphanFromDup} are duplicates), {emptyPages} empty pages. Lint elapsed: {elapsedSeconds}s',
+    lintReportSummary: 'Wiki status overview: {total} pages total, {aliasesMissing} pages missing aliases, {duplicates} duplicate pages, {deadLinks} dead links ({deadLinkFromDup} involve duplicates), {orphans} orphan pages ({orphanFromDup} are duplicates), {emptyPages} empty pages, {ungroundedQuotes} ungrounded quotes, {tagViolations} out-of-vocabulary tags. Lint elapsed: {elapsedSeconds}s',
 
     // Advanced LLM Settings (Issues #99 / #128)
     advancedSettingsModeName: 'Advanced parameter settings',
@@ -430,7 +430,9 @@ export const EN_TEXTS = {
     lintPollutedItem: '- [[{page}]] → should be "{clean}"',
     lintSourcesNormalizedSection: 'Sources normalized (auto-fixed) [{files} files / {entries} entries]',
     lintSourcesNormalizedItem: 'Cleaned {entries} polluted sources entries across {files} file(s) (external paths, .md extensions, alias pipes removed and deduplicated).',
-    lintNoIssuesFound: 'No duplicates, dead links, empty pages, or orphan pages detected.',
+    lintNoIssuesFound: 'No duplicates, dead links, empty pages, orphan pages, or ungrounded quotes detected.',
+    lintQuoteGroundingSection: 'Ungrounded quotes (detected) [{count}]',
+    lintQuoteGroundingItem: '- [[{page}]]{sourceHint}: "{quote}"',
     lintDeadLinkItem: '- [[{source}]] → **{target}** (page does not exist){dupFlag}',
     lintDeadLinkMore: '- ... {count} more dead links',
     lintEmptyPageItem: '- [[{page}]] — less than 50 characters of substantive content',

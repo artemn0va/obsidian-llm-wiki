@@ -89,6 +89,8 @@ export interface LintCounts {
   pollutedPages: number;
   // Issue #85 v7: out-of-vocabulary tag count
   tagViolations: number;
+  // Issue #126: quotes not found in source files
+  ungroundedQuotes: number;
 }
 
 export class LintReportModal extends Modal {

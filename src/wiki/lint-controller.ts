@@ -13,7 +13,7 @@ import { isPageEmpty, detectPollutedPages, fixDoubleNestedWikiLinks } from './li
 import { fixPollutedSources, scanPollutedSources } from '../core/sources-normalizer';
 import { generateDuplicateCandidates, DuplicateCandidate } from './lint/duplicate-detection';
 import { runAliasCompletion, runDeadLinkFixes, runEmptyPageFixes, runOrphanFixes, runDuplicateMerges, runRetagViolations, makeMirroredNotice } from './lint/fix-runners';
-import { buildKnownTargets, detectAliasDeficiency, scanDeadLinks, scanOrphans, scanTagViolations } from './lint/scanners';
+import { buildKnownTargets, detectAliasDeficiency, scanDeadLinks, scanOrphans, scanTagViolations, scanQuoteGrounding, ScannerPage } from './lint/scanners';
 import { WikiEngine } from './wiki-engine';
 
 export interface LintContext {
@@ -137,11 +137,59 @@ export async function runLintWiki(ctx: LintContext, signal?: AbortSignal): Promi
       console.debug(`lintWiki: sources normalized in ${sourcesNormalizedFiles} files (${sourcesNormalizedEntries} entries)`);
     }
 
-    // ---- 1. Alias deficiency check ----
+    // ---- 1. Fast programmatic checks (no LLM, no source-file IO) ----
+
+    // 1.1 Alias deficiency
     const aliasDeficientPages = detectAliasDeficiency(wikiFiles, pageMap);
     console.debug(`lintWiki: ${aliasDeficientPages.length} entity/concept pages missing aliases`);
 
-    // ---- 2. Duplicate detection (Layer 1 programmatic candidates + Layer 3 LLM verification) ----
+    // 1.2 Empty pages (will exclude duplicate source pages after duplicate detection)
+    const emptyPages: Array<{path: string, content: string}> = [];
+
+    // 1.3 Orphan pages
+    const orphans = scanOrphans(pageMap, ctx.settings.wikiFolder);
+
+    // 1.4 Tag vocabulary violations (Issue #85 v7)
+    const tagViolations = scanTagViolations(pageMap, ctx.settings);
+
+    // 1.5 Polluted pages — basenames with folder-prefix duplication
+    const allPages = Array.from(pageMap.values()).map(({ path, basename }) => ({
+      path, title: basename
+    }));
+    const pollutedPages = detectPollutedPages(allPages);
+    if (pollutedPages.length > 0) {
+      console.warn(`[Lint] Detected ${pollutedPages.length} polluted page(s):`);
+      for (const pp of pollutedPages) {
+        console.warn(`  - ${pp.path} → should be "${pp.cleanTitle}"`);
+      }
+    }
+
+    // ---- 2. Source-IO programmatic checks (no LLM, but reads source files) ----
+
+    // 2.1 Dead links
+    stageNotice.setMessage(t.lintScanningLinks);
+    ctx.wikiEngine.updateStatusBar(getText(ctx.settings.language, 'lintStatusScanningLinks'));
+    console.debug('lintWiki: scanning dead links');
+    const deadLinks = scanDeadLinks(pageMap, knownTargets, knownTargetsLower, ctx.settings.wikiFolder);
+    stageNotice.setMessage(t.lintScanningLinksProgress
+      .replace('{current}', String(totalPages))
+      .replace('{total}', String(totalPages)));
+
+    // 2.2 Quote grounding (Issue #126) — verify Mentions in Source against source files.
+    // Build a source-only page map by reusing the already-read wiki pages that live
+    // under `wiki/sources/`.  No extra vault.read() calls.
+    const sourceMap = new Map<string, ScannerPage>();
+    for (const [path, page] of pageMap) {
+      if (path.includes('/sources/')) {
+        sourceMap.set(path, page);
+      }
+    }
+    const ungroundedQuotes = scanQuoteGrounding(pageMap, sourceMap, ctx.settings.wikiFolder);
+    console.debug(`lintWiki: ${ungroundedQuotes.length} ungrounded quote(s)`);
+
+    // ---- 3. LLM-assisted checks (high latency / token cost) ----
+
+    // 3.1 Duplicate detection (Layer 1 programmatic candidates + Layer 3 LLM verification)
     let duplicates: Array<{target: string, source: string, reason: string}> = [];
     const entityConceptFiles = wikiFiles.filter(f =>
       f.path.includes('/entities/') || f.path.includes('/concepts/')
@@ -319,44 +367,24 @@ export async function runLintWiki(ctx: LintContext, signal?: AbortSignal): Promi
       }
     }
 
-    // Dead links
-    stageNotice.setMessage(t.lintScanningLinks);
-    ctx.wikiEngine.updateStatusBar(getText(ctx.settings.language, 'lintStatusScanningLinks'));
-    console.debug('lintWiki: scanning dead links');
-    const deadLinks = scanDeadLinks(pageMap, knownTargets, knownTargetsLower, ctx.settings.wikiFolder);
-    stageNotice.setMessage(t.lintScanningLinksProgress
-      .replace('{current}', String(totalPages))
-      .replace('{total}', String(totalPages)));
-
-    // Empty pages (exclude duplicate source pages — they will be merged/deleted)
+    // ---- 3.5 Build empty-page list now that duplicates are known ----
     const duplicatePaths = new Set<string>();
     for (const d of duplicates) {
       duplicatePaths.add(d.target);
       duplicatePaths.add(d.source);
     }
 
-    const emptyPages: Array<{path: string, content: string}> = [];
     for (const { path, content } of pageMap.values()) {
       // Skip if this page is a duplicate source (will be deleted after merge)
       if (duplicatePaths.has(path)) continue;
-
       if (isPageEmpty(content)) {
         emptyPages.push({path, content});
       }
     }
 
-    // Orphan pages
-    const orphans = scanOrphans(pageMap, ctx.settings.wikiFolder);
+    // ---- 4. Build programmatic findings report ----
 
-    // Issue #85 v7: programmatic tag-vocabulary audit. Pure function,
-    // O(P × T) where P = page count and T = avg tags per page.
-    // <50ms even on 2000-page vaults, no token cost. Always runs
-    // (no opt-in checkbox).
-    const tagViolations = scanTagViolations(pageMap, ctx.settings);
-
-    // ---- 2. Build programmatic findings report ----
-
-    // Build report in causality-aware order: Duplicates → Dead Links → Empty Pages → Orphans
+    // Build report in causality-aware order within each speed tier.
     let progReport = '';
 
     // 0. Missing aliases section (listed before duplicates — aliases enable detection)
@@ -405,7 +433,24 @@ export async function runLintWiki(ctx: LintContext, signal?: AbortSignal): Promi
       progReport += `## ${t.lintDeadLinkSection.replace('{count}', String(deadLinks.length))}\n\n${deadLinkLines.join('\n')}\n\n`;
     }
 
-    // 3. Empty pages section
+    // 3. Ungrounded quotes section (Issue #126)
+    if (ungroundedQuotes.length > 0) {
+      progReport += `## ${t.lintQuoteGroundingSection.replace('{count}', String(ungroundedQuotes.length))}\n\n`;
+      for (const q of ungroundedQuotes) {
+        const pageRel = q.pagePath.replace(ctx.settings.wikiFolder + '/', '').replace('.md', '');
+        const sourceRel = q.sourcePath
+          ? q.sourcePath.replace(ctx.settings.wikiFolder + '/', '').replace('.md', '')
+          : '';
+        progReport += t.lintQuoteGroundingItem
+          .replace('{page}', pageRel)
+          .replace('{source}', sourceRel)
+          .replace('{quote}', q.quote)
+          .replace('{sourceHint}', q.hasSourceLink ? ` → [[${sourceRel}]]` : '') + '\n';
+      }
+      progReport += '\n';
+    }
+
+    // 4. Empty pages section
     if (emptyPages.length > 0) {
       progReport += `## ${t.lintEmptyPageSection.replace('{count}', String(emptyPages.length))}\n\n`;
       for (const ep of emptyPages) {
@@ -427,19 +472,7 @@ export async function runLintWiki(ctx: LintContext, signal?: AbortSignal): Promi
       progReport += '\n';
     }
 
-    // 3.5 Polluted pages — basenames with folder-prefix duplication
-    const allPages = Array.from(pageMap.values()).map(({ path, basename }) => ({
-      path, title: basename
-    }));
-    const pollutedPages = detectPollutedPages(allPages);
-    if (pollutedPages.length > 0) {
-      console.warn(`[Lint] Detected ${pollutedPages.length} polluted page(s):`);
-      for (const pp of pollutedPages) {
-        console.warn(`  - ${pp.path} → should be "${pp.cleanTitle}"`);
-      }
-    }
-
-    // 3.5 Polluted pages section
+    // 3.5 Polluted pages section (already computed in phase 1)
     if (pollutedPages.length > 0) {
       progReport += `## ${t.lintPollutedSection.replace('{count}', String(pollutedPages.length))}\n\n`;
       for (const pp of pollutedPages) {
@@ -476,11 +509,11 @@ export async function runLintWiki(ctx: LintContext, signal?: AbortSignal): Promi
     }
 
     // 5. No issues message
-    if (!duplicates.length && !deadLinks.length && !emptyPages.length && !orphans.length) {
+    if (!duplicates.length && !deadLinks.length && !emptyPages.length && !orphans.length && !ungroundedQuotes.length) {
       progReport += `${t.lintNoIssuesFound}\n\n`;
     }
 
-    // ---- 2.5 Contradiction scanning ----
+    // ---- 5. Contradiction scanning (LLM-assisted / mixed) ----
     const openContradictions = await ctx.wikiEngine.getOpenContradictions();
     let contradictionsReport = '';
 
@@ -517,7 +550,7 @@ export async function runLintWiki(ctx: LintContext, signal?: AbortSignal): Promi
       contradictionsReport += '\n';
     }
 
-    // ---- 3. LLM analysis ----
+    // ---- 6. LLM analysis ----
     // TODO (v1.18.0+, performance): LLM health analysis is the other major
     // Lint bottleneck. Current implementation sends the full wiki content
     // sample (~8 pages × 600 chars) plus the programmatic findings report
@@ -580,7 +613,7 @@ export async function runLintWiki(ctx: LintContext, signal?: AbortSignal): Promi
 
     const cleanedLLM = cleanMarkdownResponse(llmReport);
 
-    // ---- 4. Combine and display ----
+    // ---- 7. Combine and display ----
     // Measure elapsed wall time since runLintWiki started. Round to whole
     // seconds for the user-facing summary; sub-second precision is noise here.
     const elapsedSeconds = Math.max(1, Math.round((Date.now() - lintStartTime) / 1000));
@@ -593,6 +626,8 @@ export async function runLintWiki(ctx: LintContext, signal?: AbortSignal): Promi
       .replace('{orphans}', String(orphans.length))
       .replace('{orphanFromDup}', String(orphanFromDup))
       .replace('{emptyPages}', String(emptyPages.length))
+      .replace('{ungroundedQuotes}', String(ungroundedQuotes.length))
+      .replace('{tagViolations}', String(tagViolations.length))
       .replace('{elapsedSeconds}', String(elapsedSeconds));
 
     // Prepend aliases deficiency section to progReport (shown first in report body)
@@ -638,6 +673,7 @@ export async function runLintWiki(ctx: LintContext, signal?: AbortSignal): Promi
       duplicates: duplicates.length,
       pagesMissingAliases: aliasDeficientPages.length,
       tagViolations: tagViolations.length,
+      ungroundedQuotes: ungroundedQuotes.length,
     };
 
     // ---- Build callbacks ----

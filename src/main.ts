@@ -251,8 +251,6 @@ export default class LLMWikiPlugin extends Plugin {
     const savedData = await this.loadData() as Partial<LLMWikiSettings> | null;
     this.settings = Object.assign({}, DEFAULT_SETTINGS, savedData || {});
 
-    console.debug('loadSettings: loaded watchedFolders =', JSON.stringify(this.settings.watchedFolders));
-
     if (savedData && !savedData.wikiLanguage) {
       this.settings.wikiLanguage = this.settings.language;
       await this.saveData(this.settings);
@@ -307,9 +305,7 @@ export default class LLMWikiPlugin extends Plugin {
   }
 
   async saveSettings() {
-    console.debug('saveSettings: watchedFolders =', JSON.stringify(this.settings.watchedFolders));
     await this.saveData(this.settings);
-    console.debug('saveSettings: data saved to data.json');
     this.initializeLLMClient();
     this.schemaManager?.updateSettings(this.settings);
     if (this.wikiEngine) {

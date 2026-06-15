@@ -170,7 +170,7 @@ export const ES_TEXTS = {
     lintTagViolationFailed: 'Retag failed for {path}: {error}',
     lintTagViolationFixed: 'Retag complete. Fixed {fixed}/{total} page(s).',
     lintTagViolationFixedNone: 'Retag complete. No pages needed fixing (LLM kept current tags).',
-    lintTagViolationSection: 'Pages with out-of-vocabulary tags [{count}]',
+    lintTagViolationSection: 'Etiquetas fuera de vocabulario (detectadas) [{count}]',
     lintTagViolationItem: '- [[{path}]] — invalid: {tags}',
     lintTagViolationRetagBtn: '🏷️ Retag {count} page(s) with LLM',
     lintAliasesFillFailed: 'Falló la generación de alias: {page} — {error}',
@@ -331,14 +331,14 @@ export const ES_TEXTS = {
     wikiHealthStats: 'Estado de la Wiki: {pages} páginas ({entities} entidades, {concepts} conceptos, {sources} fuentes){indexStatus}',
 
     // Startup quick fixes detail (Issue #81)
-    startupCheckTitle: '✅ Correcciones rápidas Wiki completadas',
-    startupCheckStructureLabel: '📁 Estructura Wiki',
-    startupCheckStructureOk: '✓ completa',
-    startupCheckStructureMissing: '⚠️ incompleta — se creará automáticamente en la primera ingestión',
-    startupCheckSourcesLabel: '🔧 Sources normalizados',
-    startupCheckSourcesClean: '✓ ya limpio',
-    startupCheckSourcesCleaned: '⚠️ {files} archivo(s), {entries} entrada(s) limpiada(s)',
-    startupCheckDisableHint: '💡 Para desactivar: Configuración → Mantenimiento automático → Ejecutar correcciones rápidas al inicio',
+    startupCheckTitle: 'Correcciones rápidas Wiki completadas',
+    startupCheckStructureLabel: 'Estructura Wiki',
+    startupCheckStructureOk: 'completa',
+    startupCheckStructureMissing: 'incompleta — se creará automáticamente en la primera ingestión',
+    startupCheckSourcesLabel: 'Sources normalizados',
+    startupCheckSourcesClean: 'ya limpio',
+    startupCheckSourcesCleaned: '{files} archivo(s), {entries} entrada(s) limpiada(s)',
+    startupCheckDisableHint: 'Para desactivar: Configuración → Mantenimiento automático → Ejecutar correcciones rápidas al inicio',
     lintWikiStart: 'Iniciando verificación lint de la Wiki...',
     lintWikiComplete: 'Verificación lint de la Wiki completada',
     lintWikiFailed: 'Verificación lint de la Wiki fallida',
@@ -397,7 +397,7 @@ export const ES_TEXTS = {
 
     // Lint Report
     lintReportTitle: 'Informe de verificación lint de la Wiki',
-    lintReportSummary: 'Resumen de estado del wiki: {total} páginas en total, {aliasesMissing} páginas sin alias, {duplicates} duplicados, {deadLinks} enlaces rotos ({deadLinkFromDup} implican duplicados), {orphans} páginas huérfanas ({orphanFromDup} son duplicados), {emptyPages} páginas vacías. Lint: {elapsedSeconds}s',
+    lintReportSummary: 'Resumen de estado del wiki: {total} páginas en total, {aliasesMissing} páginas sin alias, {duplicates} duplicados, {deadLinks} enlaces rotos ({deadLinkFromDup} implican duplicados), {orphans} páginas huérfanas ({orphanFromDup} son duplicados), {emptyPages} páginas vacías, {ungroundedQuotes} citas sin fuente, {tagViolations} etiquetas fuera de vocabulario. Lint: {elapsedSeconds}s',
 
     // Advanced LLM Settings (Issues #99 / #128)
     advancedSettingsModeName: 'Configuración de parámetros avanzados',
@@ -418,7 +418,9 @@ export const ES_TEXTS = {
     lintOrphanSection: 'Páginas huérfanas (detectadas) [{count}]',
     lintContradictionSection: 'Contradicciones (detectadas)',
     lintDuplicateSection: 'Páginas duplicadas (detectadas)',
-    lintNoIssuesFound: 'No se detectaron duplicados, enlaces rotos, páginas vacías ni páginas huérfanas.',
+    lintNoIssuesFound: 'No se detectaron duplicados, enlaces rotos, páginas vacías, páginas huérfanas ni citas sin fuente.',
+    lintQuoteGroundingSection: 'Citas sin fuente (detectadas) [{count}]',
+    lintQuoteGroundingItem: '- [[{page}]]{sourceHint}: "{quote}"',
     lintDeadLinkItem: '- [[{source}]] → **{target}** (la página no existe){dupFlag}',
     lintDeadLinkMore: '- ... {count} enlaces rotos más',
     lintEmptyPageItem: '- [[{page}]] — menos de 50 caracteres de contenido sustantivo',

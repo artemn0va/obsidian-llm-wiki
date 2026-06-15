@@ -170,7 +170,7 @@ export const PT_TEXTS = {
     lintTagViolationFailed: 'Retag failed for {path}: {error}',
     lintTagViolationFixed: 'Retag complete. Fixed {fixed}/{total} page(s).',
     lintTagViolationFixedNone: 'Retag complete. No pages needed fixing (LLM kept current tags).',
-    lintTagViolationSection: 'Pages with out-of-vocabulary tags [{count}]',
+    lintTagViolationSection: 'Tags fora do vocabulário (detectadas) [{count}]',
     lintTagViolationItem: '- [[{path}]] — invalid: {tags}',
     lintTagViolationRetagBtn: '🏷️ Retag {count} page(s) with LLM',
     lintAliasesFillFailed: 'Falha ao gerar aliases: {page} — {error}',
@@ -331,14 +331,14 @@ export const PT_TEXTS = {
     wikiHealthStats: 'Saúde da Wiki: {pages} páginas ({entities} entidades, {concepts} conceitos, {sources} fontes){indexStatus}',
 
     // Startup quick fixes detail (Issue #81)
-    startupCheckTitle: '✅ Correções rápidas Wiki concluídas',
-    startupCheckStructureLabel: '📁 Estrutura Wiki',
-    startupCheckStructureOk: '✓ completa',
-    startupCheckStructureMissing: '⚠️ incompleta — será criada automaticamente na primeira ingestão',
-    startupCheckSourcesLabel: '🔧 Sources normalizados',
-    startupCheckSourcesClean: '✓ já limpo',
-    startupCheckSourcesCleaned: '⚠️ {files} arquivo(s), {entries} entrada(s) limpa(s)',
-    startupCheckDisableHint: '💡 Para desativar: Configurações → Manutenção automática → Executar correções rápidas na inicialização',
+    startupCheckTitle: 'Correções rápidas Wiki concluídas',
+    startupCheckStructureLabel: 'Estrutura Wiki',
+    startupCheckStructureOk: 'completa',
+    startupCheckStructureMissing: 'incompleta — será criada automaticamente na primeira ingestão',
+    startupCheckSourcesLabel: 'Sources normalizados',
+    startupCheckSourcesClean: 'já limpo',
+    startupCheckSourcesCleaned: '{files} arquivo(s), {entries} entrada(s) limpa(s)',
+    startupCheckDisableHint: 'Para desativar: Configurações → Manutenção automática → Executar correções rápidas na inicialização',
     lintWikiStart: 'Iniciando verificação da Wiki...',
     lintWikiComplete: 'Verificação da Wiki concluída',
     lintWikiFailed: 'Verificação da Wiki falhou',
@@ -397,7 +397,7 @@ export const PT_TEXTS = {
 
     // Lint Report
     lintReportTitle: 'Relatório de verificação da Wiki',
-    lintReportSummary: 'Visão geral do wiki: {total} páginas no total, {aliasesMissing} sem aliases, {duplicates} duplicados, {deadLinks} links quebrados ({deadLinkFromDup} envolvem duplicados), {orphans} órfãs ({orphanFromDup} são duplicados), {emptyPages} vazias. Lint: {elapsedSeconds}s',
+    lintReportSummary: 'Visão geral do wiki: {total} páginas no total, {aliasesMissing} sem aliases, {duplicates} duplicados, {deadLinks} links quebrados ({deadLinkFromDup} envolvem duplicados), {orphans} órfãs ({orphanFromDup} são duplicados), {emptyPages} vazias, {ungroundedQuotes} citações sem fonte, {tagViolations} tags fora do vocabulário. Lint: {elapsedSeconds}s',
 
     // Advanced LLM Settings (Issues #99 / #128)
     advancedSettingsModeName: 'Configuração de parâmetros avançados',
@@ -418,7 +418,9 @@ export const PT_TEXTS = {
     lintOrphanSection: 'Páginas órfãs (detectadas) [{count}]',
     lintContradictionSection: 'Contradições (detectadas)',
     lintDuplicateSection: 'Páginas duplicadas (detectadas)',
-    lintNoIssuesFound: 'Nenhuma duplicata, link quebrado, página vazia ou página órfã detectada.',
+    lintNoIssuesFound: 'Nenhuma duplicata, link quebrado, página vazia, página órfã ou citação sem fonte detectada.',
+    lintQuoteGroundingSection: 'Citações sem fonte (detectadas) [{count}]',
+    lintQuoteGroundingItem: '- [[{page}]]{sourceHint}: "{quote}"',
     lintDeadLinkItem: '- [[{source}]] → **{target}** (página inexistente){dupFlag}',
     lintDeadLinkMore: '- ... mais {count} links quebrados',
     lintEmptyPageItem: '- [[{page}]] — menos de 50 caracteres de conteúdo substantivo',

@@ -170,7 +170,7 @@ export const JA_TEXTS = {
     lintTagViolationFailed: 'Retag failed for {path}: {error}',
     lintTagViolationFixed: 'Retag complete. Fixed {fixed}/{total} page(s).',
     lintTagViolationFixedNone: 'Retag complete. No pages needed fixing (LLM kept current tags).',
-    lintTagViolationSection: 'Pages with out-of-vocabulary tags [{count}]',
+    lintTagViolationSection: '語彙外タグ（検出）[{count} 件]',
     lintTagViolationItem: '- [[{path}]] — invalid: {tags}',
     lintTagViolationRetagBtn: '🏷️ Retag {count} page(s) with LLM',
     lintAliasesFillFailed: '別名生成に失敗：{page} — {error}',
@@ -331,14 +331,14 @@ export const JA_TEXTS = {
     wikiHealthStats: 'Wiki健全性: {pages}ページ（{entities}エンティティ、{concepts}概念、{sources}ソース）{indexStatus}',
 
     // Startup quick fixes detail (Issue #81)
-    startupCheckTitle: '✅ Wiki クイック修正完了',
-    startupCheckStructureLabel: '📁 Wiki 構造',
-    startupCheckStructureOk: '✓ 完了',
-    startupCheckStructureMissing: '⚠️ 不完全 — 初回取り込み時に自動作成されます',
-    startupCheckSourcesLabel: '🔧 Sources 正規化',
-    startupCheckSourcesClean: '✓ 既に正規化済み',
-    startupCheckSourcesCleaned: '⚠️ {files} ファイル、{entries} エントリを修正',
-    startupCheckDisableHint: '💡 無効化するには 設定 → 自動メンテナンス → 起動時にクイック修正を実行',
+    startupCheckTitle: 'Wiki クイック修正完了',
+    startupCheckStructureLabel: 'Wiki 構造',
+    startupCheckStructureOk: '完了',
+    startupCheckStructureMissing: '不完全 — 初回取り込み時に自動作成されます',
+    startupCheckSourcesLabel: 'Sources 正規化',
+    startupCheckSourcesClean: '既に正規化済み',
+    startupCheckSourcesCleaned: '{files} ファイル、{entries} エントリを修正',
+    startupCheckDisableHint: '無効化するには 設定 → 自動メンテナンス → 起動時にクイック修正を実行',
     lintWikiStart: 'Wiki Lintを開始中...',
     lintWikiComplete: 'Wiki Lint完了',
     lintWikiFailed: 'Wiki Lint失敗',
@@ -397,7 +397,7 @@ export const JA_TEXTS = {
 
     // Lint Report
     lintReportTitle: 'Wiki Lintレポート',
-    lintReportSummary: 'Wiki 状態の概要: 合計 {total} ページ、{aliasesMissing} ページにエイリアス欠落、重複 {duplicates}、デッドリンク {deadLinks}（うち {deadLinkFromDup} は重複関連）、孤立 {orphans}（うち {orphanFromDup} は重複）、空ページ {emptyPages}。Lint 実行時間: {elapsedSeconds}秒',
+    lintReportSummary: 'Wiki 状態の概要: 合計 {total} ページ、{aliasesMissing} ページにエイリアス欠落、重複 {duplicates}、デッドリンク {deadLinks}（うち {deadLinkFromDup} は重複関連）、孤立 {orphans}（うち {orphanFromDup} は重複）、空ページ {emptyPages}、根拠のない引用 {ungroundedQuotes}、語彙外タグ {tagViolations}。Lint 実行時間: {elapsedSeconds}秒',
 
     // Advanced LLM Settings (Issues #99 / #128)
     advancedSettingsModeName: '高度なパラメータ設定',
@@ -418,7 +418,9 @@ export const JA_TEXTS = {
     lintOrphanSection: '孤立ページ（検出）[{count} 件]',
     lintContradictionSection: '矛盾（検出済み）',
     lintDuplicateSection: '重複ページ（検出済み）',
-    lintNoIssuesFound: '重複、リンク切れ、空ページ、孤立ページは検出されませんでした。',
+    lintNoIssuesFound: '重複、リンク切れ、空ページ、孤立ページ、または根拠のない引用は検出されませんでした。',
+    lintQuoteGroundingSection: '根拠のない引用（検出）[{count} 件]',
+    lintQuoteGroundingItem: '- [[{page}]]{sourceHint}: 「{quote}」',
     lintDeadLinkItem: '- [[{source}]] → **{target}**（ページが存在しません）{dupFlag}',
     lintDeadLinkMore: '- ... 他{count}件のリンク切れ',
     lintEmptyPageItem: '- [[{page}]] — 実質的なコンテンツが50文字未満',

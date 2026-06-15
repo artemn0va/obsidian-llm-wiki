@@ -171,7 +171,7 @@ export const KO_TEXTS = {
     lintTagViolationFailed: 'Retag failed for {path}: {error}',
     lintTagViolationFixed: 'Retag complete. Fixed {fixed}/{total} page(s).',
     lintTagViolationFixedNone: 'Retag complete. No pages needed fixing (LLM kept current tags).',
-    lintTagViolationSection: 'Pages with out-of-vocabulary tags [{count}]',
+    lintTagViolationSection: '어휘 외 태그 (감지됨) [{count}개]',
     lintTagViolationItem: '- [[{path}]] — invalid: {tags}',
     lintTagViolationRetagBtn: '🏷️ Retag {count} page(s) with LLM',
     lintAliasesFillFailed: '별칭 생성 실패: {page} — {error}',
@@ -332,14 +332,14 @@ export const KO_TEXTS = {
     wikiHealthStats: '위키 건강: {pages}개의 페이지 ({entities} 엔티티, {concepts} 컨셉, {sources} 소스){indexStatus}',
 
     // Startup quick fixes detail (Issue #81)
-    startupCheckTitle: '✅ Wiki 빠른 수정 완료',
-    startupCheckStructureLabel: '📁 Wiki구조',
-    startupCheckStructureOk: '✓ 완료',
-    startupCheckStructureMissing: '⚠️ 불완전 — 첫 수집 시 자동 생성',
-    startupCheckSourcesLabel: '🔧 Sources 정규화',
-    startupCheckSourcesClean: '✓ 이미 정규화됨',
-    startupCheckSourcesCleaned: '⚠️ {files}개 파일, {entries}개 항목 정리',
-    startupCheckDisableHint: '💡 비활성화하려면 설정 → 자동 유지보수 → 시작 시 빠른 수정 실행',
+    startupCheckTitle: 'Wiki 빠른 수정 완료',
+    startupCheckStructureLabel: 'Wiki구조',
+    startupCheckStructureOk: '완료',
+    startupCheckStructureMissing: '불완전 — 첫 수집 시 자동 생성',
+    startupCheckSourcesLabel: 'Sources 정규화',
+    startupCheckSourcesClean: '이미 정규화됨',
+    startupCheckSourcesCleaned: '{files}개 파일, {entries}개 항목 정리',
+    startupCheckDisableHint: '비활성화하려면 설정 → 자동 유지보수 → 시작 시 빠른 수정 실행',
     lintWikiStart: '위키 린트 시작 중...',
     lintWikiComplete: '위키 린트 완료',
     lintWikiFailed: '위키 린트 실패',
@@ -398,7 +398,7 @@ export const KO_TEXTS = {
 
     // Lint Report
     lintReportTitle: '위키 린트 보고서',
-    lintReportSummary: 'Wiki 상태 개요: 총 {total}페이지, {aliasesMissing}페이지 별칭 누락, 중복 {duplicates}개, 데드 링크 {deadLinks}개 ({deadLinkFromDup}개 중복 관련), 고아 {orphans}개 ({orphanFromDup}개 중복), 빈 페이지 {emptyPages}개. Lint 소요: {elapsedSeconds}초',
+    lintReportSummary: 'Wiki 상태 개요: 총 {total}페이지, {aliasesMissing}페이지 별칭 누락, 중복 {duplicates}개, 데드 링크 {deadLinks}개 ({deadLinkFromDup}개 중복 관련), 고아 {orphans}개 ({orphanFromDup}개 중복), 빈 페이지 {emptyPages}개, 출처 없는 인용 {ungroundedQuotes}개, 어휘 외 태그 {tagViolations}개. Lint 소요: {elapsedSeconds}초',
 
     // Advanced LLM Settings (Issues #99 / #128)
     advancedSettingsModeName: '고급 매개변수 설정',
@@ -419,7 +419,9 @@ export const KO_TEXTS = {
     lintOrphanSection: '고아 페이지 (감지됨) [{count}개]',
     lintContradictionSection: '모순 (감지됨)',
     lintDuplicateSection: '중복 페이지 (감지됨)',
-    lintNoIssuesFound: '중복, 깨진 링크, 빈 페이지 또는 고아 페이지가 감지되지 않았습니다.',
+    lintNoIssuesFound: '중복, 깨진 링크, 빈 페이지, 고아 페이지 또는 출처 없는 인용이 감지되지 않았습니다.',
+    lintQuoteGroundingSection: '출처 없는 인용 (감지됨) [{count}개]',
+    lintQuoteGroundingItem: '- [[{page}]]{sourceHint}: "{quote}"',
     lintDeadLinkItem: '- [[{source}]] → **{target}** (페이지가 존재하지 않음){dupFlag}',
     lintDeadLinkMore: '- ... {count}개의 깨진 링크 추가',
     lintEmptyPageItem: '- [[{page}]] — 실질적인 콘텐츠가 50자 미만',

@@ -25,7 +25,7 @@ import {
 } from '../utils';
 import { UNIVERSAL_LINK_CONSTRAINTS } from './prompts/constraints';
 import { applySectionLabels, appendTagVocabularyToPrompt } from './system-prompts';
-import { getExistingWikiPages } from './lint-fixes';
+import { getExistingWikiPages } from './lint/fixer';
 
 // Wrap errors with entity/concept context for better diagnostics
 function contextualizeError(error: unknown, name: string, pageType: string): Error {

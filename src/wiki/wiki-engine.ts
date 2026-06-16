@@ -31,7 +31,7 @@ import {
 import {
   LintFixer,
   getExistingWikiPages,
-} from './lint-fixes';
+} from './lint/fixer';
 import { ContradictionManager } from './contradictions';
 import { fixPollutedSources } from '../core/sources-normalizer';
 import { UNIVERSAL_LINK_CONSTRAINTS } from './prompts/constraints';

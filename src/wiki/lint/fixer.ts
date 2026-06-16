@@ -2,32 +2,32 @@
 // and duplicate merge. Extracted from WikiEngine.
 
 import { App } from 'obsidian';
-import { EngineContext } from '../types';
-import { PROMPTS } from '../prompts';
-import { slugify, parseJsonResponse, cleanMarkdownResponse, parseFrontmatter, enforceFrontmatterConstraints } from '../utils';
-import { TOKENS_LINT_PAGE_FIX, TOKENS_LINT_ORPHAN_FIX, WIKI_SUBFOLDERS } from '../constants';
+import { EngineContext, LLMWikiSettings } from '../../types';
+import { PROMPTS } from '../../prompts';
+import { slugify, parseJsonResponse, cleanMarkdownResponse, parseFrontmatter, enforceFrontmatterConstraints } from '../../utils';
+import { TOKENS_LINT_PAGE_FIX, TOKENS_LINT_ORPHAN_FIX, WIKI_SUBFOLDERS } from '../../constants';
 import {
   buildSystemPrompt,
   getSectionLabels,
   applySectionLabels,
   getGranularityFixLimits,
-} from './system-prompts';
+} from '../system-prompts';
 import {
   findDeadLinkTarget,
   buildDeadLinkReplacement,
   replaceDeadLink,
-} from '../core/dead-link-detector';
+} from '../../core/dead-link-detector';
 import {
   buildEmptyPagePrompt,
   cleanWikiIndex,
   correctLinkPollution,
-} from '../core/prompt-builders';
+} from '../../core/prompt-builders';
 import {
   buildOrphanLinkPrompt,
   validateOrphanLinkTarget,
   buildOrphanLinkUpdate,
   normalizeOrphanPagePath,
-} from '../core/orphan-matcher';
+} from '../../core/orphan-matcher';
 
 // Regex used to strip markdown syntax for substantive-content measurement.
 // Removes headings, bold/italic, list markers, blockquotes, wiki links, em dashes, whitespace.
@@ -779,7 +779,7 @@ export function escapeRegex(s: string): string {
 
 // Build a hint string listing section labels in the target language,
 // so the LLM knows what headers to use when generating page content.
-function buildSectionLabelsHint(settings: import('../types').LLMWikiSettings): string {
+function buildSectionLabelsHint(settings: LLMWikiSettings): string {
   const labels = getSectionLabels(settings);
   const entityLabels = [
     `- ${labels.basic_information}`,

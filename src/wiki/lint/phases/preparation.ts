@@ -1,6 +1,6 @@
 import { TEXTS } from '../../../texts';
 import { getText } from '../../../utils';
-import { fixDoubleNestedWikiLinks } from '../../lint-fixes';
+import { fixDoubleNestedWikiLinks } from '../fixer';
 import { scanPollutedSources, fixPollutedSources } from '../../../core/sources-normalizer';
 import { LintPhaseContext, ScannerPage } from '../types';
 

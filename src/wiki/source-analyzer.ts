@@ -31,7 +31,7 @@ import {
 import { PROMPTS } from '../prompts';
 import { parseJsonResponse, matchExtractedToExisting, coerceToArray } from '../utils';
 import { MAX_TOKENS_BATCH, TOKENS_PER_ITEM_BUDGET, SOURCE_ANALYZER_RETRY_MULTIPLIER } from '../constants';
-import { getExistingWikiPages } from './lint-fixes';
+import { getExistingWikiPages } from './lint/fixer';
 import { getGranularityInstruction, buildActiveTagVocabularySection } from './system-prompts';
 import { calculateBatchLimits, adjustBatchSizeForResponse, getCustomTypeCaps } from '../core/batch-limits';
 import { detectConvergence, checkCumulativeLimits, checkEmptyBatch, formatConvergenceStatus } from '../core/convergence-detector';

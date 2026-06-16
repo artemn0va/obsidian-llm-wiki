@@ -13,23 +13,23 @@
 // require rich ctx wiring that does not pay off in module isolation.
 
 import { Notice } from 'obsidian';
-import { LintFixCallbacks, LintCounts, LintReportModal, FixReportModal, FixReportPhase } from '../ui/modals';
-import { TEXTS } from '../texts';
-import { PROMPTS } from '../prompts';
-import { cleanMarkdownResponse, parseJsonResponse, detectRateLimitFailures, formatRateLimitNotice, getText, nestReportUnderParent } from '../utils';
-import { appendGranularityToPrompt, appendTagVocabularyToPrompt } from './system-prompts';
-import { TOKENS_LINT_DEDUP_LLM, NOTICE_NORMAL, NOTICE_RATE_LIMIT } from '../constants';
-import { isPageEmpty } from './lint-fixes';
-import { generateDuplicateCandidates, DuplicateCandidate } from './lint/duplicate-detection';
-import { runAliasCompletion, runDeadLinkFixes, runEmptyPageFixes, runOrphanFixes, runDuplicateMerges, runRetagViolations, makeMirroredNotice } from './lint/fix-runners';
-import { runPreparationPhase } from './lint/phases/preparation';
-import { runProgrammaticPhase } from './lint/phases/programmatic';
-import { buildLintReport } from './lint/report-builder';
-import { LintContext, LintPhaseContext, ProgrammaticFindings } from './lint/types';
+import { LintFixCallbacks, LintCounts, LintReportModal, FixReportModal, FixReportPhase } from '../../ui/modals';
+import { TEXTS } from '../../texts';
+import { PROMPTS } from '../../prompts';
+import { cleanMarkdownResponse, parseJsonResponse, detectRateLimitFailures, formatRateLimitNotice, getText, nestReportUnderParent } from '../../utils';
+import { appendGranularityToPrompt, appendTagVocabularyToPrompt } from '../system-prompts';
+import { TOKENS_LINT_DEDUP_LLM, NOTICE_NORMAL, NOTICE_RATE_LIMIT } from '../../constants';
+import { isPageEmpty } from './fixer';
+import { generateDuplicateCandidates, DuplicateCandidate } from './duplicate-detection';
+import { runAliasCompletion, runDeadLinkFixes, runEmptyPageFixes, runOrphanFixes, runDuplicateMerges, runRetagViolations, makeMirroredNotice } from './fix-runners';
+import { runPreparationPhase } from './phases/preparation';
+import { runProgrammaticPhase } from './phases/programmatic';
+import { buildLintReport } from './report-builder';
+import { LintContext, LintPhaseContext, ProgrammaticFindings } from './types';
 
 // Re-export LintContext for back-compat — external callers (e.g. main.ts,
 // modals.ts indirect import) still reference `LintContext` from this file.
-export type { LintContext } from './lint/types';
+export type { LintContext } from './types';
 
 /**
  * Extract just the per-section body from a full Lint report.

@@ -73,7 +73,7 @@ import { QueryModal } from './wiki/query-engine';
 import { FileSuggestModal, FolderSuggestModal, IngestReportModal } from './ui/modals';
 import { SchemaManager } from './schema/schema-manager';
 import { AutoMaintainManager } from './schema/auto-maintain';
-import { runLintWiki } from './wiki/lint-controller';
+import { runLintWiki } from './wiki/lint/controller';
 
 export default class LLMWikiPlugin extends Plugin {
   settings: LLMWikiSettings;

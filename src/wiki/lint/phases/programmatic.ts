@@ -1,5 +1,5 @@
 import { detectAliasDeficiency, scanOrphans, scanTagViolations, scanDeadLinks, scanQuoteGrounding } from '../scanners';
-import { detectPollutedPages } from '../../lint-fixes';
+import { detectPollutedPages } from '../fixer';
 import { getText } from '../../../utils';
 import { LintPhaseContext, ProgrammaticFindings, ScannerPage } from '../types';
 

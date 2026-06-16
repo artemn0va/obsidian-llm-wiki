@@ -2,16 +2,26 @@
 
 > Feature planning and improvement proposals
 
-**Version:** 1.18.3-in-progress | **Updated:** 2026-06-15
+**Version:** 1.19.0 | **Updated:** 2026-06-16
 
 ---
 
 ## Current Status
 
-### Implemented (v1.18.3-in-progress)
+### Implemented (v1.19.0) — Ingest Quality & Cost Hardening (2026-06-16)
 
-- ✅ **PR #127 / Issue #125 — sources frontmatter normalization in write path.** `fixPollutedSources()` is now called from `WikiEngine.createOrUpdateFile()`, the centralized write chokepoint, so every generated/merged page gets a normalized `sources:` field. External paths are slugified so `Notizen/AGEs (Advanced).md` resolves to `sources/AGEs-Advanced`.
-- ✅ **PR #109 — Auto Smart Fix setting.** Lint can now skip the report modal and run the full Smart Fix All chain hands-free. Default `false`; fix summary modal still shown on completion.
+- ✅ **#99 — Reasoning-only response detection.** `OpenAICompatibleClient` now detects when `disableThinking=true` produces an empty `content` + `finish_reason: length` response with high reasoning tokens, and throws an actionable error. Automatic 400 fallback to `chat_template_kwargs: {enable_thinking: false}` for providers that reject `thinking.type='disabled'`.
+- ✅ **#116 — Compact slug list in analyzeSource prompt.** New `buildCompactSlugList()` injects a sorted slug-only list of existing wiki pages into the analyzeSource prompt so the LLM uses exact paths when creating `[[links]]`, reducing dead-link slug mismatches from the 50-page index cap. Contributed by @DocTpoint.
+- ✅ **#126 — Quote-grounding lint scanner.** New `scanQuoteGrounding()` pure function verifies every quote under `## Mentions in Source` against the linked source file. Tier 1 = exact match; Tier 2 = normalized match. Supports both current and legacy bare-`quote` formats. Zero token cost. Contributed by @DocTpoint.
+- ✅ **#128 — Advanced LLM parameter settings.** Default/Custom mode selector in LLM Configuration. Default hides all advanced params and keeps disable-thinking on. Custom reveals: disable thinking toggle, extraction temperature (0–2), query temperature (0–2), repetition penalty (0–2). `data.json` backward compatible — `disableThinking` field name preserved.
+- ✅ **#131 Tier 1 — Skip Stage 4 LLM on no-op.** `PageFactory.updateRelatedPage` skips LLM call when `new_info` resolves to the fallback string. Removes ~33% of Stage 4 LLM calls. Contributed by @DocTpoint.
+- ✅ **PR #109 — Auto Smart Fix setting.** Lint can auto-run Smart Fix All after analysis. Default `false`.
+- ✅ **PR #110 — Status bar mirrors popup during ingest and lint.** All progress messages update both Notice + status bar. Contributed by @dmarchevsky.
+- ✅ **PR #127 — Sources normalization in write path.** `fixPollutedSources()` called from centralized write chokepoint. Contributed by @DocTpoint.
+- ✅ **Lint report enhanced.** Summary now includes ungroundedQuotes + tagViolations counts. `lintTagViolationSection` fully i18n'd in all 8 languages.
+- ✅ **Advanced settings dropdown fix.** Missing `this.display()` in onChange caused empty "Custom" panel. Fixed.
+- ✅ **Startup quick-fixes Notice simplified.** Removed emoji + heavy separators.
+- ✅ **Internal refactoring.** lint-controller modularization (phases/report-builder), schema-analyze moved to schema/, LintContext extracted to lint/types, lint-controller + lint-fixes moved into lint/ directory.
 
 ### Implemented (v1.18.2) — Custom Extraction Limits Hard-Enforced (Issue #120)
 
@@ -61,45 +71,33 @@ Major quality release addressing previously-unprocessable large sources and a cl
 
 ---
 
-## Next Milestone: v1.18.3 — Ingest Quality & Cost Hardening
+## Next Milestone: v1.19.0 — Schema Coherence & Workflow Scale
 
-Target: P0 bug fixes + cost reduction from the 2026-06-14 triage. Scope = high-confidence items from the issue audit. Source-of-record: 2026-06-14 triage (PRs #127 / #109 merged; Issues #99 / #131 / #116 / #126 / #128).
+Release focus: schema as single source of truth, event/timeline design, graph-based features, and workflow scale-up. See also the [lint modularization ROI plan](~/.claude/projects/-Users-greener-project-obsidian-llm-wiki/memory/project_lint_modularization_roi.md) for internal refactor priorities.
 
-### P0 — Real user pain or significant waste
+### Theme 1: Schema as single source of truth
+- **#124 — Schema Page Template truth source.** Page Template as body-structure authority; header language decoupled from `wikiLanguage`; `tagVocabularyMode` synced with schema Classification Rules. 2 PRs.
+- **#131 Tier 2 — Replace Stage 4 LLM rewrite with deterministic Mentions append.** Full Stage 4 cost removal.
 
-| Item | Author | Block | Note |
-|------|--------|-------|------|
-| **#99 defensive detection — reasoning-only response** | (planned) | none | When `disableThinking=true` but response is empty `content` + `finish_reason: length` + reasoning tokens ≈ max_tokens, throw actionable error pointing user to runtime-side reasoning toggle. Detected in `OpenAICompatibleClient.createMessage` (use `completion_tokens_details.reasoning_tokens`). Closes the LM Studio MLX "Source analysis failed" dead end. |
-| **#131 Tier 1 — skip Stage 4 LLM on no-op** | @DocTpoint (proposed) | none | `PageFactory.updateRelatedPage`: when `new_info` resolves to `'No directly relevant information'` fallback, skip the LLM call entirely. Still update frontmatter `sources` + `updated` programmatically. Removes ~33% of Stage 4 LLM calls for ~5 lines of code. |
-| **#116 — compact slug list in semantic resolution** | @DocTpoint (proposed) | none | Inject compact slug-only list into `PROMPTS.resolveEntityDedup` (NOT `analyzeSource` — that no longer takes `existing_pages`). Lets LLM semantic resolution match all slugs without the 50-page cap. Slug-only list at 500 pages ≈ 18k chars, fits uncapped. |
+### Theme 2: Event / timeline design
+- **#112 — Event/timeline concept.** No new `event/` page type. Explore `arc` + `sequence` frontmatter or per-page timeline block. Need concrete vault example.
 
-### P1 — High-value UX / quality
+### Theme 3: Graph-based features
+- **#117 — Graph-based domain tag inference.** `in_degree × out_degree` hub detection; hub domain labeling via cheap LLM call; tag propagation with explainability.
 
-| Item | Author | Block | Note |
-|------|--------|-------|------|
-| **#126 — quote-grounding lint scanner** | @DocTpoint (proposed) | none | New scanner in `src/wiki/lint/scanners.ts`: parse `## Mentions in Source` quotes + their `**Source: [[...]]**` link, check each quote is a substring of that source. Report-only (do not auto-rewrite verbatim). Protects against Gemma/quantized model corruption of `Mentions in Source`. |
-| **#128 — Advanced sampling params (temperature per task)** | (planned) | none | Add collapsible "Advanced" section in LLM Configuration: per-task temperature (low for ingest/analysis, moderate for query). Default 0.2/0.7. Cloud providers that ignore the field fall back to their own defaults. |
-| **#110 — status bar mirror (after UX fix)** | @dmarchevsky | author UX fix | Re-check after author implements the "click to cancel" affordance in `ingestStatusAnalyzing` / `lintStatus*` strings + clears status bar in `makeMirroredNotice.hide()`. Rebase on top of #109. |
+### Theme 4: Workflow scale-up
+- **#97 — One-click schema apply + backup.** Needs backup/restore design pass.
+- **#122 — Ingestion history panel.** Start with log.md UI layer.
+- **#130 — In-place batch ingest queue.** Composes with #122 and `pageGenerationConcurrency`.
 
-### Out of scope (defer to v1.19.0+):
+### Out of scope (v1.19.0+)
 
-- **#112 (event/timeline)** — design discussion only; no new event page type; explore `arc` + `sequence` frontmatter metadata or per-page timeline block. Need concrete vault example to validate.
-- **#117 (graph-based domain tag inference)** — research direction; explore `in_degree × out_degree` hub detection with data-derived threshold; hub domain labeling via cheap LLM call; tag propagation with explainability.
-- **#124 (schema Page Template truth source)** — needs Page Template as the body-structure authority, header language decoupled from `wikiLanguage`, and `tagVocabularyMode` setting synced with schema's Classification Rules section. Split into 2 PRs under same v1.19.0 theme.
-- **#97 (one-click schema apply + backup)** — needs backup/restore design pass.
-- **#122 (ingestion history panel)** — start with log.md UI layer (no new persistence); expand later.
-- **#130 (in-place batch ingest queue)** — composes with #122 and current `pageGenerationConcurrency`.
 - **#91 (nested tags)** — awaiting #85 in-the-wild feedback; chip input already accepts `/`.
-- **#131 Tier 2 (deterministic Stage 4 append)** — v1.19.0; replace LLM rewrite with deterministic Mentions append for full Stage 4 cost removal.
-
-### v1.19.0 Theme — Schema Coherence & Workflow Scale
-
-After v1.18.3, the v1.19.0 cycle addresses:
-1. **Schema as single source of truth** (#124 + own tag-vocab → schema sync proposal)
-2. **Event/timeline design** (#112)
-3. **Graph-based features** (#117)
-4. **Workflow scale-up** (#97, #122, #130)
-5. **#131 Tier 2** — full deterministic Stage 4
+- **#36 — Source title in frontmatter** — needs clarification from issue author.
+- **P3 test infrastructure:** wiki-engine full-path integration tests; query-engine core flow tests (requires Obsidian App + Modal + DOM mocks).
+- **Restore true streaming for 3rd-party providers** (requires Obsidian native streaming).
+- **Missing Concept Pages tracker** (parse Lint LLM prose into structured reports).
+- **Lint performance:** hash-bucket dedup prefilter; hierarchical LLM health analysis.
 
 ### v1.19.0+ Theme — Query Engine Evolution (P3 research)
 
@@ -110,14 +108,6 @@ Query engine is currently a "structured-context RAG" (keyword + LLM semantic sel
 - **Tier D (highest):** agentic loop with multi-step tool calls (function-calling / OpenAI tools support required)
 
 Documented in `~/.claude/projects/.../memory/project_v1.19.0_query_evolution.md`.
-
-### Backlog (P3, low priority)
-
-- P1 cleanup: page-factory resolvePagePath LLM fallback tests; runLintWiki phase extraction; refine error message classification
-- P2 test infra: wiki-engine full-path integration tests; query-engine core flow tests
-- Restore true streaming for 3rd-party providers (requires Obsidian native streaming)
-- Missing Concept Pages tracker (parse Lint LLM prose into structured reports)
-- Lint performance: hash-bucket dedup prefilter; hierarchical LLM health analysis
 
 ---
 

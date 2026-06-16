@@ -19,14 +19,13 @@
 ## 📑 Contents
 
 - [💡 ¿Qué es LLM-Wiki?](#-qué-es-llm-wiki)
-- [⚡ ¿Por qué Obsidian + LLM-Wiki?](#-por-qué-obsidian--llm-wiki)
-- [🚀 Inicio Rápido](#-inicio-rápido)
+- [💡 ¿Qué es LLM-Wiki?](#-qué-es-llm-wiki)
   - [📦 Instalación](#-instalación)
   - [🔄 Actualizar el plugin](#-actualizar-el-plugin)
   - [🔑 Configurar un Provider de LLM](#-configurar-un-provider-de-llm)
   - [🎮 Uso](#-uso)
   - [⚠️ Actualizando desde una Versión Anterior](#️-actualizando-desde-una-versión-anterior)
-- [⚡ Novedades en la v1.18.2](#-novedades-en-la-v1182)
+- [⚡ Novedades de la v1.19.0](#-novedades-de-la-v1190)
 - [✨ Características](#-características)
   - [📊 Calidad del Conocimiento](#-calidad-del-conocimiento)
   - [🛠️ Mantenimiento](#️-mantenimiento)
@@ -61,15 +60,21 @@ Escribe. La IA organiza. Pregunta. Así de simple.
 
 ---
 
-## ⚡ Novedades de la v1.18.2
+## ⚡ Novedades de la v1.19.0
 
-v1.18.2 es una **corrección de tipo PATCH** que finalmente hace que los ajustes `customEntityLimit` y `customConceptLimit` realmente se cumplan. Anteriormente, cuando `extractionGranularity` se establecía en `custom`, estos límites solo se aplicaban como sugerencias suaves en el prompt — el LLM devolvía habitualmente entre 12 y 25 elementos para un límite configurado de 8, y todos se escribían en páginas del wiki. El detector de convergencia existente solo detenía *lotes adicionales* una vez que ambos tipos alcanzaban el límite, lo cual nunca se activaba en el caso habitual de un solo lote (la mayoría de las notas). Cierra #120.
+v1.19.0 es una **versión MINOR** centrada en la **calidad de ingesta y el endurecimiento de costes**. Añade un panel de parámetros avanzados del LLM, un escáner lint de verificación de citas, e inyección de listas compactas de slugs. Incluye Auto Smart Fix, espejo de barra de estado, y normalización de sources – contribuciones de la comunidad.
 
-- **🎯 Límite estricto de entidades y conceptos según sus límites configurados.** Tras acumular todos los lotes e inmediatamente antes de la creación de páginas, el plugin recorta ambas listas a `customEntityLimit` / `customConceptLimit`. Se conservan los primeros N elementos en orden de extracción. La instrucción del prompt y el detector de convergencia siguen siendo mecanismos complementarios (guían al LLM y evitan lotes adicionales innecesarios). Sin cambios de comportamiento en los modos de granularidad `default` / `1-5`.
+- **🔧 Parámetros avanzados del LLM.** Selector Predeterminado/Personalizado. Personalizado: interruptor razonamiento, temperatura extracción (0–2), temperatura consulta (0–2), penalización repetición (0–2).
+- **🔍 Verificación de citas (Issue #126).** @DocTpoint.
+- **📋 Lista compacta de slugs (Issue #116).** @DocTpoint.
+- **🛡️ Detección respuesta solo razonamiento (Issue #99).**
+- **⚡ Salto Stage 4 sin operación (Issue #131 Tier 1).** @DocTpoint.
+- **📊 Informe lint mejorado.**
+- **🔊 Espejo barra estado (PR #110).** @dmarchevsky.
+- **🤖 Auto Smart Fix (PR #109).**
+- **📝 Normalización sources escritura (PR #127).** @DocTpoint.
 
-Esta versión también incluye dos contribuciones de la comunidad que llegaron en la misma ventana: capitalización configurable de nombres de archivo (Issue #111) y conservación de etiquetas al re-ingestar (Issue #114). Consulte CHANGELOG.md para obtener detalles completos.
-
-**Recomendamos encarecidamente a todos los usuarios del modo de extracción Custom que actualicen a esta versión.** Sin ella, su ajuste `customEntityLimit` no surte efecto.
+**Recomendamos a todos los usuarios actualizar.** Detalles : [CHANGELOG.md](../CHANGELOG.md).
 
 ## ✨ Características
 

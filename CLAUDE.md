@@ -1,70 +1,36 @@
 # LLM Wiki Plugin Project Development Standards
 
-**Last Updated:** 2026-06-12
+**Last Updated:** 2026-06-16
 
 ---
 
-## Current Phase: v1.18.2 — Custom Extraction Limits Hard-Enforced (Issue #120) — Released 2026-06-12
+## Current Phase: v1.19.0 — Ingest Quality & Cost Hardening (Issue #99/#116/#126/#128) — Released 2026-06-16
 
-### Completed (v1.18.2) — Released 2026-06-12
-- ✅ **Issue #120 (customEntityLimit/customConceptLimit hard-enforced).** Single 11-line slice in `src/wiki/source-analyzer.ts` (pre-`buildSourceAnalysis`) closes the silent-overflow bug in custom extraction mode. The LLM's "extract at most N" prompt hint is now actually enforced — 685 tests passing (684 → 685, +1 new end-to-end test for the cap).
-- ✅ **Issue #114 (tags preservation on re-ingest) and Issue #111 (configurable slug casing)** community contributions from @DocTpoint shipped in the same window.
+### Completed (v1.19.0) — Released 2026-06-16
+- ✅ **Issue #116: Compact slug list in analyzeSource prompt.** `buildCompactSlugList()` injects a sorted slug-only list of existing wiki pages so the LLM uses exact paths when creating `[[links]]`, reducing dead-link mismatches. Contributed by @DocTpoint.
+- ✅ **Issue #126: Quote-grounding lint scanner.** `scanQuoteGrounding()` pure function (zero token cost) verifies every quote under `## Mentions in Source` against the linked source file. Supports current `"— [[sources/slug]]"` format and historical bare quotes. Tier 1 = exact match; Tier 2 = normalized. Contributed by @DocTpoint.
+- ✅ **Issue #128: Advanced LLM parameter settings.** Default/Custom mode selector in LLM Configuration. Default hides all advanced params, keeps disable-thinking on. Custom reveals: thinking toggle, extraction temperature (0–2), query temperature (0–2), repetition penalty (0–2). `disableThinking` field preserved in `data.json` for backward compatibility.
+- ✅ **Issue #99: Reasoning-only response detection.** Empty content + finish_reason=length + reasoning_tokens >= 50% → actionable error. Automatic 400 fallback to `chat_template_kwargs: {enable_thinking: false}`.
+- ✅ **PR #131 Tier 1: Stage 4 no-op skip.** ~33% Stage 4 LLM call reduction. Contributed by @DocTpoint.
+- ✅ **PR #109: Auto Smart Fix setting.** Lint can auto-run Smart Fix All after analysis without showing modal. Default off.
+- ✅ **PR #110: Status bar mirrors popup during ingest and lint.** Contributed by @dmarchevsky.
+- ✅ **PR #127: Sources normalization in write path.** Contributed by @DocTpoint.
+- ✅ **Lint report enhanced:** summary includes ungroundedQuotes + tagViolations counts. `lintTagViolationSection` fully i18n'd.
+- ✅ **Internal refactoring:** lint-controller modularization (phases/report-builder), schema-analyze to schema/, LintContext to lint/types, lint-controller + lint-fixes into lint/ directory.
+- ✅ **Tests: 728 passing (was 549).** 34 test files, 0 regressions. 179 new tests since v1.17.0.
 
-## Completed (v1.18.0) — Released 2026-06-11
+### P0 — Bug fixes / quality regressions
+All v1.18.x P0 items closed. Next window opens with post-v1.19.0 feedback.
+All v1.18.x P0 items closed. Next window opens with post-v1.19.0 feedback.
 
-### Completed (v1.18.0) — Released 2026-06-11
-- ✅ **Issue #85 v2 (chip input UX)**: replaced v1's textarea CSV with GitHub-Issue-Labels-style chip input. Each tag renders as a discrete chip + × button. Add via Enter / `,` / `;`; remove via × click or Backspace on empty input. Duplicate tags (case-insensitive) are silently skipped with a brief shake animation. CJK IME composition is respected.
-- ✅ **No standalone "Tag Vocabulary" heading**: settings sub-block is now embedded inside Wiki Configuration as a `setName()` row (no `.setHeading()`), reflecting the conceptual hierarchy.
-- ✅ **Default-mode description enumerates actual defaults**: shows the concrete default list inline (`person, organization, project, … (entities) / theory, method, … (concepts)`) so users know what they will get.
-- ✅ **v1 → v2 migration on `onload()`**: `cleanupVocabularyTags()` normalizes any pre-v2 CSV (trim, dedupe case-insensitively, drop empty) and writes back to `data.json`.
-- ✅ **`enforceFrontmatterConstraints` honors the active vocabulary** via new `getActiveEntityTags` / `getActiveConceptTags` helpers. Three call-sites (page-factory, lint-fixes × 2) pass `this.ctx.settings`.
-- ✅ **`minAppVersion` bumped 1.6.6 → 1.11.0** to use `Setting.addComponent()`.
-- ✅ **8-language i18n**: rewritten 2 descs, added 5 new keys, removed 1 key. Mirrored in all 8 locales.
-- ✅ **Tests**: 628 tests passing (605 → 628, +23 new), 0 regressions. New `jsdom@29.1.1` devDep for chip input tests.
-- ✅ **de.ts trailing-comma fix**: 6 other language files had the same issue — all fixed in lockstep.
-- ✅ **Tests**: 549/549 passing. 4-Gate clean.
+### P1 — Cleanup (v1.19.0 target, deferred items from v1.18.x)
 
-### Completed (v1.16.2) — Released 2026-06-07
-- ✅ **Issue #94: Lint cancellation**: AbortSignal propagated through 5 fix-runner functions. `try/finally` wraps all persistent Notices.
-- ✅ **Issue #96: Lint granularity**: `appendGranularityToPrompt` injects extractionGranularity into lint LLM analysis. 4 tests.
-- ✅ **Issue #99 + #86: Thinking token bleeding**: Three-layer defense — API `disableThinking` + `parseJsonResponse` strip + `cleanMarkdownResponse` Layer B2 preamble detection.
-- ✅ **ROADMAP P3 #11**: `parseJsonResponse` strips `<think>`/`<thinking>` before brace-counting.
-- ✅ **ROADMAP P3 #12**: `disableThinking` interface on `LLMClient` with `thinking.type='disabled'`, Test Connection probe + cache, 400 fallback.
-- ✅ **Issue #103: Delete empty stubs**: Lint modal button + 8-language i18n + try/finally.
-- ✅ **Tests**: 549/549 (+37 new tests). 4-Gate: lint 0/0, tsc 0, test 549, build clean.
-
-### Completed (v1.16.0)
-- ✅ **Issue #81: Sources normalization**: 4 pure functions in `src/core/sources-normalizer.ts`, 22 tests, Lint integration (section 0.5), startup quick fixes. 6 pollution patterns → canonical `[[sources/X]]`. 572 files/1616 entries cleaned on reporter's ~3800-page vault.
-- ✅ **Issue #75: LM Studio 8K + token cap**: Removed `source-analyzer.ts:113` shadow constant. New Context Window setting (dropdown 4K~1M) caps max_tokens + truncation retry. LMStudio provider added. `capMaxTokens` pure function.
-- ✅ **Issue #76: TOKENS_DEDUP_RESOLUTION 300→1000**: Token budget safety margin. Deleted dead constants `TOKENS_PAGE_MERGE`, `TOKENS_RELATED_UPDATE`.
-- ✅ **Alias language fix (replaces PR #82)**: English as linker language, "no invented technical translations" guard. Explicit examples (Transformer≠变换器).
-- ✅ **Startup quick fixes**: Default ON. Auto-repair sources + verify wiki structure. Single 10s aggregated Notice.
-- ✅ **Settings UX redesign**: LLM-Wiki Status section, LLM Configuration/Wiki Configuration rename, Provider dropdown i18n.
-
-### Deferred to P3 (high mock complexity — current ROI insufficient)
-- ⏸ wiki-engine `ingestSource` full-path tests (P2 #4 → P3 #14): requires Obsidian App + 5 submodule mocks
-- ⏸ query-engine core flow tests (P2 #5 → P3 #15): requires Modal + MarkdownRenderer + DOM mocks
-- ⏸ True streaming for 3rd-party providers: `requestUrl` returns full response, not stream — would need Obsidian native streaming support
-
-### Earlier Releases
-
-Complete version history (v1.14.0 → v1.0.0) is maintained in [ROADMAP.md](ROADMAP.md). CLAUDE.md tracks only the current phase and active work items.
-
-### P0 — Not applicable (v1.16.2 released)
-
-All P0 items resolved. Current phase transitions to cleanup & technical debt.
-
-### P1 — Cleanup (v1.17.0 target)
-
-| Item | Effort |
-|------|--------|
-| page-factory resolvePagePath LLM fallback + merge + append tests | 1 day |
-| runLintWiki phase extraction (762 → 6 × ~130 lines) | half day |
-| Fix thinkingControlCache key mismatch when baseUrl is empty | 1h |
-| Fix deleteEmptyStubs callback error handling | 1h |
-| Update thinkingControlSupported after successful 400 fallback | 1h |
-| Broaden isThinkingControlError detection patterns | 30min |
-| Skip unnecessary thinking probe for Anthropic clients | 30min |
+| Item | Effort | Status |
+|------|--------|--------|
+| page-factory resolvePagePath LLM fallback + merge + append tests | 1 day | Deferred |
+| runLintWiki phase extraction completed in refactor (phases/controller split) | already done | ✅ |
+| LintFixer class split (707-line god class → 6 module-level functions) | 1 day | Deferred — fold into wiki-engine refactor |
+| LintContext removal from fix-runners completed | already done | ✅ |
 
 ### P2 — Test infrastructure (deferred, high mock complexity)
 
@@ -77,9 +43,10 @@ All P0 items resolved. Current phase transitions to cleanup & technical debt.
 
 | Item | Effort |
 |------|--------|
-| Good First Issue tagging | 10min |
-| Tag vocabulary ecosystem (Issues #85/#90/#91) | 2-3 days |
+| Full lint-controller → lint/ directory integration (all paths) | already done ✅ |
+| LintFixer class → module-level functions | 1 day |
 | Restore true streaming for 3rd-party providers | 1-2 days |
+| Missing Concept Pages tracker | 2 days |
 
 ### Evaluated & Rejected
 
@@ -105,23 +72,47 @@ src/
 ├── utils.ts                        # Utilities (slugify, parseJson, etc.)
 ├── texts.ts                        # i18n texts (barrel, 8 languages)
 ├── llm-client.ts                   # LLM clients
+├── llm-client-wrapper.ts           # Advanced settings injection
 ├── wiki/                           # Wiki engine
 │   ├── wiki-engine.ts              # Orchestrator
 │   ├── query-engine.ts             # Conversational query
 │   ├── source-analyzer.ts          # Iterative batch extraction
 │   ├── page-factory.ts             # Entity/concept CRUD + merge
 │   ├── conversation-ingest.ts      # Chat → wiki knowledge
-│   ├── lint-fixes.ts               # Fix logic
-│   ├── lint-controller.ts          # Lint orchestration
-│   ├── lint/                       # Lint sub-modules
 │   ├── contradictions.ts           # Contradiction detection
 │   ├── system-prompts.ts           # Language directive + labels
+│   ├── lint/                       # Lint subsystem
+│   │   ├── controller.ts           # Lint orchestration
+│   │   ├── fixer.ts                # Fix logic (LintFixer class)
+│   │   ├── fix-runners.ts          # Batch fix execution helpers
+│   │   ├── scanners.ts             # Scanners (dead links, orphans, aliases, quote grounding)
+│   │   ├── duplicate-detection.ts  # Programmatic candidate generation
+│   │   ├── report-builder.ts       # Pure-function report markdown builder
+│   │   ├── types.ts                # LintContext, LintPhaseContext, findings
+│   │   └── phases/
+│   │       ├── preparation.ts      # Page read, link fix, sources normalize
+│   │       └── programmatic.ts     # Fast programmatic scanners
 │   └── prompts/                    # LLM prompt templates
 ├── schema/                         # Schema co-evolution
+│   ├── manager.ts                  # SchemaManager (read/write schema config)
+│   ├── auto-maintain.ts            # File watcher, periodic lint, startup quick fixes
+│   └── analyze.ts                  # Schema-analyze with cancel wiring
 ├── ui/
 │   ├── settings.ts                 # Settings panel
 │   └── modals.ts                   # Lint/Ingest/Query modals
-└── __tests__/                      # Unit tests (vitest, 121 tests)
+├── core/                           # Pure function modules
+│   ├── sources-normalizer.ts       # Sources field normalization
+│   ├── truncation-retry.ts         # Token truncation retry policy
+│   ├── dead-link-detector.ts       # Dead link identification
+│   ├── orphan-matcher.ts           # Orphan page matching
+│   ├── prompt-builders.ts          # Prompt template builders
+│   ├── batch-limits.ts             # Adaptive batch sizing
+│   ├── batch-merger.ts             # Multi-batch result merging
+│   ├── convergence-detector.ts     # Early-stop on low-yield batches
+│   ├── sse-parser.ts               # SSE event parser
+│   ├── token-cap.ts                # max_tokens cap helper
+│   └── conflict-resolver.ts        # Conflict detection
+└── __tests__/                      # Unit tests (vitest, 728 tests)
 ```
 
 ---

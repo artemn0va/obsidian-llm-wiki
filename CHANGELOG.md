@@ -5,11 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.19.0] - 2026-06-16
 
 ### Added
-- **Auto Smart Fix (new setting).** When enabled, lint automatically runs all Smart Fix phases (alias cleanup, duplicate merges, dead-link removal, orphan fixes, empty-stub deletion, tag retag) after analysis completes, without showing the report modal. A before/after Notice summarises what changed. Default: off — existing users see no behaviour change.
-- **Status bar mirrors popup progress during ingest and lint.** All ingestion progress messages (batch counts, per-entity steps) now update both the popup Notice and the Obsidian status bar simultaneously. Lint shows four dedicated status-bar checkpoints: reading pages, checking duplicates, scanning links, and AI analysis. Fix-runner Notices (alias completion, dead links, empty pages, orphan fixes, duplicate merges) mirror every `setMessage()` call to the status bar via the new `makeMirroredNotice()` wrapper in `fix-runners.ts`. Status bar always shows a cancel hint ("click to cancel") so users retain the cancellation affordance throughout. `onFixAll` callback type corrected to `() => Promise<void>` so it properly participates in the AbortSignal / `runFixPhase` lifecycle.
+- **Compact slug list in analyzeSource prompt (Issue #116).** New `buildCompactSlugList()` injects a sorted slug-only list of existing wiki pages into the prompt so the LLM uses exact paths when creating `[[links]]`, reducing dead-link slug mismatches caused by the verbose 40K-char index cap. Previously, only the first ~50 pages fit. Contributed by @DocTpoint.
+- **Quote-grounding lint scanner (Issue #126).** New `scanQuoteGrounding()` pure function verifies that every quote under `## Mentions in Source` can be found in the linked source file. Supports both current `"quote" — [[sources/slug]]` format and historical bare quotes (scans all source files if no link is present). Tier 1 = exact substring match; Tier 2 = normalized (case-fold, punctuation stripped, whitespace collapsed). Report-only, zero token cost. Contributed by @DocTpoint.
+- **Advanced LLM parameter settings (Issue #128).** Collapsible "Advanced parameter settings" section in LLM Configuration with a Default/Custom mode selector. Default mode keeps all advanced parameters hidden and "disable thinking" on — the right choice for most users. Custom mode reveals the thinking toggle, extraction temperature (range 0–2), query temperature (range 0–2), and repetition penalty (range 0–2). Only sent to the LLM when the user sets a value — cloud providers that ignore the field fall back to their own defaults. The `disableThinking` field name is preserved in `data.json` for backward compatibility; production code passes the affirmative `enableThinking` form internally.
+- **Reasoning-only response detection (Issue #99).** `OpenAICompatibleClient.createMessage` now detects when the model returns an empty response with high reasoning tokens (`content == '' && finish_reason == 'length' && reasoning_tokens >= 50% of completion_tokens`) and throws an actionable error prompting the user to check the disable-thinking toggle or switch models. Also adds automatic 400 fallback: when the provider rejects `thinking.type='disabled'`, the client retries with `chat_template_kwargs: {enable_thinking: false}` (auto-fallback, no separate user toggle).
+- **Status bar mirrors popup during ingest and lint (Issue #110).** All ingestion progress messages and lint checkpoints now update both the popup Notice and the Obsidian status bar simultaneously. `makeMirroredNotice.hide()` clears the status bar text. Fix-runner Notices mirror every `setMessage()` call to the status bar. Contributed by @dmarchevsky.
+- **Auto Smart Fix setting (PR #109).** When enabled, lint automatically runs all Smart Fix phases after analysis completes without showing the report modal. Default: off — existing users see no behaviour change.
+- **Sources normalization in write path (PR #127).** `fixPollutedSources()` is called from the centralized write chokepoint (`WikiEngine.createOrUpdateFile()`), so every generated/merged page gets a normalized `sources:` field. Contributed by @DocTpoint.
+
+### Changed
+- **Startup quick-fixes Notice simplified.** Removed heavy emoji icons and `━━━━━━━━━━━━━━━━` separators; cleaner layout with plain text prefixes. Logs now use English consistently.
+- **Lint report summary now includes ungroundedQuotes and tagViolations counts.** The report header line shows all current dimensions.
+- **Ungrounded quotes section in Lint report.** When scanQuoteGrounding finds issues, a new "Ungrounded quotes" section appears in the programmatic findings report.
+- **lintTagViolationSection i18n completed.** Previously 7 non-English locales showed English placeholder — now fully translated (de/es/fr/ja/ko/pt/zh).
+- **Language dropdown labels simplified.** Labels now use each language's native name only (e.g. `中文`, `日本語`, `Deutsch`) without English sub-labels.
+
+### Fixed
+- **Advanced settings mode dropdown did not render controls.** The `onChange` handler was missing `this.display()` (contrast with Tag Vocabulary dropdown which called it). Fixed: choosing "Custom" now properly reveals thinking toggle, temperature, and penalty inputs.
+- **Misleading watchedFolders debug logs removed.** `loadSettings`/`saveSettings` no longer print `watchedFolders` content, preventing confusion when `autoWatchSources` is off.
+- **Previously-merged PR #110 "click to cancel" status bar affordance.** UX fix by @dmarchevsky in PR #110: status bar now shows locale-specific "click to cancel" throughout ingest/lint/fix operations.
+
+### Performance
+- **Stage 4 no-op skip (PR #131 Tier 1).** `PageFactory.updateRelatedPage` skips the LLM call when `new_info` resolves to the `'No directly relevant information'` fallback string. Removes ~33% of Stage 4 LLM calls. Still updates frontmatter `sources` + `updated` programmatically. Contributed by @DocTpoint.
+
+### Refactored
+- **lint-controller modularization.** Extracted `phases/preparation.ts`, `phases/programmatic.ts`, `report-builder.ts`, `types.ts` from the monolithic controller. lint-controller.ts went from 1069 → 897 lines. 17 new unit tests (728 total).
+- **schema-analyze moved to schema/ directory.** `src/wiki/schema-analyze.ts` → `src/schema/analyze.ts`.
+- **LintContext extracted to lint/types.ts.** Breaks the latent import cycle between `fix-runners.ts` and `lint-controller.ts`; `fix-runners` now imports from `./types`.
+- **lint-controller + lint-fixes moved into lint/ directory.** `src/wiki/lint/controller.ts` (was lint-controller.ts), `src/wiki/lint/fixer.ts` (was lint-fixes.ts). All internal imports updated.
 
 ## [1.18.2] - 2026-06-12
 

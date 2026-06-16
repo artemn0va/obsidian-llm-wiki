@@ -76,6 +76,14 @@ vi.mock('obsidian', () => ({
     load() {}
     unload() {}
   },
+  // Suggest modals (stubbed — used in settings.ts FolderSuggestModal)
+  FuzzySuggestModal: class {
+    constructor() {}
+    open() {}
+    close() {}
+    onOpen() {}
+    onClose() {}
+  },
   // Network requests — tests control return values via vi.mocked(requestUrl)
   requestUrl: vi.fn(),
 }));

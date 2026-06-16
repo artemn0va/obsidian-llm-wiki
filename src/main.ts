@@ -9,8 +9,8 @@ import {
 } from './types';
 import { TOKENS_QUERY_MODEL_DETECT, NOTICE_NORMAL, NOTICE_ERROR } from './constants';
 import { AnthropicClient, AnthropicCompatibleClient, OpenAICompatibleClient } from './llm-client';
-import { capMaxTokens } from './core/token-cap';
-import { runSchemaAnalyze } from './wiki/schema-analyze';
+import { wrapWithAdvancedSettings } from './llm-client-wrapper';
+import { runSchemaAnalyze } from './schema/analyze';
 
 // Issue #243: derive a consistent cache key for the thinking-control cache.
 // Used in both the read (createLLMClient) and write (testLLMConnection) paths
@@ -20,7 +20,11 @@ function getThinkingControlCacheKey(settings: LLMWikiSettings): string {
   return settings.baseUrl?.trim() || PREDEFINED_PROVIDERS[settings.provider]?.baseUrl || '';
 }
 
-function createLLMClient(settings: LLMWikiSettings): LLMClient {
+// Exported for unit tests (see src/__tests__/root/main.test.ts).
+// Issue #99 / #128 / #128 follow-up: thin wrapper that injects only the
+// advanced settings the user has configured; otherwise the call passes
+// through unchanged to preserve the provider default.
+export function createLLMClient(settings: LLMWikiSettings): LLMClient {
   let client: LLMClient;
 
   if (settings.provider === 'anthropic') {
@@ -49,19 +53,17 @@ function createLLMClient(settings: LLMWikiSettings): LLMClient {
     }
   }
 
-  // Issue #75: wrap createMessage with token cap when configured
-  if (settings.maxTokensPerCall > 0) {
-    const originalCreate = client.createMessage.bind(client) as (params: Parameters<typeof client.createMessage>[0]) => ReturnType<typeof client.createMessage>;
-    client.createMessage = async (params) => {
-      return originalCreate({
-        ...params,
-        max_tokens: capMaxTokens(params.max_tokens, settings),
-        maxTokensPerCall: settings.maxTokensPerCall,
-      });
-    };
-  }
-
-  return client;
+  // Wrap createMessage so advanced settings are applied consistently.
+  // Each setting is only injected when the caller did not already pass the
+  // parameter explicitly and when the user has configured a value. This keeps
+  // backward compatibility: empty/undefined settings mean "use provider default".
+  return wrapWithAdvancedSettings(client, {
+    maxTokensPerCall: settings.maxTokensPerCall,
+    enableThinking: !settings.disableThinking,
+    extractionTemperature: settings.extractionTemperature,
+    chatTemperature: settings.chatTemperature,
+    repetitionPenalty: settings.repetitionPenalty,
+  });
 }
 import { TEXTS } from './texts';
 import { slugify, parseFrontmatter, getText, normalizeVocabularyCsv } from './utils';
@@ -71,7 +73,7 @@ import { QueryModal } from './wiki/query-engine';
 import { FileSuggestModal, FolderSuggestModal, IngestReportModal } from './ui/modals';
 import { SchemaManager } from './schema/schema-manager';
 import { AutoMaintainManager } from './schema/auto-maintain';
-import { runLintWiki } from './wiki/lint-controller';
+import { runLintWiki } from './wiki/lint/controller';
 
 export default class LLMWikiPlugin extends Plugin {
   settings: LLMWikiSettings;
@@ -249,8 +251,6 @@ export default class LLMWikiPlugin extends Plugin {
     const savedData = await this.loadData() as Partial<LLMWikiSettings> | null;
     this.settings = Object.assign({}, DEFAULT_SETTINGS, savedData || {});
 
-    console.debug('loadSettings: loaded watchedFolders =', JSON.stringify(this.settings.watchedFolders));
-
     if (savedData && !savedData.wikiLanguage) {
       this.settings.wikiLanguage = this.settings.language;
       await this.saveData(this.settings);
@@ -259,6 +259,14 @@ export default class LLMWikiPlugin extends Plugin {
     if (!Array.isArray(this.settings.watchedFolders)) {
       this.settings.watchedFolders = [];
       console.debug('loadSettings: watchedFolders was not an array, reset to []');
+    }
+
+    // v1.18.3 migration: force startupCheck to true for existing users who
+    // previously had it off. The startup scan is safe (~100ms, no token
+    // cost) and prevents silent format pollution between restarts. User
+    // can toggle off after this one-time migration.
+    if (savedData && savedData.startupCheck === false) {
+      this.settings.startupCheck = true;
     }
 
     // Migrate existing users: if they already have a working config, trust it
@@ -297,9 +305,7 @@ export default class LLMWikiPlugin extends Plugin {
   }
 
   async saveSettings() {
-    console.debug('saveSettings: watchedFolders =', JSON.stringify(this.settings.watchedFolders));
     await this.saveData(this.settings);
-    console.debug('saveSettings: data saved to data.json');
     this.initializeLLMClient();
     this.schemaManager?.updateSettings(this.settings);
     if (this.wikiEngine) {
@@ -630,7 +636,7 @@ export default class LLMWikiPlugin extends Plugin {
             model: this.settings.model,
             max_tokens: 1,
             messages: [{ role: 'user', content: 'think' }],
-            disableThinking: true,
+            enableThinking: false,
           });
           if (testClient instanceof OpenAICompatibleClient) {
             testClient.thinkingControlSupported = true;

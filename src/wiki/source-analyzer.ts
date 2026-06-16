@@ -1,3 +1,21 @@
+// Issue #116: build a compact slug-only list of existing wiki pages.
+// The verbose index is capped at 40K chars, so the LLM often guesses slugs
+// wrong. A slug-only list for 500 pages is ~18K chars and fits uncapped.
+export function buildCompactSlugList(app: EngineContext['app'], wikiFolder: string, sourcePath?: string): string {
+  const wikiPrefix = wikiFolder + '/';
+  const files = app.vault.getMarkdownFiles();
+  const slugs = files
+    .filter(f =>
+      f.path.startsWith(wikiPrefix) &&
+      !f.path.includes('/schema/') &&
+      !f.path.endsWith('/index.md') &&
+      f.path !== sourcePath
+    )
+    .map(f => f.path.replace(wikiPrefix, '').replace(/\.md$/, ''))
+    .sort();
+  return slugs.join('\n');
+}
+
 // Source Analyzer — iterative batch extraction of entities/concepts from source files.
 // Extracted from WikiEngine.
 
@@ -13,7 +31,7 @@ import {
 import { PROMPTS } from '../prompts';
 import { parseJsonResponse, matchExtractedToExisting, coerceToArray } from '../utils';
 import { MAX_TOKENS_BATCH, TOKENS_PER_ITEM_BUDGET, SOURCE_ANALYZER_RETRY_MULTIPLIER } from '../constants';
-import { getExistingWikiPages } from './lint-fixes';
+import { getExistingWikiPages } from './lint/fixer';
 import { getGranularityInstruction, buildActiveTagVocabularySection } from './system-prompts';
 import { calculateBatchLimits, adjustBatchSizeForResponse, getCustomTypeCaps } from '../core/batch-limits';
 import { detectConvergence, checkCumulativeLimits, checkEmptyBatch, formatConvergenceStatus } from '../core/convergence-detector';
@@ -138,12 +156,19 @@ export class SourceAnalyzer {
     // silently dropped at write time.
     const tagVocabularySection = buildActiveTagVocabularySection(this.ctx.settings)
 
+    // Issue #116: inject a compact slug-only list of existing wiki pages so
+    // the LLM uses exact paths when generating [[links]]. The verbose index
+    // is capped at 40K chars and causes dead-link slug mismatches; a slug-only
+    // list for 500 pages is ~18K chars and fits uncapped.
+    const existingSlugs = buildCompactSlugList(this.ctx.app, this.ctx.settings.wikiFolder, file.path);
+
     // ⚡ Page list removed from extraction prompt — PageFactory.resolvePagePath
     // handles deduplication via slug/alias/LLM matching. Programmatic
     // related_pages matching runs after extraction instead.
     const templateUntouched = PROMPTS.analyzeSource
       .replace('{{content}}', content)
-      .replace('{{existing_pages}}', '');  // Empty — dedup handled downstream
+      .replace('{{existing_pages}}', '')  // Empty — dedup handled downstream
+      .replace('{{existing_slugs}}', existingSlugs);
     const batchMarker = '{{batch_context}}';
     const markerIdx = templateUntouched.indexOf(batchMarker);
     const staticPrefix = templateUntouched.substring(0, markerIdx);

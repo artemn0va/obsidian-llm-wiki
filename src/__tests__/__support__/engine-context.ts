@@ -54,21 +54,21 @@ class MockVault {
 // ── Mock LLM Client ──────────────────────────────────────────────
 
 interface CreateMessageCall {
-  disableThinking?: boolean;
+  enableThinking?: boolean;
   // other fields intentionally omitted for the F6 test
 }
 
 /**
  * Mock LLM client that records every createMessage call's params. Tests
  * can inspect `ctx.lastCreateMessageCall` to verify wiring (e.g. that
- * `disableThinking: true` is propagated to all production call sites —
+ * `enableThinking: false` is propagated to all production call sites —
  * Issue #99 v2 Layer A).
  */
 export function createMockClient(responses: string[]): LLMClient & { lastCreateMessageCall?: CreateMessageCall } {
   let idx = 0;
   const client: LLMClient & { lastCreateMessageCall?: CreateMessageCall } = {
-    createMessage: async (params: { disableThinking?: boolean } & Record<string, unknown>) => {
-      client.lastCreateMessageCall = { disableThinking: params.disableThinking };
+    createMessage: async (params: { enableThinking?: boolean } & Record<string, unknown>) => {
+      client.lastCreateMessageCall = { enableThinking: params.enableThinking };
       return responses[idx++] ?? '{"entities":[],"concepts":[],"contradictions":[],"related_pages":[],"key_points":[]}';
     },
   };

@@ -3,6 +3,9 @@
 export const INGESTION_PROMPTS = {
   analyzeSource: `You are a Wiki knowledge base maintainer. Analyze the following source file and output structured JSON.
 
+**Existing Wiki pages — use ONLY these exact paths when creating [[links]]:**
+{{existing_slugs}}
+
 **Source File Content:**
 {{content}}
 

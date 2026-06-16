@@ -158,7 +158,7 @@ CRITICAL RULES:
         content: analysisPrompt
       }],
       response_format: { type: 'json_object' },
-      disableThinking: this.ctx.settings.disableThinking,
+      enableThinking: !this.ctx.settings.disableThinking,
     });
 
     const parsed = await parseJsonResponse(analysis, async (malformedJson: string) => {
@@ -169,7 +169,7 @@ CRITICAL RULES:
         system: await this.ctx.buildSystemPrompt('conversation'),
         messages: [{ role: 'user', content: repairPrompt }],
         response_format: { type: 'json_object' },
-        disableThinking: this.ctx.settings.disableThinking,
+        enableThinking: !this.ctx.settings.disableThinking,
       });
     }) as SourceAnalysis | null;
     if (!parsed) {
@@ -224,7 +224,7 @@ CRITICAL RULES:
       max_tokens: TOKENS_CONVERSATION_PAGE,
       system: await this.ctx.buildSystemPrompt('summary'),
       messages: [{ role: 'user', content: finalSummaryPrompt }],
-      disableThinking: this.ctx.settings.disableThinking,
+      enableThinking: !this.ctx.settings.disableThinking,
     });
 
     const cleanedSummary = cleanMarkdownResponse(summaryPageContent);
@@ -313,7 +313,7 @@ CRITICAL RULES:
       system: await this.ctx.buildSystemPrompt('conversation'),
       messages: [{ role: 'user', content: prompt }],
       response_format: { type: 'json_object' },
-      disableThinking: this.ctx.settings.disableThinking,
+      enableThinking: !this.ctx.settings.disableThinking,
     });
 
     const parsed = await parseJsonResponse(response) as { status?: string } | null;

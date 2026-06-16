@@ -27,6 +27,23 @@
   line-height: 1.6;
 }
 
+/* Advanced LLM settings — collapsed by default, expanded when .llm-wiki-advanced-expanded is added */
+.llm-wiki-advanced-settings {
+  display: none;
+  padding-left: 16px;
+  border-left: 2px solid var(--background-modifier-border);
+  margin-left: 8px;
+}
+
+.llm-wiki-settings .llm-wiki-advanced-expanded {
+  display: block;
+}
+
+/* Cursor hint on the heading that toggles the advanced section */
+.llm-wiki-settings .llm-wiki-advanced-toggle {
+  cursor: pointer;
+}
+
 /* 设置面板样式 */
 .llm-wiki-settings .setting-item {
   border-bottom: 1px solid var(--background-modifier-border);

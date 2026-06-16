@@ -39,6 +39,12 @@ export interface TruncationRetryOptions<T> {
   label: string;
   /** Optional: extracts the stop/finish reason from the response for the warning log. */
   getStopReason?: (response: T) => string | null | undefined;
+  /**
+   * Optional: called when the initial response is truncated. May throw to abort
+   * the retry and surface a domain-specific error (e.g. #99 reasoning-only
+   * response detection).
+   */
+  onTruncatedResponse?: (response: T) => void;
 }
 
 export async function withTruncationRetry<T>(opts: TruncationRetryOptions<T>): Promise<string> {
@@ -48,6 +54,8 @@ export async function withTruncationRetry<T>(opts: TruncationRetryOptions<T>): P
   if (!opts.isTruncated(initialResponse)) {
     return text;
   }
+
+  opts.onTruncatedResponse?.(initialResponse);
 
   const cap = opts.maxCap ?? DEFAULT_MAX_CAP;
   const currentMax = opts.getMaxTokens();

@@ -450,7 +450,115 @@ export class LLMWikiSettingTab extends PluginSettingTab {
           new Notice(result.message, result.success ? NOTICE_NORMAL : NOTICE_ERROR);
         }));
 
-    // (Status indicators moved to LLM-Wiki Status section above LLM Configuration)
+    // Advanced LLM settings — hidden behind a Default/Custom dropdown
+    // like the Tag Vocabulary mode selector. Default keeps things simple:
+    // disableThinking=on, all other params unset. Custom reveals the
+    // individual toggles and number inputs.
+    new Setting(containerEl)
+      .setName(this.getText('advancedSettingsModeName'))
+      .setDesc(this.getText('advancedSettingsModeDesc'))
+      .addDropdown(dropdown => {
+        dropdown
+          .addOption('default', this.getText('advancedSettingsDefault'))
+          .addOption('custom', this.getText('advancedSettingsCustom'))
+          .setValue(this.tempSettings.advancedSettingsMode || 'default')
+          .onChange((value: string) => {
+            this.tempSettings.advancedSettingsMode = value as 'default' | 'custom';
+            if (value === 'default') {
+              this.tempSettings.disableThinking = true;
+              this.tempSettings.extractionTemperature = undefined;
+              this.tempSettings.chatTemperature = undefined;
+              this.tempSettings.repetitionPenalty = undefined;
+            }
+            this.display();
+          });
+      });
+
+    if (this.tempSettings.advancedSettingsMode === 'custom') {
+    new Setting(containerEl)
+      .setName(this.getText('disableThinkingName'))
+      .setDesc(this.getText('disableThinkingDesc'))
+      .addToggle(toggle => toggle
+        .setValue(this.tempSettings.disableThinking !== false)
+        .onChange((value) => {
+          this.tempSettings.disableThinking = value;
+        }));
+
+    new Setting(containerEl)
+      .setName(this.getText('extractionTemperatureName'))
+      .setDesc(this.getText('extractionTemperatureDesc'))
+      .addText(text => {
+        text
+          .setPlaceholder(this.getText('temperaturePlaceholder'))
+          .setValue(this.tempSettings.extractionTemperature?.toString() ?? '')
+          .onChange((value) => {
+            const trimmed = value.trim();
+            if (trimmed === '') {
+              this.tempSettings.extractionTemperature = undefined;
+            } else {
+              const parsed = parseFloat(trimmed);
+              if (!isNaN(parsed)) {
+                this.tempSettings.extractionTemperature = parsed;
+              }
+            }
+          });
+        text.inputEl.type = 'number';
+        text.inputEl.min = '0';
+        text.inputEl.max = '2';
+        text.inputEl.step = '0.05';
+        text.inputEl.classList.add('llm-wiki-number-input');
+      });
+
+    new Setting(containerEl)
+      .setName(this.getText('chatTemperatureName'))
+      .setDesc(this.getText('chatTemperatureDesc'))
+      .addText(text => {
+        text
+          .setPlaceholder(this.getText('temperaturePlaceholder'))
+          .setValue(this.tempSettings.chatTemperature?.toString() ?? '')
+          .onChange((value) => {
+            const trimmed = value.trim();
+            if (trimmed === '') {
+              this.tempSettings.chatTemperature = undefined;
+            } else {
+              const parsed = parseFloat(trimmed);
+              if (!isNaN(parsed)) {
+                this.tempSettings.chatTemperature = parsed;
+              }
+            }
+          });
+        text.inputEl.type = 'number';
+        text.inputEl.min = '0';
+        text.inputEl.max = '2';
+        text.inputEl.step = '0.05';
+        text.inputEl.classList.add('llm-wiki-number-input');
+      });
+
+    new Setting(containerEl)
+      .setName(this.getText('repetitionPenaltyName'))
+      .setDesc(this.getText('repetitionPenaltyDesc'))
+      .addText(text => {
+        text
+          .setPlaceholder(this.getText('temperaturePlaceholder'))
+          .setValue(this.tempSettings.repetitionPenalty?.toString() ?? '')
+          .onChange((value) => {
+            const trimmed = value.trim();
+            if (trimmed === '') {
+              this.tempSettings.repetitionPenalty = undefined;
+            } else {
+              const parsed = parseFloat(trimmed);
+              if (!isNaN(parsed)) {
+                this.tempSettings.repetitionPenalty = parsed;
+              }
+            }
+          });
+        text.inputEl.type = 'number';
+        text.inputEl.min = '0';
+        text.inputEl.max = '2';
+        text.inputEl.step = '0.05';
+        text.inputEl.classList.add('llm-wiki-number-input');
+      });
+    }
 
     // ==========================================
     // 4. Wiki Configuration

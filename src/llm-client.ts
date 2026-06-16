@@ -78,7 +78,10 @@ export class AnthropicCompatibleClient implements LLMClient {
     messages: Array<{ role: 'user' | 'assistant'; content: string }>;
     response_format?: { type: 'json_object' };
     maxTokensPerCall?: number;
-    disableThinking?: boolean;
+    enableThinking?: boolean;
+    temperature?: number;
+    repetition_penalty?: number;
+    chat_template_kwargs?: Record<string, unknown>;
   }): Promise<string> {
     const body: Record<string, unknown> = {
       model: params.model,
@@ -88,9 +91,12 @@ export class AnthropicCompatibleClient implements LLMClient {
         : params.messages
     };
     if (params.system) body.system = params.system;
+    if (params.temperature !== undefined) body.temperature = params.temperature;
+    if (params.repetition_penalty !== undefined) body.repetition_penalty = params.repetition_penalty;
+    if (params.chat_template_kwargs !== undefined) body.chat_template_kwargs = params.chat_template_kwargs;
     // ROADMAP P3 #12: explicit thinking disable for thinking-capable models
     // (Anthropic format: thinking.type = 'disabled').
-    if (params.disableThinking) {
+    if (params.enableThinking === false) {
       body.thinking = { type: 'disabled' };
     }
 
@@ -161,7 +167,7 @@ export class AnthropicCompatibleClient implements LLMClient {
     try {
       return await anthropicDoRequest(body);
     } catch (e) {
-      if (params.disableThinking && isThinkingControlError(e)) {
+      if (params.enableThinking === false && isThinkingControlError(e)) {
         this.thinkingControlSupported = false;
         console.debug(`[AnthropicCompat] thinking.type='disabled' not supported by ${this.baseUrl}, falling back`);
         const fallbackBody: Record<string, unknown> = {
@@ -186,7 +192,9 @@ export class AnthropicCompatibleClient implements LLMClient {
     system?: string;
     messages: Array<{ role: 'user' | 'assistant'; content: string }>;
     onChunk: (chunk: string) => void;
-    disableThinking?: boolean;
+    enableThinking?: boolean;
+    temperature?: number;
+    repetition_penalty?: number;
   }): Promise<string> {
     const messages = params.system ? params.messages : [
       ...params.messages,
@@ -203,7 +211,9 @@ export class AnthropicCompatibleClient implements LLMClient {
       stream: true
     };
     if (params.system) body.system = params.system;
-    if (params.disableThinking) {
+    if (params.temperature !== undefined) body.temperature = params.temperature;
+    if (params.repetition_penalty !== undefined) body.repetition_penalty = params.repetition_penalty;
+    if (params.enableThinking === false) {
       body.thinking = { type: 'disabled' };
     }
 
@@ -297,7 +307,10 @@ export class AnthropicClient implements LLMClient {
     response_format?: { type: 'json_object' };
     cacheBreakpoint?: number;
     maxTokensPerCall?: number;
-    disableThinking?: boolean;
+    enableThinking?: boolean;
+    temperature?: number;
+    repetition_penalty?: number;
+    chat_template_kwargs?: Record<string, unknown>;
   }): Promise<string> {
     const messages: Array<Record<string, unknown>> = params.response_format?.type === 'json_object'
       ? [...params.messages, { role: 'assistant', content: '{' }]
@@ -321,8 +334,11 @@ export class AnthropicClient implements LLMClient {
       messages,
     };
     if (params.system) body.system = params.system;
+    if (params.temperature !== undefined) body.temperature = params.temperature;
+    if (params.repetition_penalty !== undefined) body.repetition_penalty = params.repetition_penalty;
+    if (params.chat_template_kwargs !== undefined) body.chat_template_kwargs = params.chat_template_kwargs;
     // ROADMAP P3 #12: explicit thinking disable for thinking-capable models.
-    if (params.disableThinking) {
+    if (params.enableThinking === false) {
       body.thinking = { type: 'disabled' };
     }
 
@@ -390,7 +406,7 @@ export class AnthropicClient implements LLMClient {
     try {
       return await anthropicDoRequest(body);
     } catch (e) {
-      if (params.disableThinking && isThinkingControlError(e)) {
+      if (params.enableThinking === false && isThinkingControlError(e)) {
         this.thinkingControlSupported = false;
         console.debug(`[AnthropicClient] thinking.type='disabled' not supported, falling back`);
         const fallbackBody: Record<string, unknown> = {
@@ -415,7 +431,9 @@ export class AnthropicClient implements LLMClient {
     system?: string;
     messages: Array<{role: 'user' | 'assistant'; content: string}>;
     onChunk: (chunk: string) => void;
-    disableThinking?: boolean;
+    enableThinking?: boolean;
+    temperature?: number;
+    repetition_penalty?: number;
   }): Promise<string> {
     const messagesWithLanguageHint = params.system
       ? params.messages
@@ -434,7 +452,9 @@ export class AnthropicClient implements LLMClient {
       stream: true,
     };
     if (params.system) streamBody.system = params.system;
-    if (params.disableThinking) {
+    if (params.temperature !== undefined) streamBody.temperature = params.temperature;
+    if (params.repetition_penalty !== undefined) streamBody.repetition_penalty = params.repetition_penalty;
+    if (params.enableThinking === false) {
       streamBody.thinking = { type: 'disabled' };
     }
 
@@ -500,6 +520,31 @@ export class OpenAICompatibleClient implements LLMClient {
     return headers;
   }
 
+  private detectReasoningOnlyResponse(response: {
+    choices: Array<{ message?: { content?: string }; finish_reason?: string }>;
+    usage?: {
+      completion_tokens?: number;
+      completion_tokens_details?: { reasoning_tokens?: number };
+    };
+  }): void {
+    const content = response.choices[0]?.message?.content;
+    if (content && content.trim().length > 0) return;
+
+    const finishReason = response.choices[0]?.finish_reason;
+    if (finishReason !== 'length') return;
+
+    const reasoningTokens = response.usage?.completion_tokens_details?.reasoning_tokens ?? 0;
+    const completionTokens = response.usage?.completion_tokens ?? 0;
+    if (completionTokens > 0 && reasoningTokens / completionTokens >= 0.5) {
+      throw new Error(
+        'The model returned empty content after using most tokens for reasoning. ' +
+        'This happens with some thinking-capable models when the reasoning toggle does not match the runtime. ' +
+        'Try disabling thinking in Settings → LLM Wiki → LLM Configuration → Advanced → "Enable thinking" (turn off), ' +
+        'or enable "Use chat-template kwarg to disable thinking" if the first toggle does not help.'
+      );
+    }
+  }
+
   async createMessage(params: {
     model: string;
     max_tokens: number;
@@ -507,7 +552,10 @@ export class OpenAICompatibleClient implements LLMClient {
     messages: Array<{role: 'user' | 'assistant'; content: string}>;
     response_format?: { type: 'json_object' };
     maxTokensPerCall?: number;
-    disableThinking?: boolean;
+    enableThinking?: boolean;
+    temperature?: number;
+    repetition_penalty?: number;
+    chat_template_kwargs?: Record<string, unknown>;
   }): Promise<string> {
     const messages = params.system
       ? [{ role: 'system' as const, content: params.system }, ...params.messages]
@@ -521,11 +569,14 @@ export class OpenAICompatibleClient implements LLMClient {
       max_tokens: params.max_tokens,
       messages
     };
+    if (params.temperature !== undefined) body.temperature = params.temperature;
+    if (params.repetition_penalty !== undefined) body.repetition_penalty = params.repetition_penalty;
+    if (params.chat_template_kwargs !== undefined) body.chat_template_kwargs = params.chat_template_kwargs;
     // Unified thinking control: use Anthropic-style `thinking.type` which
     // works for DeepSeek and Anthropic. Cache from Test Connection probe
     // (`thinkingControlSupported`) gates the attempt: true → send, false → skip,
     // undefined (not probed) → try anyway (fallback handles 400).
-    if (params.disableThinking && this.thinkingControlSupported !== false) {
+    if (params.enableThinking === false && this.thinkingControlSupported !== false) {
       body.thinking = { type: 'disabled' };
     }
 
@@ -551,12 +602,16 @@ export class OpenAICompatibleClient implements LLMClient {
           throw err;
         }
 
-        const data = response.json as {
-          choices?: Array<{
-            message?: { content?: string };
-            finish_reason?: string;
-          }>;
-          error?: { message: string };
+      const data = response.json as {
+        choices?: Array<{
+          message?: { content?: string };
+          finish_reason?: string;
+        }>;
+        error?: { message: string };
+        usage?: {
+          completion_tokens?: number;
+          completion_tokens_details?: { reasoning_tokens?: number };
+        };
       };
 
       if (data.error) throw new Error(`status ${response.status}: ${data.error.message}`);
@@ -564,8 +619,8 @@ export class OpenAICompatibleClient implements LLMClient {
       const initialChoices = data.choices;
       const initialText = data.choices?.[0]?.message?.content || '';
 
-      return withTruncationRetry<{ choices: NonNullable<typeof data.choices>; initialText: string }>({
-        initialFn: async () => ({ choices: initialChoices ?? [], initialText }),
+      return withTruncationRetry<{ choices: NonNullable<typeof data.choices>; initialText: string; usage?: typeof data.usage }>({
+        initialFn: async () => ({ choices: initialChoices ?? [], initialText, usage: data.usage }),
         retryFn: async (retryTokens) => {
           const retryResponse = await requestUrl({
             url: this.baseUrl + '/chat/completions',
@@ -573,15 +628,9 @@ export class OpenAICompatibleClient implements LLMClient {
             headers: this.getHeaders(),
             body: JSON.stringify({ ...bodyToUse, max_tokens: retryTokens })
           });
-          const retryData = retryResponse.json as {
-            choices?: Array<{
-              message?: { content?: string };
-              finish_reason?: string;
-            }>;
-            error?: { message: string };
-          };
+          const retryData = retryResponse.json as typeof data;
           if (retryData.error) throw new Error(`status ${retryResponse.status}: ${retryData.error.message}`);
-          return { choices: retryData.choices ?? [], initialText };
+          return { choices: retryData.choices ?? [], initialText, usage: retryData.usage };
         },
         isTruncated: (r) => r.choices[0]?.finish_reason === 'length',
         extractText: (r) => r.choices[0]?.message?.content || r.initialText,
@@ -589,17 +638,18 @@ export class OpenAICompatibleClient implements LLMClient {
         getStopReason: (r) => r.choices[0]?.finish_reason,
         maxCap: params.maxTokensPerCall || MAX_TOKENS_BATCH,
         label: 'OpenAI-compatible API',
+        onTruncatedResponse: (r) => this.detectReasoningOnlyResponse(r),
       });
     }, 3, 'OpenAI-compatible API');
 
     try {
       return await doRequest(body);
     } catch (e) {
-      if (params.disableThinking && isThinkingControlError(e)) {
+      if (params.enableThinking === false && isThinkingControlError(e)) {
         // Issue #245: remember that this baseUrl rejects thinking control
         // so subsequent calls skip the probe-and-fail round-trip.
         this.thinkingControlSupported = false;
-        console.debug(`[OpenAICompat] thinking.type='disabled' not supported by ${this.baseUrl}, falling back`);
+        console.debug(`[OpenAICompat] thinking.type='disabled' not supported by ${this.baseUrl}, falling back — retrying with chat_template_kwargs`);
         const fallbackBody: Record<string, unknown> = {
           model: params.model,
           max_tokens: params.max_tokens,
@@ -607,6 +657,9 @@ export class OpenAICompatibleClient implements LLMClient {
             ? [{ role: 'system' as const, content: params.system }, ...params.messages]
             : params.messages,
         };
+        // Auto-fallback to chat-template kwarg for runtimes that reject
+        // Anthropic-style thinking control (e.g. LM Studio MLX, some Ollama).
+        fallbackBody.chat_template_kwargs = { enable_thinking: false };
         return await doRequest(fallbackBody);
       }
       throw e;
@@ -619,7 +672,9 @@ export class OpenAICompatibleClient implements LLMClient {
     system?: string;
     messages: Array<{role: 'user' | 'assistant'; content: string}>;
     onChunk: (chunk: string) => void;
-    disableThinking?: boolean;
+    enableThinking?: boolean;
+    temperature?: number;
+    repetition_penalty?: number;
   }): Promise<string> {
     const messages = params.system
       ? [{ role: 'system' as const, content: params.system }, ...params.messages]
@@ -637,7 +692,9 @@ export class OpenAICompatibleClient implements LLMClient {
       messages,
       stream: true
     };
-    if (params.disableThinking && this.thinkingControlSupported !== false) {
+    if (params.temperature !== undefined) body.temperature = params.temperature;
+    if (params.repetition_penalty !== undefined) body.repetition_penalty = params.repetition_penalty;
+    if (params.enableThinking === false && this.thinkingControlSupported !== false) {
       body.thinking = { type: 'disabled' };
     }
 
@@ -696,7 +753,7 @@ export class OpenAICompatibleClient implements LLMClient {
     try {
       return await doRequest(body);
     } catch (e) {
-      if (params.disableThinking && isThinkingControlError(e)) {
+      if (params.enableThinking === false && isThinkingControlError(e)) {
         // Issue #245: cache the negative result so we don't pay the
         // 400-error round-trip on every subsequent call to this baseUrl.
         this.thinkingControlSupported = false;

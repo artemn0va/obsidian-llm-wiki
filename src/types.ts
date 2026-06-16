@@ -123,18 +123,33 @@ export interface LLMWikiSettings {
   // false → provider returned 400; subsequent calls skip thinking control
   thinkingControlCache?: Record<string, boolean>;
 
-  // Issue #99 v2: disable thinking-mode for thinking-capable models.
-  // When true, all createMessage calls send `thinking: { type: 'disabled' }`
-  // so the LLM outputs final answer only — no mid-response CoT or
-  // duplicated body. Layer A of the v1.16.2 3-layer defense (commit 8c520cf)
-  // added the parameter, but the production call sites never passed it.
-  // This setting makes the wiring complete. DEFAULT_SETTINGS provides
-  // the default (true) so thinking-capable models (Gemma 4, DeepSeek-R1,
-  // QwQ) output final answers without preamble/mid-stream reasoning.
-  // Users with non-thinking models can leave true; users with thinking
-  // models wanting CoT can set false. Optional in the interface for
-  // backward compat with existing test fixtures.
+  // Issue #99 v2 / v3: when true (default), createMessage sends a directive
+  // to suppress the model's reasoning output. Setting name kept for data.json
+  // backward compatibility with v1.18.2. The internal LLMClient interface
+  // inverts this to the affirmative `enableThinking` at the call sites.
+  // If the first directive (`thinking.type='disabled'`) is rejected by the
+  // provider, the code automatically falls back to an alternative mechanism
+  // (`chat_template_kwargs`) — the user does not need to know the difference.
+  // Optional in the interface for test fixtures.
   disableThinking?: boolean;
+
+  // Advanced settings mode — 'default' hides the toggles/inputs; 'custom'
+  // reveals them. 'default' also forces disableThinking=true.
+  advancedSettingsMode?: 'default' | 'custom';
+
+  // enableThinkingViaChatTemplate removed — merged into disableThinking's
+  // automatic fallback (see llm-client.ts OpenAICompatibleClient).
+
+  // Issue #128: per-task sampling temperature. Leave undefined to use the
+  // provider's default. Low values (e.g. 0.15) improve fidelity for extraction
+  // and verbatim quotes; higher values (e.g. 0.7) make chat answers more fluid.
+  extractionTemperature?: number;
+  chatTemperature?: number;
+
+  // Issue #128 follow-up: repetition penalty. Leave undefined to omit the field.
+  // Some local models (llama.cpp-based) benefit from a small penalty (e.g. 1.1)
+  // to avoid repetition loops at low temperatures.
+  repetitionPenalty?: number;
 
   // Issue #75: cap max_tokens per LLM call. 0 = no cap.
   // Recommended for local models with small context windows.
@@ -211,7 +226,10 @@ export interface LLMClient {
     response_format?: { type: 'json_object' };
     cacheBreakpoint?: number;
     maxTokensPerCall?: number;  // Issue #75: cap for truncation retry
-    disableThinking?: boolean;  // ROADMAP P3 #12: disable thinking for thinking-capable models
+    enableThinking?: boolean;   // ROADMAP P3 #12: allow thinking for thinking-capable models
+    temperature?: number;       // Issue #128: per-request sampling temperature
+    repetition_penalty?: number; // Issue #128 follow-up: llama.cpp extension
+    chat_template_kwargs?: Record<string, unknown>; // Issue #99: template-based reasoning disable
   }): Promise<string>;
 
   createMessageStream?(params: {
@@ -220,7 +238,9 @@ export interface LLMClient {
     system?: string;
     messages: Array<{role: 'user' | 'assistant'; content: string}>;
     onChunk: (chunk: string) => void;
-    disableThinking?: boolean;
+    enableThinking?: boolean;
+    temperature?: number;
+    repetition_penalty?: number;
   }): Promise<string>;
 
   listModels?(): Promise<string[]>;
@@ -475,13 +495,14 @@ export const DEFAULT_SETTINGS: LLMWikiSettings = {
   // custom, or anthropic-compatible.
   maxTokensPerCall: 0,
 
-  // Issue #99 v2: default ON so thinking-capable models (Gemma 4,
-  // DeepSeek-R1, QwQ) output final answer only — no mid-response CoT
-  // or duplicated body. The v1.16.2 Layer A parameter existed but the
-  // production call sites never passed it; this default makes the
-  // wiring complete. Users with non-thinking models can leave true;
-  // users with thinking models wanting CoT can set false.
+  // Issue #99 v2: default true so thinking-capable models output final answers
+  // without reasoning preamble. Setting name kept for v1.18.2 data.json
+  // compatibility. Removed enableThinkingViaChatTemplate — the code now
+  // automatically falls back to the chat-template kwarg if the first directive
+  // is rejected (see llm-client.ts OpenAICompatibleClient fallback path).
   disableThinking: true,
+  // Advanced settings mode — default hides the toggles, custom reveals them.
+  advancedSettingsMode: 'default',
   // Issue #111: default to 'lower' for backwards compatibility.
   slugCase: 'lower',
 };

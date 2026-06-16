@@ -19,14 +19,13 @@
 ## 📑 Contents
 
 - [💡 Über LLM Wiki](#-Über-llm-wiki)
-- [⚡ Warum Obsidian + LLM Wiki?](#-warum-obsidian--llm-wiki)
-- [🚀 Schnellstart](#-schnellstart)
+- [💡 Über LLM Wiki](#-Über-llm-wiki)
   - [📦 Installation](#-installation)
   - [🔄 Plugin aktualisieren](#-plugin-aktualisieren)
   - [🔑 LLM Provider konfigurieren](#-llm-provider-konfigurieren)
   - [🎮 Nutzung](#-nutzung)
   - [⚠️ Upgrade von einer älteren Version?](#️-upgrade-von-einer-älteren-version)
-- [⚡ Was ist neu in v1.18.2](#-was-ist-neu-in-v1182)
+- [⚡ Was ist neu in v1.19.0](#-was-ist-neu-in-v1190)
 - [✨ Funktionen](#-funktionen)
   - [📊 Knowledge Quality](#-knowledge-quality)
   - [🛠️ Maintenance](#️-maintenance)
@@ -68,9 +67,9 @@ Notizen schreiben. KI organisiert. Fragen stellen. Das ist alles.
 
 ---
 
-## ⚡ Was ist neu in v1.18.2
+## ⚡ Was ist neu in v1.19.0
 
-v1.18.2 ist ein **PATCH-Bugfix**, der die `customEntityLimit`- und `customConceptLimit`-Einstellungen endlich tatsächlich durchsetzt. Zuvor wurden diese Obergrenzen, wenn `extractionGranularity` auf `custom` gesetzt war, nur als weiche Prompt-Hinweise erzwungen — das LLM lieferte routinemäßig 12–25 Elemente für eine konfigurierte Obergrenze von 8, und alle wurden in Wiki-Seiten geschrieben. Der bestehende Convergence-Detector stoppte lediglich *weitere Batches*, sobald beide Typen die Obergrenze erreichten, was im häufigen Single-Batch-Fall (die meisten Notizen) nie auslöste. Schließt #120.
+v1.19.0 ist ein **PATCH-Bugfix**, der die `customEntityLimit`- und `customConceptLimit`-Einstellungen endlich tatsächlich durchsetzt. Zuvor wurden diese Obergrenzen, wenn `extractionGranularity` auf `custom` gesetzt war, nur als weiche Prompt-Hinweise erzwungen — das LLM lieferte routinemäßig 12–25 Elemente für eine konfigurierte Obergrenze von 8, und alle wurden in Wiki-Seiten geschrieben. Der bestehende Convergence-Detector stoppte lediglich *weitere Batches*, sobald beide Typen die Obergrenze erreichten, was im häufigen Single-Batch-Fall (die meisten Notizen) nie auslöste. Schließt #120.
 
 - **🎯 Harte Obergrenze für Entitäten und Konzepte auf Ihre konfigurierten Limits.** Nachdem alle Batches akkumuliert sind und unmittelbar vor der Seitenerstellung schneidet das Plugin beide Listen auf `customEntityLimit` / `customConceptLimit`. Die ersten N Elemente in Extraktionsreihenfolge bleiben erhalten. Die Prompt-Anweisung und der Convergence-Detector bleiben als ergänzende Mechanismen erhalten (sie leiten das LLM und vermeiden unnötige zusätzliche Batches). Keine Verhaltensänderung für `default` / `1-5`-Granularitätsmodi.
 

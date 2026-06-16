@@ -32,6 +32,97 @@ function makeOpenAIResponse(text: string, finishReason?: string, statusCode = 20
   } as unknown as Awaited<ReturnType<typeof requestUrl>>;
 }
 
+function makeOpenAIResponseWithUsage(
+  text: string,
+  finishReason: string,
+  usage: { completion_tokens: number; completion_tokens_details?: { reasoning_tokens?: number } }
+) {
+  const payload = {
+    choices: [{ message: { content: text }, finish_reason: finishReason }],
+    usage,
+  };
+  return {
+    status: 200,
+    text: JSON.stringify(payload),
+    json: payload,
+    headers: {},
+    arrayBuffer: async () => new ArrayBuffer(0),
+  } as unknown as Awaited<ReturnType<typeof requestUrl>>;
+}
+
+describe('OpenAICompatibleClient — #99 reasoning-only detection', () => {
+  beforeEach(() => {
+    mockRequestUrl.mockReset();
+    // Default fallback — any unmocked call returns a valid empty response.
+    mockRequestUrl.mockResolvedValue(
+      makeOpenAIResponseWithUsage('', 'stop', { completion_tokens: 0 })
+    );
+  });
+
+  it('throws actionable error when response is empty and reasoning tokens consumed the budget', async () => {
+    mockRequestUrl.mockResolvedValueOnce(
+      makeOpenAIResponseWithUsage('', 'length', {
+        completion_tokens: 100,
+        completion_tokens_details: { reasoning_tokens: 95 },
+      })
+    );
+    mockRequestUrl.mockResolvedValueOnce(
+      makeOpenAIResponseWithUsage('', 'length', {
+        completion_tokens: 200,
+        completion_tokens_details: { reasoning_tokens: 190 },
+      })
+    );
+
+    const client = new OpenAICompatibleClient('key', 'http://localhost:1234/v1');
+
+    await expect(client.createMessage({
+      model: 'gemma-4-26b',
+      max_tokens: 100,
+      messages: [{ role: 'user', content: 'hi' }],
+    })).rejects.toThrow(/reasoning.*disable thinking/i);
+  });
+
+  it('does not throw on normal empty truncated response without reasoning tokens', async () => {
+    mockRequestUrl.mockResolvedValueOnce(
+      makeOpenAIResponseWithUsage('', 'length', {
+        completion_tokens: 100,
+      })
+    );
+    mockRequestUrl.mockResolvedValueOnce(
+      makeOpenAIResponseWithUsage('', 'length', {
+        completion_tokens: 200,
+      })
+    );
+
+    const client = new OpenAICompatibleClient('key', 'http://localhost:1234/v1');
+    const result = await client.createMessage({
+      model: 'gemma-4-26b',
+      max_tokens: 100,
+      messages: [{ role: 'user', content: 'hi' }],
+    });
+
+    expect(result).toBe('');
+  });
+
+  it('does not throw when reasoning tokens are well below the budget', async () => {
+    mockRequestUrl.mockResolvedValueOnce(
+      makeOpenAIResponseWithUsage('Hello', 'stop', {
+        completion_tokens: 100,
+        completion_tokens_details: { reasoning_tokens: 10 },
+      })
+    );
+
+    const client = new OpenAICompatibleClient('key', 'http://localhost:1234/v1');
+    const result = await client.createMessage({
+      model: 'gemma-4-26b',
+      max_tokens: 100,
+      messages: [{ role: 'user', content: 'hi' }],
+    });
+
+    expect(result).toBe('Hello');
+  });
+});
+
 describe('AnthropicCompatibleClient.createMessage', () => {
   beforeEach(() => {
     mockRequestUrl.mockClear();
@@ -337,9 +428,9 @@ describe('AnthropicClient.createMessage', () => {
     expect((firstMsg.content as Array<unknown>)[0]).toHaveProperty('cache_control');
   });
 
-  // ROADMAP P3 #12: disableThinking parameter for thinking-capable models.
-  // Anthropic API: maps to `thinking: { type: 'disabled' }`.
-  it('sends thinking.type=disabled in body when disableThinking=true', async () => {
+  // ROADMAP P3 #12: enableThinking parameter for thinking-capable models.
+  // Anthropic API: enableThinking=false maps to `thinking: { type: 'disabled' }`.
+  it('sends thinking.type=disabled in body when enableThinking=false', async () => {
     mockRequestUrl.mockResolvedValueOnce(
       makeAnthropicResponse('ok', 'end_turn')
     );
@@ -349,7 +440,7 @@ describe('AnthropicClient.createMessage', () => {
       model: 'claude-sonnet-4-6',
       max_tokens: 100,
       messages: [{ role: 'user', content: 'hi' }],
-      disableThinking: true,
+      enableThinking: false,
     });
 
     const callArgs = mockRequestUrl.mock.calls[0]?.[0] as { body: string };
@@ -357,7 +448,7 @@ describe('AnthropicClient.createMessage', () => {
     expect(body.thinking).toEqual({ type: 'disabled' });
   });
 
-  it('omits thinking field when disableThinking not set', async () => {
+  it('omits thinking field when enableThinking not set', async () => {
     mockRequestUrl.mockResolvedValueOnce(
       makeAnthropicResponse('ok', 'end_turn')
     );
@@ -375,12 +466,12 @@ describe('AnthropicClient.createMessage', () => {
   });
 });
 
-describe('AnthropicCompatibleClient — disableThinking', () => {
+describe('AnthropicCompatibleClient — enableThinking', () => {
   beforeEach(() => {
     mockRequestUrl.mockClear();
   });
 
-  it('sends thinking.disabled in body when disableThinking=true', async () => {
+  it('sends thinking.disabled in body when enableThinking=false', async () => {
     mockRequestUrl.mockResolvedValueOnce({
       status: 200,
       text: JSON.stringify({ content: [{ type: 'text', text: 'ok' }] }),
@@ -394,7 +485,7 @@ describe('AnthropicCompatibleClient — disableThinking', () => {
       model: 'claude-sonnet-4-6',
       max_tokens: 100,
       messages: [{ role: 'user', content: 'hi' }],
-      disableThinking: true,
+      enableThinking: false,
     });
 
     const callArgs = mockRequestUrl.mock.calls[0]?.[0] as { body: string };
@@ -403,12 +494,12 @@ describe('AnthropicCompatibleClient — disableThinking', () => {
   });
 });
 
-describe('OpenAICompatibleClient — disableThinking', () => {
+describe('OpenAICompatibleClient — enableThinking', () => {
   beforeEach(() => {
     mockRequestUrl.mockClear();
   });
 
-  it('sends thinking.type=disabled for api.openai.com baseUrl when disableThinking=true', async () => {
+  it('sends thinking.type=disabled for api.openai.com baseUrl when enableThinking=false', async () => {
     mockRequestUrl.mockResolvedValueOnce(
       makeOpenAIResponse('ok', 'stop')
     );
@@ -418,7 +509,7 @@ describe('OpenAICompatibleClient — disableThinking', () => {
       model: 'o1-mini',
       max_tokens: 100,
       messages: [{ role: 'user', content: 'hi' }],
-      disableThinking: true,
+      enableThinking: false,
     });
 
     const callArgs = mockRequestUrl.mock.calls[0]?.[0] as { body: string };
@@ -426,7 +517,7 @@ describe('OpenAICompatibleClient — disableThinking', () => {
     expect(body.thinking).toEqual({ type: 'disabled' });
   });
 
-  it('sends thinking.type=disabled for api.deepseek.com baseUrl when disableThinking=true', async () => {
+  it('sends thinking.type=disabled for api.deepseek.com baseUrl when enableThinking=false', async () => {
     mockRequestUrl.mockResolvedValueOnce(
       makeOpenAIResponse('ok', 'stop')
     );
@@ -436,7 +527,7 @@ describe('OpenAICompatibleClient — disableThinking', () => {
       model: 'deepseek-reasoner',
       max_tokens: 100,
       messages: [{ role: 'user', content: 'hi' }],
-      disableThinking: true,
+      enableThinking: false,
     });
 
     const callArgs = mockRequestUrl.mock.calls[0]?.[0] as { body: string };
@@ -444,7 +535,7 @@ describe('OpenAICompatibleClient — disableThinking', () => {
     expect(body.thinking).toEqual({ type: 'disabled' });
   });
 
-  it('sends thinking.type=disabled for api.x.ai (xAI Grok) baseUrl when disableThinking=true', async () => {
+  it('sends thinking.type=disabled for api.x.ai (xAI Grok) baseUrl when enableThinking=false', async () => {
     mockRequestUrl.mockResolvedValueOnce(
       makeOpenAIResponse('ok', 'stop')
     );
@@ -454,7 +545,7 @@ describe('OpenAICompatibleClient — disableThinking', () => {
       model: 'grok-4',
       max_tokens: 100,
       messages: [{ role: 'user', content: 'hi' }],
-      disableThinking: true,
+      enableThinking: false,
     });
 
     const callArgs = mockRequestUrl.mock.calls[0]?.[0] as { body: string };
@@ -462,7 +553,7 @@ describe('OpenAICompatibleClient — disableThinking', () => {
     expect(body.thinking).toEqual({ type: 'disabled' });
   });
 
-  it('sends thinking.type=disabled for openrouter.ai baseUrl when disableThinking=true', async () => {
+  it('sends thinking.type=disabled for openrouter.ai baseUrl when enableThinking=false', async () => {
     mockRequestUrl.mockResolvedValueOnce(
       makeOpenAIResponse('ok', 'stop')
     );
@@ -472,7 +563,7 @@ describe('OpenAICompatibleClient — disableThinking', () => {
       model: 'anthropic/claude-sonnet-4-6',
       max_tokens: 100,
       messages: [{ role: 'user', content: 'hi' }],
-      disableThinking: true,
+      enableThinking: false,
     });
 
     const callArgs = mockRequestUrl.mock.calls[0]?.[0] as { body: string };
@@ -490,7 +581,7 @@ describe('OpenAICompatibleClient — disableThinking', () => {
       model: 'gemini-2.0-flash-thinking',
       max_tokens: 100,
       messages: [{ role: 'user', content: 'hi' }],
-      disableThinking: true,
+      enableThinking: false,
     });
 
     const callArgs = mockRequestUrl.mock.calls[0]?.[0] as { body: string };
@@ -508,7 +599,7 @@ describe('OpenAICompatibleClient — disableThinking', () => {
       model: 'gemma4:26b',
       max_tokens: 100,
       messages: [{ role: 'user', content: 'hi' }],
-      disableThinking: true,
+      enableThinking: false,
     });
 
     const callArgs = mockRequestUrl.mock.calls[0]?.[0] as { body: string };
@@ -526,7 +617,7 @@ describe('OpenAICompatibleClient — disableThinking', () => {
       model: 'qwen3-r1-32b',
       max_tokens: 100,
       messages: [{ role: 'user', content: 'hi' }],
-      disableThinking: true,
+      enableThinking: false,
     });
 
     const callArgs = mockRequestUrl.mock.calls[0]?.[0] as { body: string };
@@ -535,16 +626,16 @@ describe('OpenAICompatibleClient — disableThinking', () => {
   });
 });
 
-// ── createMessageStream — disableThinking propagation (Simplify Phase 1 #1) ──
-// The interface declares disableThinking on createMessageStream, but the three
+// ── createMessageStream — enableThinking propagation (Simplify Phase 1 #1) ──
+// The interface declares enableThinking on createMessageStream, but the three
 // implementations were not updated alongside the createMessage changes.
 
-describe('AnthropicClient.createMessageStream — disableThinking', () => {
+describe('AnthropicClient.createMessageStream — enableThinking', () => {
   beforeEach(() => {
     mockRequestUrl.mockClear();
   });
 
-  it('sends thinking.disabled in stream body when disableThinking=true', async () => {
+  it('sends thinking.disabled in stream body when enableThinking=true', async () => {
     mockRequestUrl.mockResolvedValueOnce({
       status: 200,
       text: 'data: {"type":"content_block_delta","delta":{"type":"text_delta","text":"ok"}}\n\n',
@@ -559,7 +650,7 @@ describe('AnthropicClient.createMessageStream — disableThinking', () => {
       max_tokens: 100,
       messages: [{ role: 'user', content: 'hi' }],
       onChunk: () => {},
-      disableThinking: true,
+      enableThinking: false,
     });
 
     const callArgs = mockRequestUrl.mock.calls[0]?.[0] as { body: string };
@@ -568,12 +659,12 @@ describe('AnthropicClient.createMessageStream — disableThinking', () => {
   });
 });
 
-describe('AnthropicCompatibleClient.createMessageStream — disableThinking', () => {
+describe('AnthropicCompatibleClient.createMessageStream — enableThinking', () => {
   beforeEach(() => {
     mockRequestUrl.mockClear();
   });
 
-  it('sends thinking.disabled in stream body when disableThinking=true', async () => {
+  it('sends thinking.disabled in stream body when enableThinking=true', async () => {
     mockRequestUrl.mockResolvedValueOnce({
       status: 200,
       text: 'data: {"type":"content_block_delta","delta":{"type":"text_delta","text":"ok"}}\n\n',
@@ -588,7 +679,7 @@ describe('AnthropicCompatibleClient.createMessageStream — disableThinking', ()
       max_tokens: 100,
       messages: [{ role: 'user', content: 'hi' }],
       onChunk: () => {},
-      disableThinking: true,
+      enableThinking: false,
     });
 
     const callArgs = mockRequestUrl.mock.calls[0]?.[0] as { body: string };
@@ -597,12 +688,12 @@ describe('AnthropicCompatibleClient.createMessageStream — disableThinking', ()
   });
 });
 
-describe('OpenAICompatibleClient.createMessageStream — disableThinking', () => {
+describe('OpenAICompatibleClient.createMessageStream — enableThinking', () => {
   beforeEach(() => {
     mockRequestUrl.mockClear();
   });
 
-  it('sends thinking.type=disabled in stream body when disableThinking=true', async () => {
+  it('sends thinking.type=disabled in stream body when enableThinking=true', async () => {
     mockRequestUrl.mockResolvedValueOnce({
       status: 200,
       text: 'data: {"choices":[{"delta":{"content":"ok"}}]}\n\n',
@@ -617,7 +708,7 @@ describe('OpenAICompatibleClient.createMessageStream — disableThinking', () =>
       max_tokens: 100,
       messages: [{ role: 'user', content: 'hi' }],
       onChunk: () => {},
-      disableThinking: true,
+      enableThinking: false,
     });
 
     const callArgs = mockRequestUrl.mock.calls[0]?.[0] as { body: string };
@@ -626,7 +717,7 @@ describe('OpenAICompatibleClient.createMessageStream — disableThinking', () =>
   });
 });
 
-describe('AnthropicCompatibleClient — disableThinking fallback', () => {
+describe('AnthropicCompatibleClient — enableThinking fallback', () => {
   beforeEach(() => {
     mockRequestUrl.mockClear();
   });
@@ -648,7 +739,7 @@ describe('AnthropicCompatibleClient — disableThinking fallback', () => {
       model: 'claude-fable-5-5',
       max_tokens: 100,
       messages: [{ role: 'user', content: 'hi' }],
-      disableThinking: true,
+      enableThinking: false,
     });
 
     expect(result).toBe('ok after fallback');
@@ -676,14 +767,14 @@ describe('AnthropicCompatibleClient — disableThinking fallback', () => {
       model: 'claude-fable-5-5',
       max_tokens: 100,
       messages: [{ role: 'user', content: 'hi' }],
-      disableThinking: true,
+      enableThinking: false,
     });
 
     expect((client as unknown as { thinkingControlSupported: boolean }).thinkingControlSupported).toBe(false);
   });
 });
 
-describe('AnthropicClient — disableThinking fallback', () => {
+describe('AnthropicClient — enableThinking fallback', () => {
   beforeEach(() => {
     mockRequestUrl.mockClear();
   });
@@ -705,7 +796,7 @@ describe('AnthropicClient — disableThinking fallback', () => {
       model: 'claude-fable-5-5',
       max_tokens: 100,
       messages: [{ role: 'user', content: 'hi' }],
-      disableThinking: true,
+      enableThinking: false,
     });
 
     expect(result).toBe('ok after fallback');

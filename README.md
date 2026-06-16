@@ -25,8 +25,8 @@
   - [🔑 Configure an LLM Provider](#-configure-an-llm-provider)
   - [🎮 Usage](#-usage)
   - [⚠️ Upgrading from an Older Version?](#️-upgrading-from-an-older-version)
-- [⚡ What's New in v1.18.2](#-whats-new-in-v1182)
-- [✨ Features](#-features)
+- [⚡ What's New in v1.19.0](#-whats-new-in-v1190)
+
   - [📊 Knowledge Quality](#-knowledge-quality)
   - [🛠️ Maintenance](#️-maintenance)
   - [💬 Query & Feedback](#-query--feedback)
@@ -186,15 +186,24 @@ Settings → **LLM Configuration**:
 
 ---
 
-## ⚡ What's New in v1.18.2
+## ⚡ What's New in v1.19.0
 
-v1.18.2 is a **PATCH bug fix** that finally makes the `customEntityLimit` and `customConceptLimit` settings actually hold. Previously, when `extractionGranularity` was set to `custom`, these caps were enforced only as soft prompt hints — the LLM routinely returned 12–25 items for a configured cap of 8, and every one of them was written to a wiki page. The existing convergence detector only stopped *further batches* once both types reached the cap, which never fired on the common single-batch case (most notes). Closes #120.
+v1.19.0 is a **MINOR release** focused on **ingest quality and cost hardening**. It adds an advanced LLM parameter settings panel (disable-thinking toggle, temperature, repetition penalty), a new programmatic quote-grounding lint scanner that verifies every `## Mentions in Source` quote against the source file, and compact slug-list injection that lets the LLM link to wiki pages by exact path. Auto Smart Fix, status bar mirroring during ingest/lint, and sources normalization in the write path round out the community contributions. Meets Six-Gate quality framework.
 
-- **🎯 Hard-cap entities and concepts to your configured limits.** After all batches are accumulated and immediately before page creation, the plugin slices both lists to `customEntityLimit` / `customConceptLimit`. The first N items in extraction order are preserved. The prompt instruction and convergence detector remain as complementary mechanisms (they guide the LLM and avoid unnecessary extra batches). No behavior change for `default` / `1-5` granularity modes.
+- **🔧 Advanced LLM parameter settings.** New Default/Custom mode selector in LLM Configuration. Default hides all advanced params and keeps disable-thinking on (the right choice for most users). Custom reveals: disable thinking toggle, extraction temperature (0–2), query temperature (0–2), and repetition penalty (0–2). The `disableThinking` field name is preserved in `data.json` for backward compatibility.
+- **🔍 Quote-grounding lint scanner (Issue #126).** New `scanQuoteGrounding()` pure function (zero token cost) verifies every quote under `## Mentions in Source` can be found in the linked source file. Supports both current `"— [[sources/slug]]"` format and historical bare quotes. Tier 1 = exact substring match; Tier 2 = normalized (case-fold, punctuation stripped). Contributed by @DocTpoint.
+- **📋 Compact slug list in ingestion (Issue #116).** `buildCompactSlugList()` injects a sorted slug-only list of existing wiki pages into the analyzeSource prompt, so the LLM uses exact paths when creating `[[links]]`, reducing dead-link mismatches from the 50-page index cap. Contributed by @DocTpoint.
+- **🛡️ Reasoning-only response detection (Issue #99).** When `disableThinking=true` but the model returns an empty response with high reasoning tokens, an actionable error is thrown. Automatic 400 fallback to `chat_template_kwargs` for providers that reject `thinking.type='disabled'`.
+- **⚡ Stage 4 no-op skip (Issue #131 Tier 1).** ~33% reduction in Stage 4 LLM calls — the update-related page LLM call is skipped when the source only contains a fallback string. Contributed by @DocTpoint.
+- **📊 Lint report enhanced.** Summary now includes ungrounded-quotes and tag-violations counts. `lintTagViolationSection` fully i18n'd in all 8 languages.
+- **🔊 Status bar mirrors popup during ingest and lint (PR #110).** Contributed by @dmarchevsky.
+- **🤖 Auto Smart Fix setting (PR #109).** Lint can auto-run all fix phases without showing the report modal.
+- **📝 Sources normalization in write path (PR #127).** `fixPollutedSources()` runs at every `createOrUpdateFile()` call. Contributed by @DocTpoint.
+- **🧹 Startup quick-fixes Notice simplified.** Cleaner layout. Removal of misleading watchedFolders debug logs. Language dropdown labels now use native names only.
 
-This release also includes two community contributions that landed in the same window: configurable file-name casing (Issue #111) and tags-preservation on re-ingest (Issue #114). See CHANGELOG.md for full details.
+**We strongly recommend all users upgrade to this version.**
 
-**We strongly recommend all users on the Custom extraction mode upgrade to this version.** Without it, your `customEntityLimit` setting has no effect.
+See [CHANGELOG.md](CHANGELOG.md) for full details.
 
 ## ⌨️ Commands
 

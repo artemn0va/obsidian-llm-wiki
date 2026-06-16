@@ -131,6 +131,124 @@ export function scanOrphans(
   return orphans;
 }
 
+// ── Quote grounding scanner (Issue #126) ──────────────────────
+
+export interface QuoteGroundingIssue {
+  pagePath: string;
+  sourcePath?: string;
+  quote: string;
+  hasSourceLink: boolean;
+}
+
+function normalizeQuote(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]/gu, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function extractMentionsSection(content: string): string | undefined {
+  // Match the first "## Mentions in Source" section up to the next ## heading.
+  const match = content.match(/##\s+Mentions\s+in\s+Source\s*\n([\s\S]*?)(?=\n##\s|\n*$)/i);
+  return match?.[1];
+}
+
+function extractSourceBody(content: string): string {
+  // Strip YAML frontmatter.
+  return content.replace(/^---\n[\s\S]*?\n---\n?/, '');
+}
+
+function isQuoteGrounded(quote: string, sourceBody: string): boolean {
+  // Tier 1: exact substring.
+  if (sourceBody.includes(quote)) return true;
+  // Tier 2: normalized substring.
+  const normalizedQuote = normalizeQuote(quote);
+  if (normalizedQuote.length === 0) return false;
+  return normalizeQuote(sourceBody).includes(normalizedQuote);
+}
+
+/**
+ * Issue #126: programmatic quote-grounding audit. Verifies that every quote
+ * listed under a page's `## Mentions in Source` section can be found in the
+ * linked (or, for legacy bare quotes, any) source file.
+ *
+ * Two tolerance tiers:
+ *   1. Exact substring match against the source body.
+ *   2. Normalized match (case-folded, punctuation stripped, whitespace collapsed).
+ *
+ * Mentions may have either of these forms:
+ *   - "quote text" — [[sources/slug]]     (current format)
+ *   - "quote text"                          (legacy format without source link)
+ *
+ * Legacy bare quotes are accepted if they appear in ANY source file under
+ * `wiki/sources/`. This avoids false positives on older pages generated before
+ * the source-link suffix was added.
+ *
+ * Returns a sorted list of ungrounded issues. No file IO, no LLM.
+ */
+export function scanQuoteGrounding(
+  pageMap: Map<string, ScannerPage>,
+  sourceMap: Map<string, ScannerPage>,
+  wikiFolder: string,
+): QuoteGroundingIssue[] {
+  const issues: QuoteGroundingIssue[] = [];
+
+  // Pre-build the list of all source bodies for legacy bare-quote fallback.
+  const sourceBodies = Array.from(sourceMap.values()).map(s => extractSourceBody(s.content));
+
+  for (const [path, page] of pageMap) {
+    if (!path.startsWith(wikiFolder + '/')) continue;
+
+    const mentionsBlock = extractMentionsSection(page.content);
+    if (!mentionsBlock) continue;
+
+    // Match lines like: - "quote text" — [[sources/slug]]
+    // or legacy:        - "quote text"
+    const lineRegex = /^[-*]\s+"([^"]+)"(?:\s*[—-]\s*\[\[([^\]]+)\]\])?\s*$/gm;
+    let match: RegExpExecArray | null;
+    while ((match = lineRegex.exec(mentionsBlock)) !== null) {
+      const quote = match[1].trim();
+      const linkTarget = match[2]?.trim();
+
+      if (linkTarget) {
+        // Current format: exact source link.
+        const sourcePath = linkTarget.endsWith('.md') ? linkTarget : `${linkTarget}.md`;
+        const resolvedPath = sourcePath.startsWith(wikiFolder + '/') ? sourcePath : `${wikiFolder}/${sourcePath}`;
+        const source = sourceMap.get(resolvedPath);
+        const body = source ? extractSourceBody(source.content) : '';
+        const grounded = source && isQuoteGrounded(quote, body);
+        if (!grounded) {
+          issues.push({
+            pagePath: path,
+            sourcePath: resolvedPath,
+            quote,
+            hasSourceLink: true,
+          });
+        }
+      } else {
+        // Legacy format: accept if quote appears in any source file.
+        const grounded = sourceBodies.some(body => isQuoteGrounded(quote, body));
+        if (!grounded) {
+          issues.push({
+            pagePath: path,
+            quote,
+            hasSourceLink: false,
+          });
+        }
+      }
+    }
+  }
+
+  issues.sort((a, b) => {
+    const pathCmp = a.pagePath.localeCompare(b.pagePath);
+    if (pathCmp !== 0) return pathCmp;
+    return a.quote.localeCompare(b.quote);
+  });
+
+  return issues;
+}
+
 // ── Tag vocabulary violation scanner (Issue #85 v7) ───────────
 
 export type TagViolationPageType = 'entity' | 'concept' | 'source';

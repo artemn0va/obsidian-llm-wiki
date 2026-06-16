@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { createMockContext, createMockFile } from '../__support__/engine-context';
-import { SourceAnalyzer } from '../../wiki/source-analyzer';
+import { SourceAnalyzer, buildCompactSlugList } from '../../wiki/source-analyzer';
 import { TFile } from 'obsidian';
 
 // We can't instantiate TFile without Obsidian, so we test SourceAnalyzer
@@ -135,5 +135,49 @@ describe('SourceAnalyzer', () => {
     expect(result!.concepts).toHaveLength(2);
     expect(result!.entities[0].name).toBe('Alpha');
     expect(result!.concepts[0].name).toBe('One');
+  });
+});
+
+describe('buildCompactSlugList (#116)', () => {
+  it('returns sorted slugs for all wiki pages except schema, index, and source itself', () => {
+    const { ctx } = createMockContext({
+      vaultFiles: {
+        'sources/test.md': '# Test',
+        'wiki/index.md': '# Index',
+        'wiki/schema/config.md': '# Schema',
+        'wiki/entities/Entity-One.md': '# Entity One',
+        'wiki/concepts/Concept-Two.md': '# Concept Two',
+      },
+    });
+    const slugs = buildCompactSlugList(ctx.app, 'wiki', 'sources/test.md');
+    expect(slugs).toContain('entities/Entity-One');
+    expect(slugs).toContain('concepts/Concept-Two');
+    expect(slugs).not.toContain('index');
+    expect(slugs).not.toContain('schema/config');
+    expect(slugs).not.toContain('sources/test');
+    const lines = slugs.split('\n');
+    expect(lines).toEqual([...lines].sort());
+  });
+
+  it('injects the slug list into the analyzeSource prompt', async () => {
+    const { ctx } = createMockContext({
+      vaultFiles: {
+        'sources/test.md': '# Test\nContent.',
+        'wiki/entities/Existing-Page.md': '# Existing Page',
+      },
+      llmResponses: [JSON.stringify({
+        source_title: 'Test',
+        summary: 'A test.',
+        entities: [{ name: 'Foo', type: 'other', summary: 'bar', mentions_in_source: [] }],
+      })],
+    });
+    const spy = vi.spyOn(ctx.getClient()!, 'createMessage');
+    const analyzer = new SourceAnalyzer(ctx);
+    // eslint-disable-next-line obsidianmd/no-tfile-tfolder-cast
+    await analyzer.analyzeSource(createMockFile('sources/test.md') as unknown as TFile);
+    expect(spy).toHaveBeenCalled();
+    const prompt = spy.mock.calls[0][0].messages[0].content;
+    expect(prompt).toContain('entities/Existing-Page');
+    expect(prompt).toContain('**Existing Wiki pages — use ONLY these exact paths when creating [[links]]:**');
   });
 });

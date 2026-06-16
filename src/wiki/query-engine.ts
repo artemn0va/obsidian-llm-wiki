@@ -278,7 +278,7 @@ export class QueryModal extends Modal {
         max_tokens: TOKENS_QUERY_SAVE_DEDUP,
         messages: [{ role: 'user', content: prompt }],
         response_format: { type: 'json_object' },
-      disableThinking: this.plugin.settings.disableThinking,
+      enableThinking: !this.plugin.settings.disableThinking,
     });
 
       const parsed = await parseJsonResponse(response) as { valuable?: boolean; reason?: string } | null;
@@ -390,7 +390,8 @@ export class QueryModal extends Modal {
               this.renderMarkdownContent(this.accumulatedResponse, contentDiv);
               this.scrollToBottom();
             },
-            disableThinking: this.plugin.settings.disableThinking,
+            enableThinking: !this.plugin.settings.disableThinking,
+            temperature: this.plugin.settings.chatTemperature,
           });
           cleanupTimer();
         } catch (streamErr) {
@@ -459,7 +460,8 @@ export class QueryModal extends Modal {
           max_tokens: TOKENS_QUERY_LLM_SELECT,
           system: wikiContext,
           messages: conversationMessages,
-          disableThinking: this.plugin.settings.disableThinking,
+          enableThinking: !this.plugin.settings.disableThinking,
+          temperature: this.plugin.settings.chatTemperature,
         });
 
         if (this.aborted) {
@@ -834,8 +836,8 @@ Important:
         max_tokens: TOKENS_QUERY_PAGE_SELECT,
         messages: [{ role: 'user', content: prompt }],
         response_format: { type: 'json_object' },
-      disableThinking: this.plugin.settings.disableThinking,
-    });
+        enableThinking: !this.plugin.settings.disableThinking,
+      });
 
       console.debug('[LLM] Raw response:', response);
 

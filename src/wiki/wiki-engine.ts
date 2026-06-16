@@ -31,7 +31,7 @@ import {
 import {
   LintFixer,
   getExistingWikiPages,
-} from './lint-fixes';
+} from './lint/fixer';
 import { ContradictionManager } from './contradictions';
 import { fixPollutedSources } from '../core/sources-normalizer';
 import { UNIVERSAL_LINK_CONSTRAINTS } from './prompts/constraints';
@@ -700,7 +700,7 @@ export class WikiEngine {
       max_tokens: TOKENS_PAGE_GENERATION,
       system: await this.buildSystemPrompt('summary'),
       messages: [{ role: 'user', content: finalPrompt }],
-      disableThinking: this.settings.disableThinking,
+      enableThinking: !this.settings.disableThinking,
     });
 
     const cleanedContent = cleanMarkdownResponse(pageContent);

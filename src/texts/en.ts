@@ -109,6 +109,12 @@ export const EN_TEXTS = {
     testConnectionProvider: 'Provider: ',
     errorUnknown: 'Unknown error',
 
+    // Issue #137: LLM fallback notices (shown when thinking-dialect
+    // fallback or param-stripping happens during a request).
+    fallbackThinkingDialect: 'Thinking control: switched to "{dialect}" dialect (this provider uses a different thinking-control format). Output is unchanged.',
+    fallbackThinkingNone: 'Thinking control fully disabled for this provider. Reasoning content may still appear; if so, try a different model.',
+    fallbackParamStripped: 'Parameter "{field}" not supported by this provider. Stripped from the request; behavior may differ from configuration.',
+
     // Wiki Init Status
     wikiInitStatusReady: 'Wiki initialized',
     wikiInitStatusNotReady: 'Wiki not initialized — will auto-create on first ingestion',
@@ -414,12 +420,14 @@ export const EN_TEXTS = {
     advancedSettingsCustom: 'Custom',
     disableThinkingName: 'Disable thinking',
     disableThinkingDesc: 'Leave this on (default). Turn it off only if your model produces clean output and you want to potentially improve extraction quality. Disabling adds cost and may cause garbled output on some models.',
+    // Issue #137: compatibility hints for advanced settings (kept short; no
+    // provider list to avoid maintenance burden when providers change).
     extractionTemperatureName: 'Extraction temperature',
-    extractionTemperatureDesc: 'Range 0–2. Lower values make LLM output more deterministic and faithful. Higher values make it more creative. Leave blank to use your provider\'s default.',
+    extractionTemperatureDesc: 'Range 0–2. Lower values make LLM output more deterministic and faithful. Higher values make it more creative. Leave blank to use your provider\'s default. If your provider rejects this value, the plugin automatically strips the field and shows a one-time notice.',
     chatTemperatureName: 'Query temperature',
-    chatTemperatureDesc: 'Range 0–2. Same as Extraction temperature, but only affects chat/query responses. Leave blank to use your provider\'s default.',
+    chatTemperatureDesc: 'Range 0–2. Same as Extraction temperature, but only affects chat/query responses. Leave blank to use your provider\'s default. If your provider rejects this value, the plugin automatically strips the field and shows a one-time notice.',
     repetitionPenaltyName: 'Repetition penalty',
-    repetitionPenaltyDesc: 'Range 0–2. Higher values reduce repetitive patterns. Leave blank to use your provider\'s default.',
+    repetitionPenaltyDesc: 'Range 0–2. Higher values reduce repetitive patterns. Leave blank to use your provider\'s default. Compatibility note: many cloud providers do not accept this field. The plugin auto-strips it on 400 and shows a one-time notice.',
     temperaturePlaceholder: 'blank = provider default',
     lintDeadLinkSection: 'Dead links (detected) [{count}]',
     lintEmptyPageSection: 'Empty pages (detected) [{count}]',

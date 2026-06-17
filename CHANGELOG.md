@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.19.1] - 2026-06-17
+
+### Fixed
+- **Gemini HTTP 400 on ingestion (Issue #137).** Added a 3-tier thinking-control dialect fallback chain (anthropic → openai → none) so `OpenAICompatibleClient` auto-discovers the correct field name (`thinking.type='disabled'` vs `reasoning_effort='none'` vs none) per baseUrl. The result is cached on the client + in `data.json` so subsequent requests skip the 400 probe round-trip. Toggles the `thinkingControlCache` schema from `boolean` to dialect string (`'anthropic' | 'openai' | 'none'`); old boolean values migrate transparently on read.
+- **Settings tab auto-save wiped `thinkingControlCache` on every close.** `LLMWikiSettingTab.hide()` and the explicit Save button used shallow `{ ...tempSettings }` spread that dropped `thinkingControlCache` (the form never tracks it). The freshly-cached probe result was erased on every tab close, forcing a full re-probe on the next ingestion. Fix: extract `commitTempSettings()` helper that preserves untracked probe-mutated fields; also sync probe result back into `tempSettings` on Test Connection success so auto-save catches it.
+- **Generic 400-field rejection retry (temperature, repetition_penalty, etc.).** `parseUnknownFields()` extracts rejected field names from Gemini-style 400 bodies; `unsupportedFields` Set pre-strips them on subsequent requests. The `retryBodyWithStrippedFields()` helper deduplicates the strip-and-retry logic across non-stream and stream paths.
+- **Stream path field-strip retry was dead code.** `createMessageStream`'s `doRequest` lacked an inner 400 catch block, so `parseUnknownFields` never ran on stream errors and `unsupportedFields` was never populated. Fixed: added the same catch+populate pattern that the non-stream path uses.
+- **`[DEBUG-400]` firing on 429 quota errors.** The `window.fetch` re-fetch and `console.error` diagnostics ran unconditionally on every 4xx. Limited to 400-class errors only; 429/5xx go through standard `withRetry` backoff without the re-fetch overhead.
+- **Fallback notices always in English.** `queueFallbackNotice()` hard-coded `TEXTS.en`; the 3 newly-added fallback not keys (`fallbackThinkingDialect`, `fallbackThinkingNone`, `fallbackParamStripped`) were present in all 8 locale files but never used. Fixed: `OpenAICompatibleClient` now has a `language` field wired by `createLLMClient`; `queueFallbackNotice` calls `getText(this.language, key)`.
+
+### Changed
+- **Advanced LLM Settings moved above Test Connection** in the settings panel for better workflow flow (configure params first, then test).
+- **400-path diagnostic output silenced from `console.error` to `console.debug`.** The in-request dialect fallback expects one 400 per rejected tier (normal on Gemini). Only the "no fallback tier succeeded" path surfaces as a real error.
+
+### Simplified
+- **`IS_400` regex extracted** as a module-level constant; used by `isThinkingControlError`, both 400 catch paths, and stream 400 path (eliminated 3 regex copies).
+- **`retryBodyWithStrippedFields`** replaces the duplicated strip-and-`JSON.stringify`-change-detect pattern with a `changed` boolean loop.
+- **`applyThinkingDialectFallback`** now reuses `buildRequestBody` instead of manually reconstructing retry bodies, so the retry inherits `unsupportedFields` pre-strip (fixing a latent bug where stripped fields could leak back into the retry body).
+- **`commitTempSettings()`** extracted to deduplicate settings form merge logic across `hide()` and Save button.
+- **Probe success/failure cache write clarified** in `testLLMConnection` — dead `detectedDialect !== undefined` branch removed; both success and failure now write to the cache so subsequent calls skip the probe.
+
+### Tests
+- **36 test files, 744 passing** (was 728; +16 from new `llm-client-gemini-fallback` and `settings-thinkcache` suites). 0 regressions.
+
+Closes #137
+
 ## [1.19.0] - 2026-06-16
 
 ### Added

@@ -22,14 +22,24 @@ export class LLMWikiSettingTab extends PluginSettingTab {
     };
   }
 
+  // Issue #137: merge tempSettings → plugin.settings, preserving any
+  // fields the form does not track but Test Connection mutates
+  // (currently: thinkingControlCache). Called by hide() (auto-save) and
+  // the explicit Save button. Adding a new probe-mutated field only
+  // requires extending this one helper, not every save site.
+  private commitTempSettings(): void {
+    this.plugin.settings = {
+      ...this.tempSettings,
+      watchedFolders: [...(this.tempSettings.watchedFolders || [])],
+      thinkingControlCache: this.plugin.settings.thinkingControlCache,
+    };
+  }
+
   // Auto-save when user navigates away from settings tab
   hide(): void {
     const hasChanges = JSON.stringify(this.tempSettings) !== JSON.stringify(this.plugin.settings);
     if (hasChanges) {
-      this.plugin.settings = {
-        ...this.tempSettings,
-        watchedFolders: [...(this.tempSettings.watchedFolders || [])]
-      };
+      this.commitTempSettings();
       void this.plugin.saveSettings();
       console.debug('Settings auto-saved on tab close');
     }
@@ -85,10 +95,7 @@ export class LLMWikiSettingTab extends PluginSettingTab {
         .setCta()
         .onClick(() => {
           void (async () => {
-            this.plugin.settings = {
-              ...this.tempSettings,
-              watchedFolders: [...(this.tempSettings.watchedFolders || [])]
-            };
+            this.commitTempSettings();
             await this.plugin.saveSettings();
             new Notice(this.getText('savedNotice'), NOTICE_SHORT);
           })();
@@ -421,35 +428,6 @@ export class LLMWikiSettingTab extends PluginSettingTab {
         });
     }
 
-    // Test Connection
-    new Setting(containerEl)
-      .setName(this.getText('testConnectionName'))
-      .setDesc(this.getText('testConnectionDesc'))
-      .addButton(button => button
-        .setButtonText(this.getText('testButton'))
-        .onClick(async () => {
-          button.setButtonText(this.getText('testing'));
-          button.setDisabled(true);
-          const testSettings = { ...this.tempSettings };
-          const oldSettings = this.plugin.settings;
-          this.plugin.settings = testSettings;
-          this.plugin.initializeLLMClient();
-          this.plugin.wikiEngine?.updateSettings(testSettings);
-          const result = await this.plugin.testLLMConnection();
-          if (!result.success) {
-            // Restore live settings on test failure — do not persist broken config
-            this.plugin.settings = oldSettings;
-            this.plugin.initializeLLMClient();
-            this.plugin.wikiEngine?.updateSettings(oldSettings);
-            await this.plugin.saveSettings();
-          }
-          this.tempSettings.llmReady = result.success;
-          button.setButtonText(this.getText('testButton'));
-          button.setDisabled(false);
-          this.display();
-          new Notice(result.message, result.success ? NOTICE_NORMAL : NOTICE_ERROR);
-        }));
-
     // Advanced LLM settings — hidden behind a Default/Custom dropdown
     // like the Tag Vocabulary mode selector. Default keeps things simple:
     // disableThinking=on, all other params unset. Custom reveals the
@@ -559,6 +537,45 @@ export class LLMWikiSettingTab extends PluginSettingTab {
         text.inputEl.classList.add('llm-wiki-number-input');
       });
     }
+
+    // Test Connection
+    new Setting(containerEl)
+      .setName(this.getText('testConnectionName'))
+      .setDesc(this.getText('testConnectionDesc'))
+      .addButton(button => button
+        .setButtonText(this.getText('testButton'))
+        .onClick(async () => {
+          button.setButtonText(this.getText('testing'));
+          button.setDisabled(true);
+          const testSettings = { ...this.tempSettings };
+          const oldSettings = this.plugin.settings;
+          this.plugin.settings = testSettings;
+          this.plugin.initializeLLMClient();
+          this.plugin.wikiEngine?.updateSettings(testSettings);
+          const result = await this.plugin.testLLMConnection();
+          if (!result.success) {
+            // Restore live settings on test failure — do not persist broken config
+            this.plugin.settings = oldSettings;
+            this.plugin.initializeLLMClient();
+            this.plugin.wikiEngine?.updateSettings(oldSettings);
+            await this.plugin.saveSettings();
+          } else {
+            // Issue #137: on test success, sync every field testLLMConnection
+            // may have written back into tempSettings so that the auto-save
+            // on tab close (and any later explicit Save click) preserves them.
+            // Without this, hide()'s { ...tempSettings } would wipe the
+            // freshly-cached thinkingControlCache[baseUrl] on the very next
+            // tab close, forcing a re-probe and producing a 400 on the next
+            // ingestion. The same race applies to any future field mutated
+            // by the test path.
+            this.tempSettings.thinkingControlCache = this.plugin.settings.thinkingControlCache;
+          }
+          this.tempSettings.llmReady = result.success;
+          button.setButtonText(this.getText('testButton'));
+          button.setDisabled(false);
+          this.display();
+          new Notice(result.message, result.success ? NOTICE_NORMAL : NOTICE_ERROR);
+        }));
 
     // ==========================================
     // 4. Wiki Configuration

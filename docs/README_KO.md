@@ -25,7 +25,7 @@
   - [🔑 LLM Provider 설정](#-llm-provider-설정)
   - [🎮 사용법](#-사용법)
   - [⚠️ 이전 버전에서 업그레이드하시나요?](#️-이전-버전에서-업그레이드하시나요)
-- [⚡ v1.19.0 업데이트 하이라이트](#-v1190-업데이트-하이라이트)
+- [⚡ v1.19.1 업데이트 하이라이트](#-v1191-업데이트-하이라이트)
 - [✨ 주요 기능](#-주요-기능)
   - [📊 지식 품질](#-지식-품질)
   - [🛠️ 유지 관리](#️-유지-관리)
@@ -60,21 +60,17 @@
 
 ---
 
-## ⚡ v1.19.0 업데이트 하이라이트
+## ⚡ v1.19.1 업데이트 하이라이트
 
-v1.19.0는 **인제스트 품질 및 비용 최적화**에 초점을 맞춘 **MINOR 릴리스**입니다. 고급 LLM 매개변수 설정 패널(생각 비활성화, 온도, 반복 패널티), 인용 접지 lint 스캐너, 컴팩트 슬러그 목록 주입을 추가합니다. Auto Smart Fix, 상태 표시줄 미러링, 소스 정규화 등의 커뮤니티 기여도 포함됩니다.
+v1.19.1는 인제스트 시 Gemini HTTP 400 오류(Issue #137)를 3단계 사고 제어 방언 폴백 체인을 통해 해결하는 **PATCH 핫픽스**입니다. OpenAI 호환 클라이언트는 이제 baseUrl별로 사고를 비활성화하는 올바른 필드 이름을 자동으로 발견하고(thinking.type='disabled' → reasoning_effort='none' → none), 결과를 캐시하여 이후 요청이 프로브를 건너뜁니다. 설정 탭을 닫아도 새로 캐시된 프로브 결과가 지워지지 않습니다. 일반 필드 제거 재시도(온도, 반복 패널티 등) 및 스트림 경로 필드 제거 수정이 릴리스를 마무리합니다. Gemini 사용자는 Test Connection 후 완전히 작동하는 인제스트를 사용할 수 있습니다.
 
-- **🔧 고급 LLM 매개변수 설정.** 기본값/사용자 정의 모드 선택기. 사용자 정의 시: 생각 토글, 추출 온도 (0–2), 쿼리 온도 (0–2), 반복 패널티 (0–2).
-- **🔍 인용 접지 검사 (Issue #126).** @DocTpoint 기여.
-- **📋 컴팩트 슬러그 목록 (Issue #116).** @DocTpoint 기여.
-- **🛡️ 추론 전용 응답 감지 (Issue #99).**
-- **⚡ Stage 4 무작업 스킵 (Issue #131 Tier 1).** @DocTpoint 기여.
-- **📊 Lint 보고서 개선.**
-- **🔊 상태 표시줄 미러링 (PR #110).** @dmarchevsky 기여.
-- **🤖 Auto Smart Fix 설정 (PR #109).**
-- **📝 쓰기 경로 소스 정규화 (PR #127).** @DocTpoint 기여.
+- 🤖 **Gemini HTTP 400 수정 (Issue #137).** 새로운 3단계 사고 제어 방언 폴백 체인(anthropic → openai → none)이 Test Connection 시 올바른 필드 이름을 프로브하고 캐시합니다. 고급 설정이 Test Connection 위로 이동하여 워크플로가 개선되었습니다.
+- 🛡️ **일반 400 필드 제거 재시도.** unsupportedFields 세트가 오류 본문에서 거부된 필드 이름을 추출하고, 이후 요청에서 사전 제거합니다. createMessageStream에서도 작동합니다(이전에는 데드 코드였습니다).
+- 🔊 **폴백 알림이 이제 현지화되었습니다.** queueFallbackNotice()가 사용자의 언어 설정을 존중하여 3개의 i18n 키(fallbackThinkingDialect, fallbackThinkingNone, fallbackParamStripped)가 이제 실제로 7개의 비영어 로케일 모두에서 표시됩니다.
+- 🧹 **여러 코드 단순화.** IS_400 정규식 최적화, retryBodyWithStrippedFields 헬퍼 추출, commitTempSettings()가 설정 병합 중복 제거, applyThinkingDialectFallback이 buildRequestBody를 재사용(잠재적 unsupportedFields 사전 제거 누출 수정).
+- 📊 **콘솔 진단 노이즈 감소.** [OpenAICompat Debug] 400 본문이 console.error에서 console.debug로 낮춰짐. [DEBUG-400] 재요청이 400클래스 오류로 제한됨(이전에는 429 할당량 오류에서도 발생).
 
-**모든 사용자께 이 버전으로 업그레이드할 것을 강력히 권장합니다.** 자세한 내용은 [CHANGELOG.md](../CHANGELOG.md)를 참조하세요.
+자세한 내용은 CHANGELOG.md를 참조하세요.
 
 ## ✨ 주요 기능
 

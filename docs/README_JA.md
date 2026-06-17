@@ -25,7 +25,7 @@
   - [🔑 LLM Providerを設定](#-llm-providerを設定)
   - [🎮 使用方法](#-使用方法)
   - [⚠️ 旧バージョンからアップグレードする場合](#️-旧バージョンからアップグレードする場合)
-- [⚡ v1.19.0 更新のポイント](#-v1190-更新のポイント)
+- [⚡ v1.19.1 更新のポイント](#-v1191-更新のポイント)
 - [✨ 特徴](#-特徴)
   - [📊 Knowledge Quality](#-knowledge-quality)
   - [🛠️ Maintenance](#️-maintenance)
@@ -60,22 +60,17 @@
 
 ---
 
-## ⚡ v1.19.0 更新のポイント
+## ⚡ v1.19.1 更新のポイント
 
-v1.19.0 は、**インジェスト品質とコスト最適化**に焦点を当てた **MINOR リリース**です。高度な LLM パラメータ設定パネル（思考無効化、温度、繰り返しペナルティ）、引用グラウンディング lint スキャナー、コンパクトスラッグリスト注入を追加。Auto Smart Fix、ステータスバーミラーリング、ソース正規化などのコミュニティ貢献も含みます。Six-Gate 品質フレームワーク準拠。
+v1.19.1 は、3層の思考制御ダイアレクトフォールバックチェーンにより、インジェスト時の Gemini HTTP 400 エラー（Issue #137）を解決する **PATCH ホットフィックス**です。OpenAI 互換クライアントは、baseUrl ごとに思考を無効化する正しいフィールド名を自動的に発見し（thinking.type='disabled' → reasoning_effort='none' → none）、結果をキャッシュするため、後続のリクエストはプローブをスキップします。設定タブを閉じても、新たにキャッシュされたプローブ結果が消去されなくなりました。一般的なフィールド削除リトライ（温度、繰り返しペナルティなど）とストリームパスのフィールド削除修正がリリースを締めくくります。Gemini ユーザーは Test Connection 後に完全に機能するインジェストを利用できるはずです。
 
-- **🔧 高度な LLM パラメータ設定。** デフォルト/カスタムモードセレクター。カスタム時：思考トグル、抽出温度 (0–2)、クエリ温度 (0–2)、繰り返しペナルティ (0–2)。
-- **🔍 引用グラウンディング (Issue #126)。** @DocTpoint による貢献。
-- **📋 コンパクトスラッグリスト (Issue #116)。** @DocTpoint による貢献。
-- **🛡️ 推論のみ応答検出 (Issue #99)。**
-- **⚡ Stage 4 スキップ (Issue #131 Tier 1)。** @DocTpoint による貢献。
-- **📊 Lint レポート拡張。**
-- **🔊 ステータスバーミラーリング (PR #110)。** @dmarchevsky による貢献。
-- **🤖 Auto Smart Fix (PR #109)。**
-- **📝 書き込みパス source 正規化 (PR #127)。** @DocTpoint による貢献。
-- **🧹 起動時クイック修正のお知らせを簡素化。**
+- 🤖 **Gemini HTTP 400 修正（Issue #137）。** 新しい3層思考制御ダイアレクトフォールバックチェーン（anthropic → openai → none）が Test Connection 時に正しいフィールド名をプローブし、キャッシュします。詳細設定が Test Connection の上に移動し、ワークフローが改善されました。
+- 🛡️ **汎用400フィールド削除リトライ。** unsupportedFields セットがエラー本文から拒否されたフィールド名を抽出し、後続リクエストで事前に削除します。createMessageStream でも機能します（以前はデッドコードでした）。
+- 🔊 **フォールバック通知がローカライズされました。** queueFallbackNotice() がユーザーの言語設定を尊重するようになり、3つの i18n キー（fallbackThinkingDialect、fallbackThinkingNone、fallbackParamStripped）が実際に7つの非英語ロケールすべてで表示されるようになりました。
+- 🧹 **複数のコード簡素化。** IS_400 正規表現の最適化、retryBodyWithStrippedFields ヘルパーの抽出、commitTempSettings() による設定マージの重複排除、applyThinkingDialectFallback が buildRequestBody を再利用（潜在的な unsupportedFields 事前削除リークを修正）。
+- 📊 **コンソール診断ノイズの低減。** [OpenAICompat Debug] 400 ボディを console.error から console.debug に格下げ。[DEBUG-400] の再取得を 400 系エラーに制限（以前は 429 クォータエラーでも発動していました）。
 
-**すべてのユーザーに本バージョンへのアップグレードを強く推奨します。** 詳細は [CHANGELOG.md](../CHANGELOG.md) をご覧ください。
+詳細は CHANGELOG.md をご覧ください。
 
 ## ✨ 特徴
 

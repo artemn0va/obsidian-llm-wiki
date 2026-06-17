@@ -103,6 +103,11 @@ export const KO_TEXTS = {
     errorUnknown: '알 수 없는 오류',
     savedNotice: '설정이 저장되었습니다!',
 
+    // Issue #137: LLM 폴백 알림
+    fallbackThinkingDialect: '사고 제어: "{dialect}" 방언으로 전환됨(이 공급자는 다른 사고 제어 필드 형식을 사용함). 출력은 변경되지 않음.',
+    fallbackThinkingNone: '이 공급자에 대해 사고 제어가 완전히 비활성화되었습니다. 추론 콘텐츠가 여전히 나타날 수 있습니다; 이 경우 다른 모델을 시도하세요.',
+    fallbackParamStripped: '매개변수 "{field}"는(은) 이 공급자에서 지원되지 않습니다. 요청에서 제거되었습니다; 동작은 구성과 다를 수 있습니다.',
+
     // Wiki Folder
     wikiSection: 'Wiki 설정',
     wikiFolderName: '위키 폴더',
@@ -407,12 +412,13 @@ export const KO_TEXTS = {
     advancedSettingsCustom: '사용자 정의',
     disableThinkingName: '생각 비활성화',
     disableThinkingDesc: '기본적으로 켜져 있습니다. 모델 출력이 정상이고 추출 품질을 개선하려는 경우에만 끄세요. 끄면 비용이 증가하고 일부 모델에서 출력이 깨질 수 있습니다.',
+    // Issue #137: 호환성 안내 (간결하게; 공급자 목록 생략)
     extractionTemperatureName: '추출 온도',
-    extractionTemperatureDesc: '범위 0–2. 낮을수록 LLM 출력이 결정적이고 원본에 충실해집니다. 높을수록 창의적입니다. 비워 두면 제공자 기본값이 사용됩니다.',
+    extractionTemperatureDesc: '범위 0–2. 낮을수록 LLM 출력이 결정적이고 원본에 충실해집니다. 높을수록 창의적입니다. 비워 두면 제공자 기본값이 사용됩니다. 제공자가 이 값을 거부하면 플러그인이 자동으로 필드를 제거하고 한 번 알림을 표시합니다.',
     chatTemperatureName: '쿼리 온도',
-    chatTemperatureDesc: '범위 0–2. 추출 온도와 동일하지만 채팅/쿼리 응답에만 영향을 미칩니다. 비워 두면 제공자 기본값이 사용됩니다.',
+    chatTemperatureDesc: '범위 0–2. 추출 온도와 동일하지만 채팅/쿼리 응답에만 영향을 미칩니다. 비워 두면 제공자 기본값이 사용됩니다. 제공자가 이 값을 거부하면 플러그인이 자동으로 필드를 제거하고 한 번 알림을 표시합니다.',
     repetitionPenaltyName: '반복 패널티',
-    repetitionPenaltyDesc: '범위 0–2. 높을수록 반복 패턴이 줄어듭니다. 비워 두면 제공자 기본값이 사용됩니다.',
+    repetitionPenaltyDesc: '범위 0–2. 높을수록 반복 패턴이 줄어듭니다. 비워 두면 제공자 기본값이 사용됩니다. 호환성 안내: 많은 클라우드 공급자는 이 필드를 허용하지 않습니다. 플러그인은 HTTP 400 시 자동으로 제거하고 한 번 알림을 표시합니다.',
     temperaturePlaceholder: '비움 = 제공자 기본값',
     lintDeadLinkSection: '데드 링크 (감지됨) [{count}개]',
     lintEmptyPageSection: '빈 페이지 (감지됨) [{count}개]',

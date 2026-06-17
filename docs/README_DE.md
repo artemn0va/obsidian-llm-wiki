@@ -25,7 +25,7 @@
   - [🔑 LLM Provider konfigurieren](#-llm-provider-konfigurieren)
   - [🎮 Nutzung](#-nutzung)
   - [⚠️ Upgrade von einer älteren Version?](#️-upgrade-von-einer-älteren-version)
-- [⚡ Was ist neu in v1.19.0](#-was-ist-neu-in-v1190)
+- [⚡ Was ist neu in v1.19.1](#-was-ist-neu-in-v1191)
 - [✨ Funktionen](#-funktionen)
   - [📊 Knowledge Quality](#-knowledge-quality)
   - [🛠️ Maintenance](#️-maintenance)
@@ -67,15 +67,17 @@ Notizen schreiben. KI organisiert. Fragen stellen. Das ist alles.
 
 ---
 
-## ⚡ Was ist neu in v1.19.0
+## ⚡ Was ist neu in v1.19.1
 
-v1.19.0 ist ein **PATCH-Bugfix**, der die `customEntityLimit`- und `customConceptLimit`-Einstellungen endlich tatsächlich durchsetzt. Zuvor wurden diese Obergrenzen, wenn `extractionGranularity` auf `custom` gesetzt war, nur als weiche Prompt-Hinweise erzwungen — das LLM lieferte routinemäßig 12–25 Elemente für eine konfigurierte Obergrenze von 8, und alle wurden in Wiki-Seiten geschrieben. Der bestehende Convergence-Detector stoppte lediglich *weitere Batches*, sobald beide Typen die Obergrenze erreichten, was im häufigen Single-Batch-Fall (die meisten Notizen) nie auslöste. Schließt #120.
+v1.19.1 ist ein **PATCH-Hotfix**, der Gemini HTTP 400-Fehler bei der Ingestion (Issue #137) durch eine 3-stufige Thinking-Control-Dialect-Fallback-Kette behebt. Der OpenAI-kompatible Client erkennt nun automatisch den korrekten Feldnamen zum Deaktivieren des Denkens pro baseUrl (thinking.type='disabled' → reasoning_effort='none' → none) und speichert das Ergebnis zwischen, sodass nachfolgende Anfragen die Suche überspringen. Der Einstellungs-Tab löscht das frisch zwischengespeicherte Suchergebnis beim Schließen nicht mehr. Allgemeine Feld-Strip-Wiederholungen (Temperatur, Wiederholungsstrafe usw.) und Stream-Path-Feld-Strip-Korrekturen runden das Release ab. Gemini-Benutzer sollten nach dem Test Connection eine voll funktionsfähige Ingestion haben.
 
-- **🎯 Harte Obergrenze für Entitäten und Konzepte auf Ihre konfigurierten Limits.** Nachdem alle Batches akkumuliert sind und unmittelbar vor der Seitenerstellung schneidet das Plugin beide Listen auf `customEntityLimit` / `customConceptLimit`. Die ersten N Elemente in Extraktionsreihenfolge bleiben erhalten. Die Prompt-Anweisung und der Convergence-Detector bleiben als ergänzende Mechanismen erhalten (sie leiten das LLM und vermeiden unnötige zusätzliche Batches). Keine Verhaltensänderung für `default` / `1-5`-Granularitätsmodi.
+- 🤖 **Gemini HTTP 400-Fix (Issue #137).** Neue 3-stufige Thinking-Control-Dialect-Fallback-Kette (anthropic → openai → none) ermittelt das korrekte Feldname beim Test Connection und speichert es zwischen. Die erweiterten Einstellungen wurden über die Test Connection verschoben, um den Workflow zu verbessern.
+- 🛡️ **Generischer 400-Feld-Strip-Retry.** Ein unsupportedFields-Set extrahiert die abgelehnten Feldnamen aus Fehlerantworten; bei nachfolgenden Anfragen werden diese vorab entfernt. Funktioniert auch bei createMessageStream (zuvor toter Code).
+- 🔊 **Fallback-Hinweise jetzt lokalisiert.** queueFallbackNotice() respektiert die Spracheinstellung des Benutzers – die 3 i18n-Schlüssel (fallbackThinkingDialect, fallbackThinkingNone, fallbackParamStripped) sind nun tatsächlich in allen 7 nicht-englischen Locales sichtbar.
+- 🧹 **Mehrere Code-Vereinfachungen.** IS_400-Regex optimiert, retryBodyWithStrippedFields-Helfer extrahiert, commitTempSettings() dedupliziert Settings-Merge, applyThinkingDialectFallback verwendet buildRequestBody (behebt ein latentes unsupportedFields-Pre-Strip-Leak).
+- 📊 **Konsolen-Diagnose-Rauschen reduziert.** [OpenAICompat Debug] 400-Körper von console.error auf console.debug herabgestuft; [DEBUG-400] erneuter Abruf auf 400er-Fehler beschränkt (feuerte zuvor bei 429-Kontingentfehlern).
 
-Diese Version enthält außerdem zwei Community-Beiträge, die im selben Zeitfenster eingegangen sind: konfigurierbare Dateinamen-Groß-/Kleinschreibung (Issue #111) und Tag-Erhaltung beim Re-Ingest (Issue #114). Vollständige Details im CHANGELOG.md.
-
-**Wir empfehlen allen Benutzern des Custom-Extraktionsmodus dringend, auf diese Version zu aktualisieren.** Ohne sie hat Ihre `customEntityLimit`-Einstellung keine Wirkung.
+Details im CHANGELOG.md.
 
 ## ✨ Funktionen
 

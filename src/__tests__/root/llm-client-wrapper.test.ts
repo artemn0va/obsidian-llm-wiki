@@ -98,13 +98,14 @@ describe('wrapWithAdvancedSettings — advanced settings injection (Issue #99 / 
     expect(body.repetition_penalty).toBe(1.1);
   });
 
-  it('injects chat_template_kwargs when enableThinking is false', async () => {
+  it('does NOT inject chat_template_kwargs — #137 moved thinking-control fallback to the client', async () => {
+    // Issue #137: the wrapper used to inject chat_template_kwargs as a
+    // thinking-control fallback for backends that reject thinking.type.
+    // That fallback path was removed because Gemini (#137) and other
+    // modern backends also reject chat_template_kwargs. The client now
+    // handles dialect fallback internally (anthropic → openai → none).
+    // The wrapper stays passive for thinking-control.
     const client = makeClient();
-    // The wrapper injects chat_template_kwargs for callers that pass
-    // enableThinking=false (the wrapper also passes it). Since the wrapper
-    // always passes enableThinking=false when disableThinking=true, the
-    // kwarg injection is the final safety net.
-    // We test the wrapper directly to ensure the ternary is correct.
     const wrapped = wrapWithAdvancedSettings(client, {
       maxTokensPerCall: 0,
       enableThinking: false,
@@ -116,8 +117,8 @@ describe('wrapWithAdvancedSettings — advanced settings injection (Issue #99 / 
       messages: [{ role: 'user', content: 'hi' }],
     });
 
-    const body = JSON.parse((mockRequestUrl.mock.calls[0][0] as { body: string }).body) as { chat_template_kwargs?: { enable_thinking?: boolean } };
-    expect(body.chat_template_kwargs).toEqual({ enable_thinking: false });
+    const body = JSON.parse((mockRequestUrl.mock.calls[0][0] as { body: string }).body) as { chat_template_kwargs?: unknown };
+    expect(body.chat_template_kwargs).toBeUndefined();
   });
 
   it('does NOT inject chat_template_kwargs when enableThinking is not passed (default)', async () => {

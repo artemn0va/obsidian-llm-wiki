@@ -25,7 +25,7 @@
   - [🔑 Configure an LLM Provider](#-configure-an-llm-provider)
   - [🎮 Usage](#-usage)
   - [⚠️ Upgrading from an Older Version?](#️-upgrading-from-an-older-version)
-- [⚡ What's New in v1.19.0](#-whats-new-in-v1190)
+- [⚡ What's New in v1.19.1](#-whats-new-in-v1191)
 
   - [📊 Knowledge Quality](#-knowledge-quality)
   - [🛠️ Maintenance](#️-maintenance)
@@ -186,22 +186,15 @@ Settings → **LLM Configuration**:
 
 ---
 
-## ⚡ What's New in v1.19.0
+## ⚡ What's New in v1.19.1
 
-v1.19.0 is a **MINOR release** focused on **ingest quality and cost hardening**. It adds an advanced LLM parameter settings panel (disable-thinking toggle, temperature, repetition penalty), a new programmatic quote-grounding lint scanner that verifies every `## Mentions in Source` quote against the source file, and compact slug-list injection that lets the LLM link to wiki pages by exact path. Auto Smart Fix, status bar mirroring during ingest/lint, and sources normalization in the write path round out the community contributions. Meets Six-Gate quality framework.
+v1.19.1 is a **PATCH hotfix** that resolves **Gemini HTTP 400 errors on ingestion (Issue #137)** via a 3-tier thinking-control dialect fallback chain. The OpenAI-compatible client now auto-discovers the correct field name for disabling thinking per baseUrl (`thinking.type='disabled'` → `reasoning_effort='none'` → none) and caches the result so subsequent requests skip the probe. The settings tab no longer wipes the freshly-cached probe result on close. Generic field-strip retry (temperature, repetition_penalty, etc.) and stream-path field-strip fixes round out the release. Gemini users should see fully working ingestion after Test Connection.
 
-- **🔧 Advanced LLM parameter settings.** New Default/Custom mode selector in LLM Configuration. Default hides all advanced params and keeps disable-thinking on (the right choice for most users). Custom reveals: disable thinking toggle, extraction temperature (0–2), query temperature (0–2), and repetition penalty (0–2). The `disableThinking` field name is preserved in `data.json` for backward compatibility.
-- **🔍 Quote-grounding lint scanner (Issue #126).** New `scanQuoteGrounding()` pure function (zero token cost) verifies every quote under `## Mentions in Source` can be found in the linked source file. Supports both current `"— [[sources/slug]]"` format and historical bare quotes. Tier 1 = exact substring match; Tier 2 = normalized (case-fold, punctuation stripped). Contributed by @DocTpoint.
-- **📋 Compact slug list in ingestion (Issue #116).** `buildCompactSlugList()` injects a sorted slug-only list of existing wiki pages into the analyzeSource prompt, so the LLM uses exact paths when creating `[[links]]`, reducing dead-link mismatches from the 50-page index cap. Contributed by @DocTpoint.
-- **🛡️ Reasoning-only response detection (Issue #99).** When `disableThinking=true` but the model returns an empty response with high reasoning tokens, an actionable error is thrown. Automatic 400 fallback to `chat_template_kwargs` for providers that reject `thinking.type='disabled'`.
-- **⚡ Stage 4 no-op skip (Issue #131 Tier 1).** ~33% reduction in Stage 4 LLM calls — the update-related page LLM call is skipped when the source only contains a fallback string. Contributed by @DocTpoint.
-- **📊 Lint report enhanced.** Summary now includes ungrounded-quotes and tag-violations counts. `lintTagViolationSection` fully i18n'd in all 8 languages.
-- **🔊 Status bar mirrors popup during ingest and lint (PR #110).** Contributed by @dmarchevsky.
-- **🤖 Auto Smart Fix setting (PR #109).** Lint can auto-run all fix phases without showing the report modal.
-- **📝 Sources normalization in write path (PR #127).** `fixPollutedSources()` runs at every `createOrUpdateFile()` call. Contributed by @DocTpoint.
-- **🧹 Startup quick-fixes Notice simplified.** Cleaner layout. Removal of misleading watchedFolders debug logs. Language dropdown labels now use native names only.
-
-**We strongly recommend all users upgrade to this version.**
+- **🤖 Gemini HTTP 400 fix (Issue #137).** New 3-tier thinking-control dialect fallback chain (anthropic → openai → none) probes the correct field name at Test Connection time and caches it. Settings panel Advanced Settings moved above Test Connection for better workflow.
+- **🛡️ Generic 400 field-strip retry.** `unsupportedFields` Set extracts rejected field names from error bodies; pre-stripped on subsequent requests. Also works on `createMessageStream` (was dead code).
+- **🔊 Fallback notices now localized.** `queueFallbackNotice()` respects the user's language setting — the 3 i18n keys (`fallbackThinkingDialect`, `fallbackThinkingNone`, `fallbackParamStripped`) are now actually visible in all 7 non-English locales.
+- **🧹 Multiple code simplifications.** `IS_400` regex hoisted, `retryBodyWithStrippedFields` helper extracted, `commitTempSettings()` deduplicated settings merge, `applyThinkingDialectFallback` reuses `buildRequestBody` (fixing a latent unsupportedFields pre-strip leak).
+- **📊 Console diagnostic noise reduced.** `[OpenAICompat Debug] 400 body` demoted from `console.error` to `console.debug`; `[DEBUG-400]` re-fetch limited to 400-class errors (was firing on 429 quota errors).
 
 See [CHANGELOG.md](CHANGELOG.md) for full details.
 

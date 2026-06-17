@@ -103,6 +103,11 @@ export const FR_TEXTS = {
     errorUnknown: 'Erreur inconnue',
     savedNotice: 'Paramètres enregistrés !',
 
+    // Issue #137 : Notifications de repli LLM
+    fallbackThinkingDialect: 'Contrôle de réflexion : basculé vers le dialecte « {dialect} » (ce fournisseur utilise un format différent). Le résultat est inchangé.',
+    fallbackThinkingNone: 'Contrôle de réflexion entièrement désactivé pour ce fournisseur. Du contenu de raisonnement peut encore apparaître ; le cas échéant, essayez un autre modèle.',
+    fallbackParamStripped: 'Le paramètre « {field} » n\'est pas pris en charge par ce fournisseur. Supprimé de la requête ; le comportement peut différer de la configuration.',
+
     // Wiki Folder
     wikiSection: 'Configuration du Wiki',
     wikiFolderName: 'Dossier wiki',
@@ -406,12 +411,13 @@ export const FR_TEXTS = {
     advancedSettingsCustom: 'Personnalisé',
     disableThinkingName: 'Désactiver le raisonnement',
     disableThinkingDesc: 'Activé par défaut. Désactivez uniquement si votre modèle produit des résultats propres et que vous souhaitez potentiellement améliorer la qualité d\'extraction. La désactivation augmente les coûts et peut provoquer des résultats dégradés sur certains modèles.',
+    // Issue #137 : Notes de compatibilité (courtes ; pas de liste de fournisseurs)
     extractionTemperatureName: 'Température d\'extraction',
-    extractionTemperatureDesc: 'Plage 0–2. Plus la valeur est basse, plus la sortie LLM est déterministe et fidèle. Plus elle est haute, plus elle est créative. Laissez vide pour utiliser la valeur par défaut du fournisseur.',
+    extractionTemperatureDesc: 'Plage 0–2. Plus la valeur est basse, plus la sortie LLM est déterministe et fidèle. Plus elle est haute, plus elle est créative. Laissez vide pour utiliser la valeur par défaut du fournisseur. Si votre fournisseur refuse cette valeur, le plugin supprime le champ automatiquement et affiche un avis unique.',
     chatTemperatureName: 'Température de requête',
-    chatTemperatureDesc: 'Plage 0–2. Comme la température d\'extraction, mais n\'affecte que les réponses de chat/requête. Laissez vide pour utiliser la valeur par défaut du fournisseur.',
+    chatTemperatureDesc: 'Plage 0–2. Comme la température d\'extraction, mais n\'affecte que les réponses de chat/requête. Laissez vide pour utiliser la valeur par défaut du fournisseur. Si votre fournisseur refuse cette valeur, le plugin supprime le champ automatiquement et affiche un avis unique.',
     repetitionPenaltyName: 'Pénalité de répétition',
-    repetitionPenaltyDesc: 'Plage 0–2. Plus la valeur est haute, plus les répétitions sont réduites. Laissez vide pour utiliser la valeur par défaut du fournisseur.',
+    repetitionPenaltyDesc: 'Plage 0–2. Plus la valeur est haute, plus les répétitions sont réduites. Laissez vide pour utiliser la valeur par défaut du fournisseur. Note de compatibilité : de nombreux fournisseurs cloud n\'acceptent pas ce champ. Le plugin le supprime automatiquement sur HTTP 400 et affiche un avis unique.',
     temperaturePlaceholder: 'vide = valeur par défaut du fournisseur',
     lintDeadLinkSection: 'Liens cassés (détectés) [{count}]',
     lintEmptyPageSection: 'Pages vides (détectées) [{count}]',

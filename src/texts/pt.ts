@@ -103,6 +103,11 @@ export const PT_TEXTS = {
     errorUnknown: 'Erro desconhecido',
     savedNotice: 'Configurações salvas!',
 
+    // Issue #137: Avisos de fallback de LLM
+    fallbackThinkingDialect: 'Controle de pensamento: alternado para o dialeto "{dialect}" (este provedor usa um formato diferente). A saída permanece inalterada.',
+    fallbackThinkingNone: 'Controle de pensamento totalmente desativado para este provedor. Conteúdo de raciocínio ainda pode aparecer; se isso acontecer, tente outro modelo.',
+    fallbackParamStripped: 'O parâmetro "{field}" não é compatível com este provedor. Removido da requisição; o comportamento pode diferir da configuração.',
+
     // Wiki Folder
     wikiSection: 'Configuração do Wiki',
     wikiFolderName: 'Pasta Wiki',
@@ -406,12 +411,13 @@ export const PT_TEXTS = {
     advancedSettingsCustom: 'Personalizado',
     disableThinkingName: 'Desabilitar pensamento',
     disableThinkingDesc: 'Ativado por padrão. Desative apenas se seu modelo produzir resultados limpos e você quiser potencialmente melhorar a qualidade da extração. Desativar aumenta o custo e pode causar saída distorcida em alguns modelos.',
+    // Issue #137: Avisos de compatibilidade (breves; sem lista de provedores)
     extractionTemperatureName: 'Temperatura de extração',
-    extractionTemperatureDesc: 'Intervalo 0–2. Valores mais baixos tornam a saída do LLM mais determinística e fiel. Valores mais altos tornam mais criativa. Deixe vazio para usar o padrão do provedor.',
+    extractionTemperatureDesc: 'Intervalo 0–2. Valores mais baixos tornam a saída do LLM mais determinística e fiel. Valores mais altos tornam mais criativa. Deixe vazio para usar o padrão do provedor. Se o provedor rejeitar este valor, o plugin remove o campo automaticamente e mostra um aviso único.',
     chatTemperatureName: 'Temperatura de consulta',
-    chatTemperatureDesc: 'Intervalo 0–2. Igual à temperatura de extração, mas afeta apenas respostas de chat/consulta. Deixe vazio para usar o padrão do provedor.',
+    chatTemperatureDesc: 'Intervalo 0–2. Igual à temperatura de extração, mas afeta apenas respostas de chat/consulta. Deixe vazio para usar o padrão do provedor. Se o provedor rejeitar este valor, o plugin remove o campo automaticamente e mostra um aviso único.',
     repetitionPenaltyName: 'Penalidade de repetição',
-    repetitionPenaltyDesc: 'Intervalo 0–2. Valores mais altos reduzem padrões repetitivos. Deixe vazio para usar o padrão do provedor.',
+    repetitionPenaltyDesc: 'Intervalo 0–2. Valores mais altos reduzem padrões repetitivos. Deixe vazio para usar o padrão do provedor. Aviso de compatibilidade: muitos provedores em nuvem não aceitam este campo. O plugin remove-o automaticamente em HTTP 400 e mostra um aviso único.',
     temperaturePlaceholder: 'vazio = padrão do provedor',
     lintDeadLinkSection: 'Links quebrados (detectados) [{count}]',
     lintEmptyPageSection: 'Páginas vazias (detectadas) [{count}]',

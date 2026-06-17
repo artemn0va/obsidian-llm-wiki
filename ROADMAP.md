@@ -2,11 +2,15 @@
 
 > Feature planning and improvement proposals
 
-**Version:** 1.19.0 | **Updated:** 2026-06-16
+**Version:** 1.19.1 | **Updated:** 2026-06-17
 
 ---
 
 ## Current Status
+
+### Implemented (v1.19.1) — Gemini HTTP 400 Hotfix (Issue #137, 2026-06-17)
+
+- ✅ **#137 — Gemini HTTP 400 on ingestion.** Added 3-tier thinking-control dialect fallback chain (anthropic → openai → none). The OpenAI-compatible client auto-discovers the correct field name per baseUrl and caches the result in `thinkingControlCache`. Settings tab no longer wipes the cache on close. Generic 400 field-strip retry for temperature/repetition_penalty. Stream path field-strip fix (was dead code). `[DEBUG-400]` refetch limited to 400-class errors (was firing on 429 quota). Fallback notices now localized in all 8 languages (was hard-coded EN). Console diagnostic noise reduced.
 
 ### Implemented (v1.19.0) — Ingest Quality & Cost Hardening (2026-06-16)
 
@@ -115,6 +119,8 @@ Documented in `~/.claude/projects/.../memory/project_v1.19.0_query_evolution.md`
 
 | Version | Date | Headline |
 |---------|------|----------|
+| **1.19.1** | 2026-06-17 | Gemini HTTP 400 hotfix (Closes #137) — 3-tier dialect fallback, settings tab cache persistence, stream field-strip fix |
+| **1.19.0** | 2026-06-16 | Ingest quality & cost hardening — advanced LLM params, quote grounding, compact slugs |
 | **1.18.2** | 2026-06-12 | Custom extraction limits hard-enforced (Closes #120) + #114 tags preservation + #111 slug casing |
 | **1.18.1** | 2026-06-11 | Obsidian review compliance (document ban + prefer-active-doc) |
 | **1.18.0** | 2026-06-10 | Tag controlled vocabulary (Closes #85) |

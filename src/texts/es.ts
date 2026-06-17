@@ -103,6 +103,11 @@ export const ES_TEXTS = {
     errorUnknown: 'Error desconocido',
     savedNotice: '¡Configuración guardada!',
 
+    // Issue #137: Avisos de fallback de LLM
+    fallbackThinkingDialect: 'Control de pensamiento: cambiado al dialecto "{dialect}" (este proveedor usa un formato diferente). La salida no cambia.',
+    fallbackThinkingNone: 'Control de pensamiento completamente deshabilitado para este proveedor. Puede seguir apareciendo contenido de razonamiento; si ocurre, pruebe con otro modelo.',
+    fallbackParamStripped: 'El parámetro "{field}" no es compatible con este proveedor. Se ha eliminado de la solicitud; el comportamiento puede diferir de la configuración.',
+
     // Wiki Folder
     wikiSection: 'Configuración del Wiki',
     wikiFolderName: 'Carpeta Wiki',
@@ -406,12 +411,13 @@ export const ES_TEXTS = {
     advancedSettingsCustom: 'Personalizado',
     disableThinkingName: 'Deshabilitar pensamiento',
     disableThinkingDesc: 'Activado por defecto. Desactívalo solo si tu modelo produce resultados limpios y deseas mejorar la calidad de extracción. Desactivarlo aumenta el costo y puede causar resultados distorsionados en algunos modelos.',
+    // Issue #137: Notas de compatibilidad (breves; sin lista de proveedores)
     extractionTemperatureName: 'Temperatura de extracción',
-    extractionTemperatureDesc: 'Rango 0–2. Cuanto más bajo, más determinista y fiel es la salida del LLM. Cuanto más alto, más creativo. Déjalo vacío para usar el valor por defecto del proveedor.',
+    extractionTemperatureDesc: 'Rango 0–2. Cuanto más bajo, más determinista y fiel es la salida del LLM. Cuanto más alto, más creativo. Déjalo vacío para usar el valor por defecto del proveedor. Si su proveedor rechaza este valor, el plugin elimina el campo automáticamente y muestra un aviso único.',
     chatTemperatureName: 'Temperatura de consulta',
-    chatTemperatureDesc: 'Rango 0–2. Igual que la temperatura de extracción, pero solo afecta las respuestas de chat/consulta. Déjalo vacío para usar el valor por defecto del proveedor.',
+    chatTemperatureDesc: 'Rango 0–2. Igual que la temperatura de extracción, pero solo afecta las respuestas de chat/consulta. Déjalo vacío para usar el valor por defecto del proveedor. Si su proveedor rechaza este valor, el plugin elimina el campo automáticamente y muestra un aviso único.',
     repetitionPenaltyName: 'Penalización por repetición',
-    repetitionPenaltyDesc: 'Rango 0–2. Cuanto más alto, más se reducen los patrones repetitivos. Déjalo vacío para usar el valor por defecto del proveedor.',
+    repetitionPenaltyDesc: 'Rango 0–2. Cuanto más alto, más se reducen los patrones repetitivos. Déjalo vacío para usar el valor por defecto del proveedor. Nota de compatibilidad: muchos proveedores en la nube no aceptan este campo. El plugin lo elimina automáticamente en HTTP 400 y muestra un aviso único.',
     temperaturePlaceholder: 'vacío = valor por defecto del proveedor',
     lintDeadLinkSection: 'Enlaces rotos (detectados) [{count}]',
     lintEmptyPageSection: 'Páginas vacías (detectadas) [{count}]',

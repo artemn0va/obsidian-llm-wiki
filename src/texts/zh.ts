@@ -103,6 +103,11 @@ export const ZH_TEXTS = {
     errorUnknown: '未知错误',
     savedNotice: '设置已保存！',
 
+    // Issue #137: LLM 回退通知（请求中触发 thinking-dialect 回退或字段剥离时显示）
+    fallbackThinkingDialect: '思考控制：已切换至 "{dialect}" 方言（该提供商使用不同的思考控制字段格式）。输出内容不受影响。',
+    fallbackThinkingNone: '该提供商已完全关闭思考控制。模型仍可能产生推理内容；若出现，请尝试其他模型。',
+    fallbackParamStripped: '参数 "{field}" 不被该提供商支持。已从请求中移除；行为可能与配置不同。',
+
     // Wiki 文件夹
     wikiSection: 'Wiki 配置',
     wikiFolderName: 'Wiki 文件夹',
@@ -408,12 +413,13 @@ export const ZH_TEXTS = {
     advancedSettingsCustom: '自定义',
     disableThinkingName: '禁用思考',
     disableThinkingDesc: '请保持开启（默认）。仅当你的模型输出正常且希望提升提取效果时，再考虑关闭。关闭会增加成本，并可能在部分模型上导致乱码。',
+    // Issue #137: 兼容性提示（简短；不列举 provider，避免维护负担）
     extractionTemperatureName: '提取温度',
-    extractionTemperatureDesc: '范围 0–2。越低则 LLM 输出越确定、越忠于原文；越高则越有创意。留空表示使用提供商默认值。',
+    extractionTemperatureDesc: '范围 0–2。越低则 LLM 输出越确定、越忠于原文；越高则越有创意。留空表示使用提供商默认值。若提供商拒绝此值，插件会自动剥离该字段并显示一次性通知。',
     chatTemperatureName: '查询温度',
-    chatTemperatureDesc: '范围 0–2。与提取温度相同，但只影响聊天/查询回复。留空表示使用提供商默认值。',
+    chatTemperatureDesc: '范围 0–2。与提取温度相同，但只影响聊天/查询回复。留空表示使用提供商默认值。若提供商拒绝此值，插件会自动剥离该字段并显示一次性通知。',
     repetitionPenaltyName: '重复惩罚',
-    repetitionPenaltyDesc: '范围 0–2。越高则越能减少重复模式。留空表示使用提供商默认值。',
+    repetitionPenaltyDesc: '范围 0–2。越高则越能减少重复模式。留空表示使用提供商默认值。兼容性提示：许多云端提供商不接受此字段，插件会在 400 时自动剥离并显示一次性通知。',
     temperaturePlaceholder: '留空 = 提供商默认',
     lintDeadLinkSection: '断链（程序检测）[共 {count} 个]',
     lintEmptyPageSection: '空洞页面（程序检测）[共 {count} 个]',

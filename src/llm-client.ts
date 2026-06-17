@@ -1,11 +1,49 @@
-import { requestUrl } from 'obsidian';
+import { requestUrl, Notice } from 'obsidian';
 import { LLMClient } from './types';
 import { MAX_RETRIES, RETRY_BASE_DELAY_MS, MAX_TOKENS_BATCH } from './constants';
+import { getText } from './core/i18n';
 import { parseSSEEvents, SSEDelta } from './core/sse-parser';
 import { withTruncationRetry } from './core/truncation-retry';
 
+// Issue #137: thinking-control dialect state. Each OpenAI-compatible
+// backend uses a different field name for the same "disable thinking"
+// directive. We probe at Test Connection time and cache the result on
+// the client + in data.json so subsequent calls avoid the 400 round-trip.
+//   'anthropic' → thinking.type='disabled' (OpenAI, DeepSeek, xAI, OpenRouter)
+//   'openai'    → reasoning_effort='none'   (Gemini OpenAI-compat endpoint)
+//   'none'      → skip thinking control entirely (backend rejects both)
+export type ThinkingControlDialect = 'anthropic' | 'openai' | 'none';
+
+// #137: per-request fallback notices. Each fallback event is queued here;
+// emitted via Obsidian Notice once at the end of a request cycle so users
+// see one consolidated message instead of a stream of warnings.
+interface FallbackNotice {
+  level: 'info' | 'warn';
+  message: string;
+}
+const fallbackNoticesThisRequest: FallbackNotice[] = [];
+
+function flushFallbackNotices(): void {
+  if (fallbackNoticesThisRequest.length === 0) return;
+  // Take the highest-priority notice (last warn > first info) and show once.
+  // Multiple notices are joined for transparency; we don't aggregate into one
+  // to preserve the "what changed" semantics of each fallback event.
+  const summary = fallbackNoticesThisRequest.map(n => n.message).join(' / ');
+  fallbackNoticesThisRequest.length = 0;
+  try {
+    new Notice(summary, 5000);
+  } catch {
+    // Notice may not be available in non-Obsidian contexts (tests). Console
+    // already has the same message from logFallback.
+  }
+}
+
 // Shared retry helper — eliminates duplicated retry loops across all client classes.
 const RETRYABLE = /status 5\d{2}|status 429|overload|network|fetch|econnrefused|etimedout|timeout|abort/i;
+
+// Issue #137: hoisted 400-status detector. Used by both the 400-catch path
+// in createMessage / createMessageStream and by isThinkingControlError.
+const IS_400 = /status 400|HTTP 400|Bad Request/i;
 
 // Issue #248: tighter detection — must be a 400-class response AND mention a
 // rejected field/parameter. This avoids false positives from generic errors
@@ -15,12 +53,59 @@ const RETRYABLE = /status 5\d{2}|status 429|overload|network|fetch|econnrefused|
 // not be the actual problem.
 const isThinkingControlError = (e: unknown): boolean => {
   const msg = e instanceof Error ? e.message : '';
-  if (!/status 400|HTTP 400|Bad Request/i.test(msg)) return false;
+  if (!IS_400.test(msg)) return false;
   return /unknown field|unsupported field|invalid parameter|not supported|reasoning_effort|thinking/i.test(msg);
 };
 
 function errMsg(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
+}
+
+// #137: extract rejected field names from a 400 error body. Supports multiple
+// provider error formats:
+//   Gemini v1:  Unknown name "thinking": Cannot find field.
+//   Gemini v2:  temperature must be in the range [0.0, 2.0] but was 2.5
+//   Anthropic:  Unknown field: thinking
+//   Generic:    invalid parameter 'temperature'
+// Returns a deduplicated string[] of field names that the caller can cache
+// and pre-strip on future requests.
+function parseUnknownFields(err: unknown): string[] {
+  const errWithBody = err as { json?: unknown; text?: string; message?: string };
+  // If we have structured json, use the error.message field directly
+  // (avoids JSON-escaped quote mangling when running regex on .text).
+  let candidateText = '';
+  if (errWithBody.json && typeof errWithBody.json === 'object') {
+    const jsonObj = errWithBody.json as { error?: { message?: string } };
+    if (jsonObj.error?.message) candidateText = jsonObj.error.message;
+  }
+  if (!candidateText) {
+    candidateText = errWithBody.text
+                  ?? errWithBody.message
+                  ?? '';
+  }
+  if (!candidateText) return [];
+  const fields = new Set<string>();
+  // Gemini: Unknown name "thinking": Cannot find field.
+  for (const m of candidateText.matchAll(/Unknown name "([^"]+)"/g)) {
+    fields.add(m[1]);
+  }
+  // Gemini range/value errors: "temperature must be in the range ..."
+  for (const m of candidateText.matchAll(/\b([A-Za-z_][A-Za-z0-9_]*)\s+must be in the range/g)) {
+    fields.add(m[1]);
+  }
+  // Anthropic-style: Unknown field: thinking
+  for (const m of candidateText.matchAll(/Unknown field:?\s*([A-Za-z_][A-Za-z0-9_]*)/g)) {
+    fields.add(m[1]);
+  }
+  // Generic: invalid parameter 'temperature'
+  for (const m of candidateText.matchAll(/invalid parameter\s+['"]?([A-Za-z_][A-Za-z0-9_]*)/gi)) {
+    fields.add(m[1]);
+  }
+  return [...fields];
+}
+
+function logFallback(category: string, detail: string): void {
+  console.debug(`[LLMClient Fallback] ${category}: ${detail}`);
 }
 
 async function withRetry<T>(
@@ -498,12 +583,28 @@ export class OpenAICompatibleClient implements LLMClient {
   private apiKey: string;
   private baseUrl: string;
 
-  // Cached result from Test Connection probe. Read by createMessage to
-  // decide whether to inject thinking.type='disabled' on first attempt.
-  // true  → send thinking control (provider confirmed support)
-  // false → skip thinking control (provider returned 400 during probe)
-  // undefined → not yet probed; will attempt + fallback in-request
-  thinkingControlSupported?: boolean;
+  // Issue #137: thinking-control dialect state.
+  //
+  //   'anthropic' → backend accepts thinking.type='disabled' (OpenAI, DeepSeek, ...)
+  //   'openai'    → backend accepts reasoning_effort='none' (Gemini OpenAI-compat)
+  //   'none'      → backend rejects both; skip thinking control entirely
+  //   undefined   → not yet probed; will attempt with anthropic dialect first
+  //
+  // Maintained as a per-client cache. main.ts hydrates this from
+  // settings.thinkingControlCache on client construction.
+  thinkingControlDialect?: ThinkingControlDialect;
+
+  // #137: cross-request cache of field names this baseUrl has rejected.
+  // Populated lazily from 400 error bodies; pre-stripped on next request
+  // so we don't pay the probe round-trip again. Replaces ad-hoc
+  // chat_template_kwargs injection for the OpenAI dialect fallback.
+  unsupportedFields: Set<string> = new Set();
+
+  // #137: language tag for localized fallback notices. Wired by
+  // createLLMClient so that queueFallbackNotice can resolve templates via
+  // getText() instead of hard-coding TEXTS.en (which would discard the
+  // per-locale translations just added to the 8 text files).
+  language: 'en' | 'zh' | 'ja' | 'ko' | 'de' | 'fr' | 'es' | 'pt' = 'en';
 
   constructor(apiKey: string, baseUrl?: string) {
     this.apiKey = apiKey;
@@ -564,21 +665,10 @@ export class OpenAICompatibleClient implements LLMClient {
     // response_format: json_object is omitted for OpenAI-compatible endpoints (LM Studio,
     // Ollama, etc.) because many local backends reject it — the prompt instruction + prefilled
     // "{" is sufficient to enforce JSON output.
-    const body: Record<string, unknown> = {
-      model: params.model,
-      max_tokens: params.max_tokens,
-      messages
-    };
-    if (params.temperature !== undefined) body.temperature = params.temperature;
-    if (params.repetition_penalty !== undefined) body.repetition_penalty = params.repetition_penalty;
-    if (params.chat_template_kwargs !== undefined) body.chat_template_kwargs = params.chat_template_kwargs;
-    // Unified thinking control: use Anthropic-style `thinking.type` which
-    // works for DeepSeek and Anthropic. Cache from Test Connection probe
-    // (`thinkingControlSupported`) gates the attempt: true → send, false → skip,
-    // undefined (not probed) → try anyway (fallback handles 400).
-    if (params.enableThinking === false && this.thinkingControlSupported !== false) {
-      body.thinking = { type: 'disabled' };
-    }
+    // Issue #137: body is now built by buildRequestBody which applies the
+    // dialect-aware thinking field + pre-strips unsupportedFields.
+    const body = this.buildRequestBody(params, messages, false);
+    console.debug('[OPENAI-DEBUG] buildRequestBody result reasoning_effort:', body.reasoning_effort, 'thinking:', body.thinking !== undefined, 'dialect:', this.thinkingControlDialect, 'params.enableThinking:', params.enableThinking);
 
     const doRequest = (bodyToUse: Record<string, unknown>) =>
       withRetry(async () => {
@@ -594,10 +684,56 @@ export class OpenAICompatibleClient implements LLMClient {
           const status = (err as { status?: number }).status;
           const json = (err as { json?: unknown }).json;
           const text = (err as { text?: string }).text;
-          if (status === 400) {
-            console.error('[OpenAICompat Debug] 400 error body:', JSON.stringify(json) || text || 'no body');
-            console.error('[OpenAICompat Debug] Request body size:', JSON.stringify(bodyToUse).length);
-            console.error('[OpenAICompat Debug] Model:', params.model, '| max_tokens:', params.max_tokens);
+          const errMessage = (err as { message?: string }).message ?? '';
+          // Detect 400 either via status field or via message text (matches
+          // Gemini "Bad Request: ..." or "status 400: ..." formats).
+          // We restrict the DEBUG-400 capture-and-re-fetch path to 400
+          // specifically: 429 is a rate-limit/quota issue where the body
+          // usually contains a human-readable retry hint but the caller's
+          // withRetry handles backoff automatically. Re-fetching on 429
+          // would burn additional quota on a user who is already throttled.
+          const is400 = status === 400
+            || IS_400.test(errMessage);
+          if (is400) {
+            // #137 debug: full error object breakdown. Obsidian requestUrl
+            // throws on 4xx without the response body. We manually re-fetch
+            // to capture what Gemini actually said. Logged at debug level
+            // (not error) because the in-request dialect fallback chain
+            // expects one 400 per rejected tier (e.g. Gemini rejects
+            // thinking.type='disabled'); only escalate to error if no
+            // fallback tier succeeds — that surfaces in the outer catch.
+            try {
+              const errObj = err as Record<string, unknown>;
+              console.debug('[DEBUG-400] full error keys:', Object.keys(errObj));
+              console.debug('[DEBUG-400] status:', status, 'message:', errMessage);
+              console.debug('[DEBUG-400] err.json:', json, 'err.text:', text);
+            } catch { /* ok */ }
+            // #137 debug: Obsidian requestUrl throws on 4xx WITHOUT the response
+            // body. To see what Gemini actually returned, we use the browser's
+            // native fetch() API. This is DEBUG ONLY — fire-and-forget, results
+            // logged to console.debug only.
+            try {
+              void window.fetch(this.baseUrl + '/chat/completions', {
+                method: 'POST',
+                headers: this.getHeaders(),
+                body: JSON.stringify(bodyToUse),
+              }).then(async (resp) => {
+                const respBody = await resp.text();
+                console.debug('[DEBUG-400] Gemini raw error response (re-fetch):', resp.status, respBody.substring(0, 2000));
+              }).catch((fetchErr: unknown) => {
+                console.debug('[DEBUG-400] Re-fetch also failed:', String(fetchErr));
+              });
+            } catch { /* fire-and-forget; ok if fails */ }
+            // #137: parse rejected field names from the 400 body so the
+            // caller's catch can strip them and retry.
+            const unknown = parseUnknownFields(err);
+            if (unknown.length > 0) {
+              for (const f of unknown) this.unsupportedFields.add(f);
+              logFallback('field-strip', `fields rejected by ${this.baseUrl}: ${unknown.join(', ')}`);
+            }
+            console.debug('[OpenAICompat Debug] 400 error body:', JSON.stringify(json) || text || 'no body');
+            console.debug('[OpenAICompat Debug] Request body size:', JSON.stringify(bodyToUse).length);
+            console.debug('[OpenAICompat Debug] Model:', params.model, '| max_tokens:', params.max_tokens);
           }
           throw err;
         }
@@ -620,7 +756,12 @@ export class OpenAICompatibleClient implements LLMClient {
       const initialText = data.choices?.[0]?.message?.content || '';
 
       return withTruncationRetry<{ choices: NonNullable<typeof data.choices>; initialText: string; usage?: typeof data.usage }>({
-        initialFn: async () => ({ choices: initialChoices ?? [], initialText, usage: data.usage }),
+        initialFn: async () => {
+          // #137: confirm dialect on first successful response. The body
+          // that produced this 200 is the correct dialect for this baseUrl.
+          this.confirmDialectOnSuccess(bodyToUse);
+          return { choices: initialChoices ?? [], initialText, usage: data.usage };
+        },
         retryFn: async (retryTokens) => {
           const retryResponse = await requestUrl({
             url: this.baseUrl + '/chat/completions',
@@ -645,25 +786,173 @@ export class OpenAICompatibleClient implements LLMClient {
     try {
       return await doRequest(body);
     } catch (e) {
+      // #137 Tier 1: thinking-dialect 400 → fall back to next dialect.
       if (params.enableThinking === false && isThinkingControlError(e)) {
-        // Issue #245: remember that this baseUrl rejects thinking control
-        // so subsequent calls skip the probe-and-fail round-trip.
-        this.thinkingControlSupported = false;
-        console.debug(`[OpenAICompat] thinking.type='disabled' not supported by ${this.baseUrl}, falling back — retrying with chat_template_kwargs`);
-        const fallbackBody: Record<string, unknown> = {
-          model: params.model,
-          max_tokens: params.max_tokens,
-          messages: params.system
-            ? [{ role: 'system' as const, content: params.system }, ...params.messages]
-            : params.messages,
-        };
-        // Auto-fallback to chat-template kwarg for runtimes that reject
-        // Anthropic-style thinking control (e.g. LM Studio MLX, some Ollama).
-        fallbackBody.chat_template_kwargs = { enable_thinking: false };
-        return await doRequest(fallbackBody);
+        return await this.applyThinkingDialectFallback(body, params, messages, doRequest);
+      }
+      // #137 generic: backend rejected one or more fields (Gemini "temperature
+      // must be in the range...", "Unknown name 'repetition_penalty'"). The
+      // catch inside doRequest already populated unsupportedFields; retry with
+      // those fields stripped.
+      const stripped = this.retryBodyWithStrippedFields(body);
+      if (stripped !== null) {
+        logFallback('field-strip-retry', `retrying without: ${[...this.unsupportedFields].join(', ')}`);
+        this.queueFallbackNotice('paramStripped', [...this.unsupportedFields].join(', '));
+        flushFallbackNotices();
+        return await doRequest(stripped);
       }
       throw e;
     }
+  }
+
+  // Issue #137: build the request body with dialect-aware thinking control
+  // and pre-strip any fields this baseUrl has previously rejected.
+  //
+  //   dialect=anthropic → thinking.type='disabled'
+  //   dialect=openai    → reasoning_effort='none'
+  //   dialect=none      → no thinking control field
+  //   dialect=undefined → assume anthropic (probe will correct on 400)
+  //
+  // Note: chat_template_kwargs is no longer injected here. v1.19.0 used it
+  // as the fallback path, but #137 showed that Gemini rejects it as well.
+  // Local backends that accept it (Ollama MLX) still receive it from the
+  // wrapper (see llm-client-wrapper.ts injection).
+  private buildRequestBody(
+    params: {
+      model: string;
+      max_tokens: number;
+      temperature?: number;
+      repetition_penalty?: number;
+      chat_template_kwargs?: Record<string, unknown>;
+      enableThinking?: boolean;
+    },
+    messages: Array<{role: 'system' | 'user' | 'assistant'; content: string}>,
+    streaming: boolean,
+  ): Record<string, unknown> {
+    const body: Record<string, unknown> = {
+      model: params.model,
+      max_tokens: params.max_tokens,
+      messages,
+    };
+    if (streaming) body.stream = true;
+
+    // #137: pre-strip fields this baseUrl has already rejected.
+    if (params.temperature !== undefined && !this.unsupportedFields.has('temperature')) {
+      body.temperature = params.temperature;
+    }
+    if (params.repetition_penalty !== undefined && !this.unsupportedFields.has('repetition_penalty')) {
+      body.repetition_penalty = params.repetition_penalty;
+    }
+    if (params.chat_template_kwargs !== undefined && !this.unsupportedFields.has('chat_template_kwargs')) {
+      body.chat_template_kwargs = params.chat_template_kwargs;
+    }
+
+    // #137: dialect-aware thinking control field selection.
+    if (params.enableThinking === false) {
+      const dialect = this.thinkingControlDialect ?? 'anthropic';
+      if (dialect === 'anthropic') {
+        body.thinking = { type: 'disabled' };
+      } else if (dialect === 'openai') {
+        body.reasoning_effort = 'none';
+      }
+      // dialect === 'none' → no field
+    }
+
+    return body;
+  }
+
+  // #137: invoked by doRequest on successful response when thinking control
+  // was sent. Confirms the dialect cache so subsequent calls skip the probe.
+  private confirmDialectOnSuccess(body: Record<string, unknown>): void {
+    if (body.thinking !== undefined && this.thinkingControlDialect !== 'anthropic') {
+      this.thinkingControlDialect = 'anthropic';
+    } else if (body.reasoning_effort !== undefined && this.thinkingControlDialect !== 'openai') {
+      this.thinkingControlDialect = 'openai';
+    }
+  }
+
+  // #137: shared field-strip retry helper. Returns a new body with
+  // unsupportedFields removed, or null if nothing was actually stripped
+  // (so the caller knows to fall through to the original error path).
+  // Used by both the non-stream and stream 400 catch blocks.
+  private retryBodyWithStrippedFields(body: Record<string, unknown>): Record<string, unknown> | null {
+    if (this.unsupportedFields.size === 0) return null;
+    const retryBody: Record<string, unknown> = { ...body };
+    let changed = false;
+    for (const f of this.unsupportedFields) {
+      if (f in retryBody) {
+        delete retryBody[f];
+        changed = true;
+      }
+    }
+    return changed ? retryBody : null;
+  }
+
+  // Issue #137: 3-tier dialect fallback chain.
+  //   Tier 1: anthropic → openai (thinking.type → reasoning_effort)
+  //   Tier 2: openai → none (drop thinking field entirely)
+  //
+  // Each tier reuses buildRequestBody with a forced dialect override so
+  // the retry inherits the unsupportedFields pre-strip (a previous Tier-1
+  // failure may have populated unsupportedFields via the catch in
+  // doRequest). Building the retry body by hand would skip that strip
+  // and risk re-sending fields the backend just rejected.
+  private async applyThinkingDialectFallback(
+    body: Record<string, unknown>,
+    params: { model: string; max_tokens: number; temperature?: number; repetition_penalty?: number; chat_template_kwargs?: Record<string, unknown>; enableThinking?: boolean },
+    messages: Array<{role: 'system' | 'user' | 'assistant'; content: string}>,
+    doRequest: (body: Record<string, unknown>) => Promise<string>,
+  ): Promise<string> {
+    const sentThinking = body.thinking !== undefined;
+    const sentReasoning = body.reasoning_effort !== undefined;
+    const startedAtDialect = this.thinkingControlDialect;
+    const reachedTier2 = sentThinking
+      && (startedAtDialect === undefined || startedAtDialect === 'anthropic');
+
+    // Tier 1: anthropic → openai (swap thinking for reasoning_effort)
+    if (reachedTier2) {
+      this.thinkingControlDialect = 'openai';
+      logFallback('thinking-dialect', `anthropic → openai (reasoning_effort) for ${this.baseUrl}`);
+      this.queueFallbackNotice('thinkingDialect', 'openai (reasoning_effort)');
+      try {
+        return await doRequest(this.buildRequestBody(params, messages, false));
+      } catch (e2) {
+        if (!isThinkingControlError(e2)) throw e2;
+        // fall through to tier 2
+      }
+    }
+
+    // Tier 2: openai → none (drop both fields).
+    // Triggered either when we just transitioned out of Tier 1, or when
+    // the cached dialect is already 'openai' and the body sent
+    // reasoning_effort. Set dialect='none' BEFORE buildRequestBody — the
+    // body builder reads this.thinkingControlDialect to decide whether
+    // to emit a thinking field.
+    if (reachedTier2 || sentReasoning) {
+      this.thinkingControlDialect = 'none';
+      logFallback('thinking-dialect', `openai → none (no thinking control) for ${this.baseUrl}`);
+      this.queueFallbackNotice('thinkingNone');
+      return await doRequest(this.buildRequestBody(params, messages, false));
+    }
+
+    // Tier 3: already at none — re-throw original error (caller will surface it)
+    throw new Error(
+      `Thinking control rejected by ${this.baseUrl} for all known dialects (anthropic, openai, none). ` +
+      'The provider may not support disabling thinking. Try a different model or disable "Enable thinking" in Advanced settings.'
+    );
+  }
+
+  // #137: queue a localized fallback notice for the next flushFallbackNotices() call.
+  private queueFallbackNotice(kind: 'thinkingDialect' | 'thinkingNone' | 'paramStripped', detail?: string): void {
+    let msg = '';
+    if (kind === 'thinkingDialect') {
+      msg = getText(this.language, 'fallbackThinkingDialect').replace('{dialect}', detail ?? 'openai');
+    } else if (kind === 'thinkingNone') {
+      msg = getText(this.language, 'fallbackThinkingNone');
+    } else if (kind === 'paramStripped') {
+      msg = getText(this.language, 'fallbackParamStripped').replace('{field}', detail ?? '');
+    }
+    if (msg) fallbackNoticesThisRequest.push({ level: 'warn', message: msg });
   }
 
   async createMessageStream(params: {
@@ -686,26 +975,36 @@ export class OpenAICompatibleClient implements LLMClient {
           }
         ];
 
-    const body: Record<string, unknown> = {
-      model: params.model,
-      max_tokens: params.max_tokens,
-      messages,
-      stream: true
-    };
-    if (params.temperature !== undefined) body.temperature = params.temperature;
-    if (params.repetition_penalty !== undefined) body.repetition_penalty = params.repetition_penalty;
-    if (params.enableThinking === false && this.thinkingControlSupported !== false) {
-      body.thinking = { type: 'disabled' };
-    }
+    // Issue #137: stream path uses the same dialect-aware body builder.
+    const body = this.buildRequestBody(params, messages, /* streaming */ true);
 
     const doRequest = (bodyToUse: Record<string, unknown>) =>
       withRetry(async () => {
-        const response = await requestUrl({
-          url: this.baseUrl + '/chat/completions',
-          method: 'POST',
-          headers: this.getHeaders(),
-          body: JSON.stringify(bodyToUse)
-        });
+        let response: { json: unknown; status: number; text: string; headers: Record<string, string> };
+        try {
+          response = await requestUrl({
+            url: this.baseUrl + '/chat/completions',
+            method: 'POST',
+            headers: this.getHeaders(),
+            body: JSON.stringify(bodyToUse)
+          });
+        } catch (err: unknown) {
+          // #137: parse rejected field names from the 400 error so
+          // unsupportedFields is populated even on stream requests,
+          // enabling the generic field-strip retry at line 1041.
+          // (The non-stream createMessage has the same pattern.)
+          const status = (err as { status?: number }).status;
+          const errMessage = (err as { message?: string }).message ?? '';
+          const is400 = status === 400 || IS_400.test(errMessage);
+          if (is400) {
+            const unknown = parseUnknownFields(err);
+            if (unknown.length > 0) {
+              for (const f of unknown) this.unsupportedFields.add(f);
+              logFallback('field-strip', `fields rejected by ${this.baseUrl}: ${unknown.join(', ')}`);
+            }
+          }
+          throw err;
+        }
 
         const responseText = response.text;
 
@@ -754,17 +1053,18 @@ export class OpenAICompatibleClient implements LLMClient {
       return await doRequest(body);
     } catch (e) {
       if (params.enableThinking === false && isThinkingControlError(e)) {
-        // Issue #245: cache the negative result so we don't pay the
-        // 400-error round-trip on every subsequent call to this baseUrl.
-        this.thinkingControlSupported = false;
-        console.debug(`[OpenAICompat SSE] thinking.type='disabled' not supported by ${this.baseUrl}, falling back`);
-        const fallbackBody: Record<string, unknown> = {
-          model: params.model,
-          max_tokens: params.max_tokens,
-          messages,
-          stream: true,
-        };
-        return await doRequest(fallbackBody);
+        // Issue #137: stream path uses the same 3-tier dialect fallback.
+        return await this.applyThinkingDialectFallback(body, params, messages, doRequest);
+      }
+      // #137 generic: 400-field-rejection in stream path. Same pre-strip retry.
+      if ((e as Error).message && IS_400.test((e as Error).message)) {
+        const stripped = this.retryBodyWithStrippedFields(body);
+        if (stripped !== null) {
+          logFallback('field-strip-retry', `stream retrying without: ${[...this.unsupportedFields].join(', ')}`);
+          this.queueFallbackNotice('paramStripped', [...this.unsupportedFields].join(', '));
+          flushFallbackNotices();
+          return await doRequest(stripped);
+        }
       }
       throw e;
     }

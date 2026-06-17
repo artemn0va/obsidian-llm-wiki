@@ -119,9 +119,18 @@ export interface LLMWikiSettings {
   llmReady: boolean;
 
   // Thinking control probe cache (key = baseUrl). Populated at Test Connection time.
-  // true  → provider accepts thinking.type='disabled'
-  // false → provider returned 400; subsequent calls skip thinking control
-  thinkingControlCache?: Record<string, boolean>;
+  //
+  // #137: schema widened to a dialect string so we can pick the right
+  // thinking-control field per provider. Old v1.19.0 boolean values are
+  // migrated on read in main.ts (true → 'anthropic', false → 'none') so
+  // existing data.json files continue to work.
+  //
+  //   'anthropic' → backend accepts thinking.type='disabled'
+  //                 (OpenAI, DeepSeek, xAI Grok, OpenRouter, ...)
+  //   'openai'    → backend accepts reasoning_effort='none' but not thinking
+  //                 (Gemini OpenAI-compat endpoint)
+  //   'none'      → backend rejects both; skip thinking control entirely
+  thinkingControlCache?: Record<string, 'anthropic' | 'openai' | 'none' | boolean>;
 
   // Issue #99 v2 / v3: when true (default), createMessage sends a directive
   // to suppress the model's reasoning output. Setting name kept for data.json

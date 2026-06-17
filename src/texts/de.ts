@@ -103,6 +103,11 @@ export const DE_TEXTS = {
     errorUnknown: 'Unbekannter Fehler',
     savedNotice: 'Einstellungen gespeichert!',
 
+    // Issue #137: LLM-Fallback-Hinweise
+    fallbackThinkingDialect: 'Denksteuerung: Zum Dialekt "{dialect}" gewechselt (dieser Anbieter verwendet ein anderes Format für die Denksteuerung). Ausgabe unverändert.',
+    fallbackThinkingNone: 'Denksteuerung für diesen Anbieter vollständig deaktiviert. Es können weiterhin Reasoning-Inhalte erscheinen; falls ja, versuchen Sie ein anderes Modell.',
+    fallbackParamStripped: 'Parameter "{field}" wird von diesem Anbieter nicht unterstützt. Aus der Anfrage entfernt; Verhalten kann von der Konfiguration abweichen.',
+
     // Wiki Folder
     wikiSection: 'Wiki-Konfiguration',
     wikiFolderName: 'Wiki-Ordner',
@@ -406,12 +411,13 @@ export const DE_TEXTS = {
     advancedSettingsCustom: 'Benutzerdefiniert',
     disableThinkingName: 'Thinking deaktivieren',
     disableThinkingDesc: 'Standardmäßig eingeschaltet. Nur ausschalten, wenn Ihr Modell saubere Ausgaben liefert und Sie die Extraktionsqualität verbessern möchten. Das Ausschalten erhöht die Kosten und kann bei manchen Modellen zu verstümmelten Ausgaben führen.',
+    // Issue #137: Kompatibilitätshinweise (kurz gehalten; keine Provider-Liste)
     extractionTemperatureName: 'Extraktionstemperatur',
-    extractionTemperatureDesc: 'Bereich 0–2. Niedrigere Werte machen die LLM-Ausgabe deterministischer und originalgetreuer. Höhere Werte machen sie kreativer. Leer lassen = Provider-Standard.',
+    extractionTemperatureDesc: 'Bereich 0–2. Niedrigere Werte machen die LLM-Ausgabe deterministischer und originalgetreuer. Höhere Werte machen sie kreativer. Leer lassen = Provider-Standard. Lehnt Ihr Anbieter diesen Wert ab, entfernt das Plugin das Feld automatisch und zeigt einen einmaligen Hinweis.',
     chatTemperatureName: 'Abfragetemperatur',
-    chatTemperatureDesc: 'Bereich 0–2. Wie Extraktionstemperatur, betrifft aber nur Chat-/Query-Antworten. Leer lassen = Provider-Standard.',
+    chatTemperatureDesc: 'Bereich 0–2. Wie Extraktionstemperatur, betrifft aber nur Chat-/Query-Antworten. Leer lassen = Provider-Standard. Lehnt Ihr Anbieter diesen Wert ab, entfernt das Plugin das Feld automatisch und zeigt einen einmaligen Hinweis.',
     repetitionPenaltyName: 'Wiederholungsstrafe',
-    repetitionPenaltyDesc: 'Bereich 0–2. Höhere Werte reduzieren Wiederholungen. Leer lassen = Provider-Standard.',
+    repetitionPenaltyDesc: 'Bereich 0–2. Höhere Werte reduzieren Wiederholungen. Leer lassen = Provider-Standard. Kompatibilitätshinweis: Viele Cloud-Anbieter akzeptieren dieses Feld nicht. Das Plugin entfernt es bei HTTP 400 automatisch und zeigt einen einmaligen Hinweis.',
     temperaturePlaceholder: 'leer = Provider-Standard',
     lintDeadLinkSection: 'Defekte Links (erkannt) [{count}]',
     lintEmptyPageSection: 'Leere Seiten (erkannt) [{count}]',

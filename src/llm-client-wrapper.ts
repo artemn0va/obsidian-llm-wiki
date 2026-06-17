@@ -4,12 +4,18 @@
 // parameter explicitly and when the user has configured a value.
 //
 // Issue #99: disableThinking (data.json field, default true) sends a
-// thinking-control directive. If the first directive (`thinking.type=
-// 'disabled'`) is rejected, the client auto-falls back to the
-// chat-template kwarg — the wrapper only passes the boolean toggle.
+// thinking-control directive. The LLM client handles all dialect-level
+// fallback internally (anthropic → openai → none, see llm-client.ts
+// OpenAICompatibleClient). The wrapper only forwards the boolean toggle.
 // Issue #128: extractionTemperature / chatTemperature inject `temperature`.
 // Issue #128 follow-up: repetitionPenalty injects `repetition_penalty`.
 // Issue #75: maxTokensPerCall cap wraps max_tokens via capMaxTokens.
+//
+// Note: v1.19.0 used to inject chat_template_kwargs here as a thinking-
+// control fallback. #137 removed that — the OpenAICompatibleClient now
+// has its own complete dialect fallback chain, and Gemini (and other
+// modern backends) reject chat_template_kwargs outright. Wrappers must
+// stay passive; dialect logic lives in the client.
 
 import { LLMClient } from './types';
 import { capMaxTokens } from './core/token-cap';
@@ -41,7 +47,8 @@ export function wrapWithAdvancedSettings(
       ...(capTokens ? { max_tokens: capMaxTokens(params.max_tokens, { maxTokensPerCall: settings.maxTokensPerCall }), maxTokensPerCall: settings.maxTokensPerCall } : {}),
       ...(params.temperature === undefined && settings.extractionTemperature !== undefined ? { temperature: settings.extractionTemperature } : {}),
       ...(params.repetition_penalty === undefined && settings.repetitionPenalty !== undefined ? { repetition_penalty: settings.repetitionPenalty } : {}),
-      ...(params.chat_template_kwargs === undefined && settings.enableThinking === false ? { chat_template_kwargs: { enable_thinking: false } } : {}),
+      // #137: chat_template_kwargs injection removed — client handles dialect
+      // fallback internally. Wrapper stays passive for thinking-control.
     });
   };
 

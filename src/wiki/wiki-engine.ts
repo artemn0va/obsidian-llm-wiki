@@ -207,6 +207,10 @@ export class WikiEngine {
     return fixPollutedPage(this.ctx, oldPath, newBasename);
   }
 
+  /** Issue #137: get the current LLM client. All consumers (page-factory,
+   * source-analyzer, conversation-ingestor, contradictions) get their client
+   * via this getter, which forwards through the shared closure `() => this.llmClient`
+   * that main.ts updates via `initializeLLMClient()`. */
   private get client(): LLMClient {
     const c = this.getLLMClient();
     if (!c) throw new Error('LLM Client not initialized');

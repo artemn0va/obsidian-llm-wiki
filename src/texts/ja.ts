@@ -103,6 +103,11 @@ export const JA_TEXTS = {
     errorUnknown: '不明なエラー',
     savedNotice: '設定を保存しました！',
 
+    // Issue #137: LLM フォールバック通知
+    fallbackThinkingDialect: '思考制御：「{dialect}」方言に切り替えました（このプロバイダーは別の思考制御フィールド形式を使用します）。出力は変わりません。',
+    fallbackThinkingNone: 'このプロバイダーでは思考制御を完全に無効化しました。推論コンテンツが引き続き表示される場合があります。その場合は別のモデルを試してください。',
+    fallbackParamStripped: 'パラメータ「{field}」はこのプロバイダーでサポートされていません。リクエストから削除されました。動作は設定と異なる場合があります。',
+
     // Wiki Folder
     wikiSection: 'Wiki設定',
     wikiFolderName: 'Wiki フォルダー',
@@ -406,12 +411,13 @@ export const JA_TEXTS = {
     advancedSettingsCustom: 'カスタム',
     disableThinkingName: '思考を無効にする',
     disableThinkingDesc: 'デフォルトでオン。モデルの出力が正常で、抽出品質を向上させたい場合のみオフにしてください。オフにするとコストが増加し、一部のモデルで出力が乱れる可能性があります。',
+    // Issue #137: 互換性に関する注意事項（簡潔；プロバイダ一覧は省略）
     extractionTemperatureName: '抽出温度',
-    extractionTemperatureDesc: '範囲 0–2。低いほどLLMの出力は確定的で忠実に。高いほど創造的に。空欄 = プロバイダのデフォルト。',
+    extractionTemperatureDesc: '範囲 0–2。低いほどLLMの出力は確定的で忠実に。高いほど創造的に。空欄 = プロバイダのデフォルト。プロバイダがこの値を拒否した場合、プラグインは自動的にフィールドを削除し、通知を一度だけ表示します。',
     chatTemperatureName: 'クエリ温度',
-    chatTemperatureDesc: '範囲 0–2。抽出温度と同じですが、チャット/クエリの応答にのみ影響します。空欄 = プロバイダのデフォルト。',
+    chatTemperatureDesc: '範囲 0–2。抽出温度と同じですが、チャット/クエリの応答にのみ影響します。空欄 = プロバイダのデフォルト。プロバイダがこの値を拒否した場合、プラグインは自動的にフィールドを削除し、通知を一度だけ表示します。',
     repetitionPenaltyName: '繰り返しペナルティ',
-    repetitionPenaltyDesc: '範囲 0–2。高いほど繰り返しパターンを低減します。空欄 = プロバイダのデフォルト。',
+    repetitionPenaltyDesc: '範囲 0–2。高いほど繰り返しパターンを低減します。空欄 = プロバイダのデフォルト。互換性に関する注意：多くのクラウドプロバイダはこのフィールドを受け付けません。プラグインは HTTP 400 時に自動的に削除し、通知を一度だけ表示します。',
     temperaturePlaceholder: '空欄 = プロバイダのデフォルト',
     lintDeadLinkSection: 'デッドリンク（検出）[{count} 件]',
     lintEmptyPageSection: '空ページ（検出）[{count} 件]',

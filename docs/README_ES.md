@@ -25,7 +25,7 @@
   - [🔑 Configurar un Provider de LLM](#-configurar-un-provider-de-llm)
   - [🎮 Uso](#-uso)
   - [⚠️ Actualizando desde una Versión Anterior](#️-actualizando-desde-una-versión-anterior)
-- [⚡ Novedades de la v1.19.0](#-novedades-de-la-v1190)
+- [⚡ Novedades de la v1.19.1](#-novedades-de-la-v1191)
 - [✨ Características](#-características)
   - [📊 Calidad del Conocimiento](#-calidad-del-conocimiento)
   - [🛠️ Mantenimiento](#️-mantenimiento)
@@ -60,21 +60,17 @@ Escribe. La IA organiza. Pregunta. Así de simple.
 
 ---
 
-## ⚡ Novedades de la v1.19.0
+## ⚡ Novedades de la v1.19.1
 
-v1.19.0 es una **versión MINOR** centrada en la **calidad de ingesta y el endurecimiento de costes**. Añade un panel de parámetros avanzados del LLM, un escáner lint de verificación de citas, e inyección de listas compactas de slugs. Incluye Auto Smart Fix, espejo de barra de estado, y normalización de sources – contribuciones de la comunidad.
+v1.19.1 es un **PATCH hotfix** que resuelve errores HTTP 400 de Gemini en la ingesta (Issue #137) mediante una cadena de reserva de dialecto de control de pensamiento de 3 niveles. El cliente compatible con OpenAI ahora descubre automáticamente el nombre de campo correcto para deshabilitar el pensamiento por baseUrl (thinking.type='disabled' → reasoning_effort='none' → none) y almacena en caché el resultado para que las solicitudes posteriores omitan la prueba. La pestaña de configuración ya no elimina el resultado de la prueba recién almacenado en caché al cerrarse. La repetición genérica de eliminación de campos (temperatura, penalización de repetición, etc.) y las correcciones de eliminación de campos en la ruta de stream completan la versión. Los usuarios de Gemini deberían tener la ingesta completamente funcional después de Test Connection.
 
-- **🔧 Parámetros avanzados del LLM.** Selector Predeterminado/Personalizado. Personalizado: interruptor razonamiento, temperatura extracción (0–2), temperatura consulta (0–2), penalización repetición (0–2).
-- **🔍 Verificación de citas (Issue #126).** @DocTpoint.
-- **📋 Lista compacta de slugs (Issue #116).** @DocTpoint.
-- **🛡️ Detección respuesta solo razonamiento (Issue #99).**
-- **⚡ Salto Stage 4 sin operación (Issue #131 Tier 1).** @DocTpoint.
-- **📊 Informe lint mejorado.**
-- **🔊 Espejo barra estado (PR #110).** @dmarchevsky.
-- **🤖 Auto Smart Fix (PR #109).**
-- **📝 Normalización sources escritura (PR #127).** @DocTpoint.
+- 🤖 **Corrección HTTP 400 de Gemini (Issue #137).** Nueva cadena de reserva de dialecto de control de pensamiento de 3 niveles (anthropic → openai → none) que prueba el nombre de campo correcto al momento de Test Connection y lo almacena en caché. Los parámetros avanzados se movieron arriba de Test Connection para un mejor flujo de trabajo.
+- 🛡️ **Reintento genérico de eliminación de campos 400.** Un conjunto unsupportedFields extrae los nombres de campo rechazados de los cuerpos de error; se eliminan previamente en solicitudes posteriores. También funciona en createMessageStream (era código muerto).
+- 🔊 **Avisos de reserva ahora localizados.** queueFallbackNotice() respeta la configuración de idioma del usuario: las 3 claves i18n (fallbackThinkingDialect, fallbackThinkingNone, fallbackParamStripped) ahora son realmente visibles en los 7 idiomas que no son inglés.
+- 🧹 **Múltiples simplificaciones de código.** IS_400 regex optimizado, helper retryBodyWithStrippedFields extraído, commitTempSettings() deduplica la fusión de configuración, applyThinkingDialectFallback reutiliza buildRequestBody (corrigiendo una fuga latente de unsupportedFields pre-strip).
+- 📊 **Ruido de diagnóstico de consola reducido.** [OpenAICompat Debug] cuerpo 400 degradado de console.error a console.debug; [DEBUG-400] re-fetch limitado a errores de clase 400 (se disparaba en errores de cuota 429).
 
-**Recomendamos a todos los usuarios actualizar.** Detalles : [CHANGELOG.md](../CHANGELOG.md).
+Ver CHANGELOG.md para más detalles.
 
 ## ✨ Características
 

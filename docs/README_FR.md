@@ -25,7 +25,7 @@
   - [🔑 Configuration d'un Provider LLM](#-configuration-dun-provider-llm)
   - [🎮 Utilisation](#-utilisation)
   - [⚠️ Mise à niveau depuis une version antérieure ?](#️-mise-à-niveau-depuis-une-version-antérieure-)
-- [⚡ Nouveautés de la v1.19.0](#-nouveautés-de-la-v1190)
+- [⚡ Nouveautés de la v1.19.1](#-nouveautés-de-la-v1191)
 - [✨ Fonctionnalités](#-fonctionnalités)
   - [📊 Qualité des connaissances](#-qualité-des-connaissances)
   - [🛠️ Maintenance](#️-maintenance)
@@ -60,21 +60,17 @@ Vous écrivez. L'IA organise. Vous interrogez. Rien de plus.
 
 ---
 
-## ⚡ Nouveautés de la v1.19.0
+## ⚡ Nouveautés de la v1.19.1
 
-v1.19.0 est une **version MINOR** axée sur la **qualité d'ingestion et le durcissement des coûts**. Elle ajoute un panneau de paramètres avancés du LLM (interrupteur de raisonnement, température, pénalité de répétition), un nouveau scanner de vérification des citations, et l'injection de liste compacte de slugs. Contributions communautaires : Auto Smart Fix, miroir de barre d'état, normalisation des sources. Conforme Six-Gate.
+v1.19.1 est un **correctif PATCH** qui résout les erreurs HTTP 400 de Gemini lors de l'ingestion (Issue #137) via une chaîne de repli à 3 niveaux du dialecte de contrôle de la réflexion. Le client compatible OpenAI découvre désormais automatiquement le nom de champ correct pour désactiver la réflexion par baseUrl (thinking.type='disabled' → reasoning_effort='none' → none) et met en cache le résultat afin que les requêtes suivantes sautent la sonde. L'onglet des paramètres n'efface plus le résultat de sonde fraîchement mis en cache lors de la fermeture. Les tentatives génériques de suppression de champ (température, pénalité de répétition, etc.) et les corrections de suppression de champ sur le chemin de stream complètent la version. Les utilisateurs de Gemini devraient avoir une ingestion pleinement fonctionnelle après Test Connection.
 
-- **🔧 Paramètres avancés du LLM.** Sélecteur Par défaut/Personnalisé. Personnalisé : interrupteur raisonnement, température extraction (0–2), température requête (0–2), pénalité répétition (0–2).
-- **🔍 Vérification des citations (Issue #126).** @DocTpoint.
-- **📋 Liste compacte de slugs (Issue #116).** @DocTpoint.
-- **🛡️ Détection réponse raisonnement seul (Issue #99).**
-- **⚡ Saut Stage 4 sans opération (Issue #131 Tier 1).** @DocTpoint.
-- **📊 Rapport lint amélioré.**
-- **🔊 Miroir barre d'état (PR #110).** @dmarchevsky.
-- **🤖 Auto Smart Fix (PR #109).**
-- **📝 Normalisation sources écriture (PR #127).** @DocTpoint.
+- 🤖 **Correction HTTP 400 Gemini (Issue #137).** Nouvelle chaîne de repli à 3 niveaux du dialecte de contrôle de la réflexion (anthropic → openai → none) qui teste le nom de champ correct au moment de Test Connection et le met en cache. Les paramètres avancés ont été déplacés au-dessus de Test Connection pour un meilleur flux de travail.
+- 🛡️ **Nouvelle tentative générique de suppression de champ 400.** Un ensemble unsupportedFields extrait les noms de champs rejetés des corps d'erreur ; ils sont pré-supprimés lors des requêtes suivantes. Fonctionne également sur createMessageStream (était du code mort).
+- 🔊 **Messages de repli désormais localisés.** queueFallbackNotice() respecte la langue de l'utilisateur – les 3 clés i18n (fallbackThinkingDialect, fallbackThinkingNone, fallbackParamStripped) sont désormais réellement visibles dans les 7 locales non anglaises.
+- 🧹 **Plusieurs simplifications de code.** IS_400 regex optimisé, helper retryBodyWithStrippedFields extrait, commitTempSettings() déduplique la fusion des paramètres, applyThinkingDialectFallback réutilise buildRequestBody (corrigeant une fuite latente de unsupportedFields pre-strip).
+- 📊 **Bruit de diagnostic console réduit.** [OpenAICompat Debug] corps 400 rétrogradé de console.error à console.debug ; [DEBUG-400] re- fetch limité aux erreurs de classe 400 (se déclenchait sur les erreurs de quota 429).
 
-**Nous recommandons à tous les utilisateurs de mettre à niveau.** Détails : [CHANGELOG.md](../CHANGELOG.md).
+Voir CHANGELOG.md pour les détails complets.
 
 ## ✨ Fonctionnalités
 

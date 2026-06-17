@@ -1,10 +1,13 @@
 # LLM Wiki Plugin Project Development Standards
 
-**Last Updated:** 2026-06-16
+**Last Updated:** 2026-06-17
 
 ---
 
-## Current Phase: v1.19.0 — Ingest Quality & Cost Hardening (Issue #99/#116/#126/#128) — Released 2026-06-16
+## Current Phase: v1.19.1 — Gemini HTTP 400 Hotfix (Issue #137) — Released 2026-06-17
+
+### Completed (v1.19.1) — Hotfix 2026-06-17
+- ✅ **Issue #137: Gemini HTTP 400.** 3-tier thinking-control dialect fallback chain (anthropic → openai → none). Settings tab no longer wipes `thinkingControlCache` on close. Generic field-strip retry for temperature/repetition_penalty. Stream path field-strip fix (was dead code). Fallback notices now localized (was hard-coded EN). Console noise reduced.
 
 ### Completed (v1.19.0) — Released 2026-06-16
 - ✅ **Issue #116: Compact slug list in analyzeSource prompt.** `buildCompactSlugList()` injects a sorted slug-only list of existing wiki pages so the LLM uses exact paths when creating `[[links]]`, reducing dead-link mismatches. Contributed by @DocTpoint.
@@ -17,7 +20,7 @@
 - ✅ **PR #127: Sources normalization in write path.** Contributed by @DocTpoint.
 - ✅ **Lint report enhanced:** summary includes ungroundedQuotes + tagViolations counts. `lintTagViolationSection` fully i18n'd.
 - ✅ **Internal refactoring:** lint-controller modularization (phases/report-builder), schema-analyze to schema/, LintContext to lint/types, lint-controller + lint-fixes into lint/ directory.
-- ✅ **Tests: 728 passing (was 549).** 34 test files, 0 regressions. 179 new tests since v1.17.0.
+- ✅ **Tests: 744 passing (was 728).** 36 test files, 0 regressions. +16 tests since v1.19.0 (new `llm-client-gemini-fallback` + `settings-thinkcache` suites).
 
 ### P0 — Bug fixes / quality regressions
 All v1.18.x P0 items closed. Next window opens with post-v1.19.0 feedback.

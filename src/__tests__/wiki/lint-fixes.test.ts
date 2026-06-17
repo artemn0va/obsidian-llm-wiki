@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isPageEmpty, detectPollutedPages, fixDoubleNestedWikiLinks, escapeRegex, normalizeFrontmatterDates } from '../../wiki/lint/fixer';
+import { isPageEmpty, detectPollutedPages, fixDoubleNestedWikiLinks, escapeRegex, normalizeFrontmatterDates } from '../../wiki/lint/utils';
 
 describe('fixDoubleNestedWikiLinks', () => {
   it('fixes double-nested with display text', () => {

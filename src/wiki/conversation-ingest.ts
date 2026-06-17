@@ -7,11 +7,9 @@ import {
   IngestReport,
 } from '../types';
 import { PROMPTS } from '../prompts';
-import {
-  slugify,
-  parseJsonResponse,
-  cleanMarkdownResponse,
-} from '../utils';
+import { slugify } from '../core/slug';
+import { parseJsonResponse } from '../core/json';
+import { cleanMarkdownResponse } from '../core/markdown';
 import { applySectionLabels } from './system-prompts';
 import { UNIVERSAL_LINK_CONSTRAINTS } from './prompts/constraints';
 import { TOKENS_CONVERSATION_EXTRACTION, TOKENS_CONVERSATION_PAGE, TOKENS_PAGE_GENERATION, TOKENS_QUERY_SAVE_DEDUP } from '../constants';

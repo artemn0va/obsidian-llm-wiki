@@ -1,7 +1,7 @@
 import { requestUrl, Notice } from 'obsidian';
 import { LLMClient } from './types';
 import { MAX_RETRIES, RETRY_BASE_DELAY_MS, MAX_TOKENS_BATCH } from './constants';
-import { getText } from './utils';
+import { getText } from './core/i18n';
 import { parseSSEEvents, SSEDelta } from './core/sse-parser';
 import { withTruncationRetry } from './core/truncation-retry';
 

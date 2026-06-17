@@ -1,7 +1,9 @@
 // Contradiction detection, tracking, and resolution — extracted from WikiEngine.
 
 import { EngineContext, ContradictionInfo } from '../types';
-import { slugify, parseFrontmatter, cleanMarkdownResponse } from '../utils';
+import { slugify } from '../core/slug';
+import { parseFrontmatter } from '../core/frontmatter';
+import { cleanMarkdownResponse } from '../core/markdown';
 import { TOKENS_CONTRADICTION } from '../constants';
 import { PROMPTS } from '../prompts';
 import {

@@ -3,7 +3,7 @@
 import { App, TFile, TFolder, Modal, FuzzySuggestModal, MarkdownRenderer, Component } from 'obsidian';
 import { IngestReport } from '../types';
 import { TEXTS } from '../texts';
-import { getText } from '../utils';
+import { getText } from '../core/i18n';
 
 export class FileSuggestModal extends FuzzySuggestModal<TFile> {
   onSelect: (file: TFile) => void;

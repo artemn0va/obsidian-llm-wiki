@@ -78,7 +78,10 @@ export function createLLMClient(settings: LLMWikiSettings): LLMClient {
   });
 }
 import { TEXTS } from './texts';
-import { slugify, parseFrontmatter, getText, normalizeVocabularyCsv } from './utils';
+import { getText } from './core/i18n';
+import { slugify } from './core/slug';
+import { parseFrontmatter } from './core/frontmatter';
+import { normalizeVocabularyCsv } from './core/tag-vocab';
 import { LLMWikiSettingTab } from './ui/settings';
 import { WikiEngine } from './wiki/wiki-engine';
 import { QueryModal } from './wiki/query-engine';

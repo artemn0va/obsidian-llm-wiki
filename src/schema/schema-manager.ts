@@ -3,7 +3,7 @@
 import { App, TFile } from 'obsidian';
 import { LLMWikiSettings, WikiSchema, SchemaSuggestion, VALID_ENTITY_TAGS, VALID_CONCEPT_TAGS, DEFAULT_ENTITY_TAG, DEFAULT_CONCEPT_TAG } from '../types';
 import { PROMPTS } from '../prompts';
-import { parseJsonResponse } from '../utils';
+import { parseJsonResponse } from '../core/json';
 import { TOKENS_SCHEMA_SUGGESTION } from '../constants';
 
 const SCHEMA_FILENAME = 'schema/config.md';

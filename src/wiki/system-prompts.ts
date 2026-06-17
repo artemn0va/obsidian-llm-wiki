@@ -2,7 +2,7 @@
 // Pure functions with no Obsidian vault dependencies.
 
 import { LLMWikiSettings, WIKI_LANGUAGES, ExtractionGranularity } from '../types';
-import { getActiveEntityTags, getActiveConceptTags } from '../utils';
+import { getActiveEntityTags, getActiveConceptTags } from '../core/tag-vocab';
 
 export function buildWikiLanguageDirective(settings: LLMWikiSettings): string {
   const lang = settings.wikiLanguage || 'en';

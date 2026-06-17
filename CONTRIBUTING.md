@@ -52,10 +52,20 @@ src/
 ├── main.ts              # Plugin entry point
 ├── types.ts             # Shared types + EngineContext
 ├── constants.ts         # Centralized constants (token budgets, notice durations, WIKI_SUBFOLDERS)
-├── utils.ts             # Utilities (slugify, parseJson, frontmatter parsing)
+├── texts.ts             # i18n texts (barrel, 8 languages)
 ├── llm-client.ts        # LLM clients (Anthropic via requestUrl, OpenAI-compatible)
 ├── llm-client-wrapper.ts # Advanced settings injection wrapper
 ├── core/                # Pure function modules (zero IO, fully testable)
+│   ├── i18n.ts                 # Type-safe i18n accessor
+│   ├── slug.ts                 # Slug computation + alias filtering
+│   ├── json.ts                 # JSON response parsing + repair
+│   ├── frontmatter.ts          # Frontmatter parse/merge/constraints
+│   ├── tag-vocab.ts            # Active tag vocabulary helpers
+│   ├── index-search.ts         # Index parsing + local keyword match
+│   ├── rate-limit.ts           # Rate-limit detection + notice formatting
+│   ├── report.ts               # Report truncation + heading nesting
+│   ├── arrays.ts               # Array coercion + source tag extraction
+│   ├── markdown.ts             # Markdown response cleanup
 │   ├── conflict-resolver.ts    # Conflict detection
 │   ├── dead-link-detector.ts   # Dead link identification
 │   ├── orphan-matcher.ts       # Orphan page matching
@@ -77,12 +87,19 @@ src/
 │   ├── system-prompts.ts # Language directive + section labels
 │   ├── lint/            # Lint subsystem
 │   │   ├── controller.ts         # Lint orchestration
-│   │   ├── fixer.ts              # Fix logic (LintFixer class)
 │   │   ├── fix-runners.ts        # Batch fix execution helpers
 │   │   ├── scanners.ts           # Scanners (dead links, orphans, aliases, quote grounding)
 │   │   ├── duplicate-detection.ts # Programmatic candidate generation
 │   │   ├── report-builder.ts     # Pure-function report markdown builder
 │   │   ├── types.ts              # LintContext, LintPhaseContext, findings
+│   │   ├── utils.ts              # Shared lint helpers
+│   │   ├── get-existing-pages.ts # Wiki page index reader
+│   │   ├── fix-dead-link.ts      # Dead-link correction
+│   │   ├── fill-empty-page.ts    # Empty-page expansion
+│   │   ├── delete-empty-stubs.ts # Empty stub deletion
+│   │   ├── link-orphan.ts        # Orphan page linking
+│   │   ├── merge-duplicates.ts   # Duplicate page merge
+│   │   ├── fix-polluted-page.ts  # Polluted basename rename
 │   │   └── phases/
 │   │       ├── preparation.ts    # Page read, link fix, sources normalize
 │   │       └── programmatic.ts   # Fast programmatic scanners
@@ -93,7 +110,7 @@ src/
 │   └── analyze.ts       # Schema-analyze with cancel wiring
 ├── ui/                  # Settings + Modals
 ├── texts/               # i18n (8 languages)
-└── __tests__/           # Unit tests (vitest, 728 tests across 34 files)
+└── __tests__/           # Unit tests (vitest, 697 tests across 43 files)
 ```
 
 ## Internationalization
@@ -139,12 +156,13 @@ graph TD
     QueryEngine -->|LLM select| selectRelevantPagesWithLLM["selectRelevantPagesWithLLM (Layer 3)"]
     QueryEngine -->|read| Vault
 
-    lint("lint/controller.ts") -->|dead links| scanDeadLinks
-    lint("lint/controller.ts") -->|orphans| scanOrphans
-    lint("lint/controller.ts") -->|duplicates| generateDuplicateCandidates
-    lint("lint/controller.ts") -->|scans| scanners["scanners.ts"]
-    lint("lint/controller.ts") -->|fixes| fix-runners["fix-runners.ts"]
-    lint("lint/controller.ts") -->|report| report-builder["report-builder.ts"]
+    lint("lint/controller.ts") -->|dead links| fix-dead-link["lint/fix-dead-link.ts"]
+    lint("lint/controller.ts") -->|empty pages| fill-empty-page["lint/fill-empty-page.ts"]
+    lint("lint/controller.ts") -->|orphans| link-orphan["lint/link-orphan.ts"]
+    lint("lint/controller.ts") -->|duplicates| merge-duplicates["lint/merge-duplicates.ts"]
+    lint("lint/controller.ts") -->|scans| scanners["lint/scanners.ts"]
+    lint("lint/controller.ts") -->|fix runners| fix-runners["lint/fix-runners.ts"]
+    lint("lint/controller.ts") -->|report| report-builder["lint/report-builder.ts"]
 
     SourceAnalyzer -->|iterative batch| LLMClient
     PageFactory -->|page generation| LLMClient

@@ -1,6 +1,6 @@
 import { detectAliasDeficiency, scanOrphans, scanTagViolations, scanDeadLinks, scanQuoteGrounding } from '../scanners';
-import { detectPollutedPages } from '../fixer';
-import { getText } from '../../../utils';
+import { detectPollutedPages } from '../utils';
+import { getText } from '../../../core/i18n';
 import { LintPhaseContext, ProgrammaticFindings, ScannerPage } from '../types';
 
 export interface ProgrammaticInput {

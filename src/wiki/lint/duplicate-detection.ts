@@ -2,7 +2,7 @@
 // bigram title similarity, and cross-language alias matching.
 // Extracted from lint-fixes.ts to keep the module focused.
 
-import { parseFrontmatter } from '../../utils';
+import { parseFrontmatter } from '../../core/frontmatter';
 
 export interface DuplicateCandidate {
   target: string;

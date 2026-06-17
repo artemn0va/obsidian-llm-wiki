@@ -15,7 +15,7 @@
  * no alias pipe.
  */
 
-import { computeSlug } from '../utils';
+import { computeSlug } from './slug';
 
 /**
  * Normalize a single raw source entry to its canonical form.

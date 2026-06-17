@@ -1,7 +1,8 @@
 // Lint scanner functions — extracted from lint-controller.ts for testability.
 // These have no Obsidian API dependencies and can be unit tested directly.
 
-import { parseFrontmatter, getActiveEntityTags, getActiveConceptTags, getActiveSourceTags } from '../../utils';
+import { parseFrontmatter } from '../../core/frontmatter';
+import { getActiveEntityTags, getActiveConceptTags, getActiveSourceTags } from '../../core/tag-vocab';
 import { LLMWikiSettings } from '../../types';
 
 export interface ScannerPage {

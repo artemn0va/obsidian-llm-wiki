@@ -13,19 +13,14 @@ import { PROMPTS } from '../prompts';
 import { ConflictResolver } from '../core/conflict-resolver';
 import { WIKI_SUBFOLDERS } from '../constants';
 import { TOKENS_DEDUP_RESOLUTION, TOKENS_PAGE_GENERATION, TOKENS_APPEND_REVIEWED } from '../constants';
-import {
-  slugify,
-  cleanMarkdownResponse,
-  parseFrontmatter,
-  mergeFrontmatter,
-  parseJsonResponse,
-  enforceFrontmatterConstraints,
-  truncateMentions,
-  filterRedundantAliases,
-} from '../utils';
+import { slugify, filterRedundantAliases } from '../core/slug';
+import { parseJsonResponse } from '../core/json';
+import { parseFrontmatter, mergeFrontmatter, enforceFrontmatterConstraints } from '../core/frontmatter';
+import { truncateMentions } from '../core/report';
+import { cleanMarkdownResponse } from '../core/markdown';
 import { UNIVERSAL_LINK_CONSTRAINTS } from './prompts/constraints';
 import { applySectionLabels, appendTagVocabularyToPrompt } from './system-prompts';
-import { getExistingWikiPages } from './lint/fixer';
+import { getExistingWikiPages } from './lint/get-existing-pages';
 
 // Wrap errors with entity/concept context for better diagnostics
 function contextualizeError(error: unknown, name: string, pageType: string): Error {

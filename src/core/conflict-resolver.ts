@@ -4,7 +4,7 @@
 // Three audit reviews (Issues #63/#64/#65, v1.13.0 deep dive, first-principles)
 // independently identified coupling in resolvePagePath as the top architecture debt.
 
-import { computeSlug } from '../utils';
+import { computeSlug } from './slug';
 import { WIKI_SUBFOLDERS } from '../constants';
 
 // ── Types ─────────────────────────────────────────────────────────

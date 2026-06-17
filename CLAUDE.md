@@ -1,13 +1,10 @@
 # LLM Wiki Plugin Project Development Standards
 
-**Last Updated:** 2026-06-17
+**Last Updated:** 2026-06-16
 
 ---
 
-## Current Phase: v1.19.1 — Gemini HTTP 400 Hotfix (Issue #137) — Released 2026-06-17
-
-### Completed (v1.19.1) — Hotfix 2026-06-17
-- ✅ **Issue #137: Gemini HTTP 400.** 3-tier thinking-control dialect fallback chain (anthropic → openai → none). Settings tab no longer wipes `thinkingControlCache` on close. Generic field-strip retry for temperature/repetition_penalty. Stream path field-strip fix (was dead code). Fallback notices now localized (was hard-coded EN). Console noise reduced.
+## Current Phase: v1.19.0+ — Core Module Refactor (utils.ts + LintFixer split) — In Progress
 
 ### Completed (v1.19.0) — Released 2026-06-16
 - ✅ **Issue #116: Compact slug list in analyzeSource prompt.** `buildCompactSlugList()` injects a sorted slug-only list of existing wiki pages so the LLM uses exact paths when creating `[[links]]`, reducing dead-link mismatches. Contributed by @DocTpoint.
@@ -20,7 +17,8 @@
 - ✅ **PR #127: Sources normalization in write path.** Contributed by @DocTpoint.
 - ✅ **Lint report enhanced:** summary includes ungroundedQuotes + tagViolations counts. `lintTagViolationSection` fully i18n'd.
 - ✅ **Internal refactoring:** lint-controller modularization (phases/report-builder), schema-analyze to schema/, LintContext to lint/types, lint-controller + lint-fixes into lint/ directory.
-- ✅ **Tests: 744 passing (was 728).** 36 test files, 0 regressions. +16 tests since v1.19.0 (new `llm-client-gemini-fallback` + `settings-thinkcache` suites).
+- ✅ **Core module refactor (post-v1.19.0).** `utils.ts` god-module split into 10 focused `core/` modules (i18n, slug, json, frontmatter, tag-vocab, index-search, rate-limit, report, arrays, markdown). `LintFixer` god-class split into 6 module-level functions under `wiki/lint/` plus shared `wiki/lint/utils.ts` and `get-existing-pages.ts`.
+- ✅ **Tests: 697 passing (was 728 before refactor, 31 old `utils.test.ts` tests replaced by 10 modular test files).** 43 test files, 0 regressions.
 
 ### P0 — Bug fixes / quality regressions
 All v1.18.x P0 items closed. Next window opens with post-v1.19.0 feedback.
@@ -32,7 +30,8 @@ All v1.18.x P0 items closed. Next window opens with post-v1.19.0 feedback.
 |------|--------|--------|
 | page-factory resolvePagePath LLM fallback + merge + append tests | 1 day | Deferred |
 | runLintWiki phase extraction completed in refactor (phases/controller split) | already done | ✅ |
-| LintFixer class split (707-line god class → 6 module-level functions) | 1 day | Deferred — fold into wiki-engine refactor |
+| LintFixer class split (707-line god class → 6 module-level functions) | 1 day | ✅ |
+| `utils.ts` god-module split into focused `core/` modules | 1 day | ✅ |
 | LintContext removal from fix-runners completed | already done | ✅ |
 
 ### P2 — Test infrastructure (deferred, high mock complexity)
@@ -47,8 +46,9 @@ All v1.18.x P0 items closed. Next window opens with post-v1.19.0 feedback.
 | Item | Effort |
 |------|--------|
 | Full lint-controller → lint/ directory integration (all paths) | already done ✅ |
-| LintFixer class → module-level functions | 1 day |
 | Restore true streaming for 3rd-party providers | 1-2 days |
+| Main.ts command logic extraction to `src/commands/` | 1.5-2 days |
+| WikiEngine service extraction (file/contradiction/conversation/index services) | 2-3 days |
 | Missing Concept Pages tracker | 2 days |
 
 ### Evaluated & Rejected
@@ -72,7 +72,6 @@ All v1.18.x P0 items closed. Next window opens with post-v1.19.0 feedback.
 src/
 ├── main.ts                         # Plugin entry point
 ├── types.ts                        # Shared types + EngineContext
-├── utils.ts                        # Utilities (slugify, parseJson, etc.)
 ├── texts.ts                        # i18n texts (barrel, 8 languages)
 ├── llm-client.ts                   # LLM clients
 ├── llm-client-wrapper.ts           # Advanced settings injection
@@ -86,12 +85,19 @@ src/
 │   ├── system-prompts.ts           # Language directive + labels
 │   ├── lint/                       # Lint subsystem
 │   │   ├── controller.ts           # Lint orchestration
-│   │   ├── fixer.ts                # Fix logic (LintFixer class)
 │   │   ├── fix-runners.ts          # Batch fix execution helpers
 │   │   ├── scanners.ts             # Scanners (dead links, orphans, aliases, quote grounding)
 │   │   ├── duplicate-detection.ts  # Programmatic candidate generation
 │   │   ├── report-builder.ts       # Pure-function report markdown builder
 │   │   ├── types.ts                # LintContext, LintPhaseContext, findings
+│   │   ├── utils.ts                # Shared lint helpers (isPageEmpty, detectPollutedPages, etc.)
+│   │   ├── get-existing-pages.ts   # Wiki page index reader
+│   │   ├── fix-dead-link.ts        # Dead-link correction
+│   │   ├── fill-empty-page.ts      # Empty-page expansion
+│   │   ├── delete-empty-stubs.ts   # Empty stub deletion
+│   │   ├── link-orphan.ts          # Orphan page linking
+│   │   ├── merge-duplicates.ts     # Duplicate page merge
+│   │   ├── fix-polluted-page.ts    # Polluted basename rename
 │   │   └── phases/
 │   │       ├── preparation.ts      # Page read, link fix, sources normalize
 │   │       └── programmatic.ts     # Fast programmatic scanners
@@ -104,6 +110,16 @@ src/
 │   ├── settings.ts                 # Settings panel
 │   └── modals.ts                   # Lint/Ingest/Query modals
 ├── core/                           # Pure function modules
+│   ├── i18n.ts                     # Type-safe i18n accessor
+│   ├── slug.ts                     # Slug computation + alias filtering
+│   ├── json.ts                     # JSON response parsing + repair
+│   ├── frontmatter.ts              # Frontmatter parse/merge/constraints
+│   ├── tag-vocab.ts                # Active tag vocabulary helpers
+│   ├── index-search.ts             # Index parsing + local keyword match
+│   ├── rate-limit.ts               # Rate-limit detection + notice formatting
+│   ├── report.ts                   # Report truncation + heading nesting
+│   ├── arrays.ts                   # Array coercion + source tag extraction
+│   ├── markdown.ts                 # Markdown response cleanup
 │   ├── sources-normalizer.ts       # Sources field normalization
 │   ├── truncation-retry.ts         # Token truncation retry policy
 │   ├── dead-link-detector.ts       # Dead link identification
@@ -115,7 +131,7 @@ src/
 │   ├── sse-parser.ts               # SSE event parser
 │   ├── token-cap.ts                # max_tokens cap helper
 │   └── conflict-resolver.ts        # Conflict detection
-└── __tests__/                      # Unit tests (vitest, 728 tests)
+└── __tests__/                      # Unit tests (vitest, 697 tests)
 ```
 
 ---

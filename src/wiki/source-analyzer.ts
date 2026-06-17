@@ -29,9 +29,11 @@ import {
   WIKI_LANGUAGES,
 } from '../types';
 import { PROMPTS } from '../prompts';
-import { parseJsonResponse, matchExtractedToExisting, coerceToArray } from '../utils';
+import { parseJsonResponse } from '../core/json';
+import { matchExtractedToExisting } from '../core/index-search';
+import { coerceToArray } from '../core/arrays';
 import { MAX_TOKENS_BATCH, TOKENS_PER_ITEM_BUDGET, SOURCE_ANALYZER_RETRY_MULTIPLIER } from '../constants';
-import { getExistingWikiPages } from './lint/fixer';
+import { getExistingWikiPages } from './lint/get-existing-pages';
 import { getGranularityInstruction, buildActiveTagVocabularySection } from './system-prompts';
 import { calculateBatchLimits, adjustBatchSizeForResponse, getCustomTypeCaps } from '../core/batch-limits';
 import { detectConvergence, checkCumulativeLimits, checkEmptyBatch, formatConvergenceStatus } from '../core/convergence-detector';

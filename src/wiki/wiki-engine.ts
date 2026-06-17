@@ -13,25 +13,25 @@ import {
 } from '../types';
 import { PROMPTS } from '../prompts';
 import { TEXTS } from '../texts';
-import {
-  slugify,
-  cleanMarkdownResponse,
-  parseFrontmatter,
-  detectRateLimitFailures,
-  formatRateLimitNotice,
-  getText,
-  extractSourceTags,
-} from '../utils';
+import { getText } from '../core/i18n';
+import { slugify } from '../core/slug';
+import { parseFrontmatter } from '../core/frontmatter';
+import { detectRateLimitFailures, formatRateLimitNotice } from '../core/rate-limit';
+import { extractSourceTags } from '../core/arrays';
+import { cleanMarkdownResponse } from '../core/markdown';
 import { SchemaManager, SchemaTask } from '../schema/schema-manager';
 import {
   buildSystemPrompt,
   getSectionLabels,
   applySectionLabels,
 } from './system-prompts';
-import {
-  LintFixer,
-  getExistingWikiPages,
-} from './lint/fixer';
+import { getExistingWikiPages } from './lint/get-existing-pages';
+import { fixDeadLink } from './lint/fix-dead-link';
+import { fillEmptyPage } from './lint/fill-empty-page';
+import { deleteEmptyStubs } from './lint/delete-empty-stubs';
+import { linkOrphanPage } from './lint/link-orphan';
+import { mergeDuplicatePages } from './lint/merge-duplicates';
+import { fixPollutedPage } from './lint/fix-polluted-page';
 import { ContradictionManager } from './contradictions';
 import { fixPollutedSources } from '../core/sources-normalizer';
 import { UNIVERSAL_LINK_CONSTRAINTS } from './prompts/constraints';
@@ -49,7 +49,7 @@ export class WikiEngine {
   private onFileWrite: ((path: string) => void) | null;
   private onProgress: ((message: string) => void) | null;
   private onDone: ((report: IngestReport) => void) | null;
-  private lintFixer: LintFixer;
+
   private contradictionManager: ContradictionManager;
   private sourceAnalyzer: SourceAnalyzer;
   private pageFactory: PageFactory;
@@ -104,7 +104,7 @@ export class WikiEngine {
     };
 
     this.ctx = ctx;
-    this.lintFixer = new LintFixer(ctx);
+
     this.contradictionManager = new ContradictionManager(ctx);
     this.sourceAnalyzer = new SourceAnalyzer(ctx);
     this.pageFactory = new PageFactory(ctx);
@@ -204,7 +204,7 @@ export class WikiEngine {
 
   // Proxy for lint-controller to access LintFixer methods without exposing the class
   async fixPollutedPage(oldPath: string, newBasename: string): Promise<string> {
-    return this.lintFixer.fixPollutedPage(oldPath, newBasename);
+    return fixPollutedPage(this.ctx, oldPath, newBasename);
   }
 
   /** Issue #137: get the current LLM client. All consumers (page-factory,
@@ -924,20 +924,20 @@ export class WikiEngine {
   }
 
   async fixDeadLink(sourcePath: string, targetName: string): Promise<string> {
-    return this.lintFixer.fixDeadLink(sourcePath, targetName);
+    return fixDeadLink(this.ctx, sourcePath, targetName);
   }
 
   async fillEmptyPage(pagePath: string, existingContent?: string): Promise<string> {
-    return this.lintFixer.fillEmptyPage(pagePath, existingContent);
+    return fillEmptyPage(this.ctx, pagePath, existingContent);
   }
 
   // Issue #103: delete empty stubs without running full lint pipeline
   async deleteEmptyStubs(wikiFolder: string): Promise<{ deleted: number; failed: number; errors: string[] }> {
-    return this.lintFixer.deleteEmptyStubs(wikiFolder);
+    return deleteEmptyStubs(this.ctx, wikiFolder);
   }
 
   async linkOrphanPage(orphanPath: string): Promise<string[]> {
-    return this.lintFixer.linkOrphanPage(orphanPath);
+    return linkOrphanPage(this.ctx, orphanPath);
   }
 
   // ---- Contradiction delegation ----
@@ -1071,7 +1071,7 @@ export class WikiEngine {
 
   /** Merge a duplicate source page into a target page. */
   async mergeDuplicatePages(targetPath: string, sourcePath: string): Promise<string> {
-    return this.lintFixer.mergeDuplicatePages(targetPath, sourcePath);
+    return mergeDuplicatePages(this.ctx, targetPath, sourcePath);
   }
 
   /** Append a lint-fix entry to the operation log. */

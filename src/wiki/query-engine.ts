@@ -5,7 +5,8 @@ import LLMWikiPlugin from '../main';
 import { TEXTS } from '../texts';
 import { WIKI_LANGUAGES } from '../types';
 import { PROMPTS } from '../prompts';
-import { parseJsonResponse, parseIndexForPages, localKeywordMatch } from '../utils';
+import { parseJsonResponse } from '../core/json';
+import { parseIndexForPages, localKeywordMatch } from '../core/index-search';
 import { MAX_PAGE_CONTENT_CHARS, TOKENS_QUERY_PAGE_SELECT, TOKENS_QUERY_LLM_SELECT, TOKENS_QUERY_SAVE_DEDUP, NOTICE_BRIEF, NOTICE_NORMAL, NOTICE_ERROR } from '../constants';
 
 // ---- Suggest Save Modal (post-query feedback) ----

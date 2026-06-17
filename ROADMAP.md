@@ -75,26 +75,28 @@ Major quality release addressing previously-unprocessable large sources and a cl
 
 ---
 
-## Next Milestone: v1.19.0 — Schema Coherence & Workflow Scale
+## Next Milestone: v1.20.0 — Core Module Refactor Landing & Schema Coherence
 
-Release focus: schema as single source of truth, event/timeline design, graph-based features, and workflow scale-up. See also the [lint modularization ROI plan](~/.claude/projects/-Users-greener-project-obsidian-llm-wiki/memory/project_lint_modularization_roi.md) for internal refactor priorities.
+Release focus: land the modular-structure refactor (already fully absorbed into main via incremental PRs across v1.18.0–v1.19.1), then schema coherence, graph-based features, and workflow scale-up. The old `refactor/modular-structure` branch (pre-v1.18.0 base) has 0 unique commits — its entire diff was absorbed into main across ~470 commits from v1.18.0 to v1.19.1. No batch merge needed.
 
-### Theme 1: Schema as single source of truth
+### Phase 1: Post-refactor cleanup & stabilization (v1.20.0)
+- Delete stale `refactor/modular-structure` branch (all content already in main).
+- **LintFixer god-class decomposition to module-level functions** (6 functions, already done in main).
+- **`utils.ts` god-module → `core/` modules split** (10 modules, already done in main).
+- Validate that all 102 refactor-delta src files are accounted for in current `main` file layout.
+- Consolidate any remaining technical debt from the manual split (file relocation, adapter exports).
+
+### Phase 2: Schema Coherence
 - **#124 — Schema Page Template truth source.** Page Template as body-structure authority; header language decoupled from `wikiLanguage`; `tagVocabularyMode` synced with schema Classification Rules. 2 PRs.
 - **#131 Tier 2 — Replace Stage 4 LLM rewrite with deterministic Mentions append.** Full Stage 4 cost removal.
 
-### Theme 2: Event / timeline design
-- **#112 — Event/timeline concept.** No new `event/` page type. Explore `arc` + `sequence` frontmatter or per-page timeline block. Need concrete vault example.
-
-### Theme 3: Graph-based features
+### Phase 3: Graph-based features & Workflow scale-up
 - **#117 — Graph-based domain tag inference.** `in_degree × out_degree` hub detection; hub domain labeling via cheap LLM call; tag propagation with explainability.
-
-### Theme 4: Workflow scale-up
 - **#97 — One-click schema apply + backup.** Needs backup/restore design pass.
 - **#122 — Ingestion history panel.** Start with log.md UI layer.
 - **#130 — In-place batch ingest queue.** Composes with #122 and `pageGenerationConcurrency`.
 
-### Out of scope (v1.19.0+)
+### Out of scope (v1.20.0+)
 
 - **#91 (nested tags)** — awaiting #85 in-the-wild feedback; chip input already accepts `/`.
 - **#36 — Source title in frontmatter** — needs clarification from issue author.
@@ -103,7 +105,7 @@ Release focus: schema as single source of truth, event/timeline design, graph-ba
 - **Missing Concept Pages tracker** (parse Lint LLM prose into structured reports).
 - **Lint performance:** hash-bucket dedup prefilter; hierarchical LLM health analysis.
 
-### v1.19.0+ Theme — Query Engine Evolution (P3 research)
+### v1.20.0+ Theme — Query Engine Evolution (P3 research)
 
 Query engine is currently a "structured-context RAG" (keyword + LLM semantic selection + 3-5 page context), not pure Karpathy full-context reasoning. Four-tier improvement roadmap:
 - **Tier A (low cost, no new LLM calls):** enhance index with `rel:` field; multi-hop link expansion from selected pages
@@ -123,6 +125,7 @@ Documented in `~/.claude/projects/.../memory/project_v1.19.0_query_evolution.md`
 | **1.19.0** | 2026-06-16 | Ingest quality & cost hardening — advanced LLM params, quote grounding, compact slugs |
 | **1.18.2** | 2026-06-12 | Custom extraction limits hard-enforced (Closes #120) + #114 tags preservation + #111 slug casing |
 | **1.18.1** | 2026-06-11 | Obsidian review compliance (document ban + prefer-active-doc) |
+| **1.18.0** | 2026-06-10 | Tag controlled vocabulary (Closes #85) v6/v7/v8 — chip input UX, end-to-end customTags pipeline |
 | **1.18.0** | 2026-06-10 | Tag controlled vocabulary (Closes #85) |
 | 1.17.0 | 2026-06-08 | Long-document ingestion + source attribution (Closes #90) |
 | 1.16.3 | 2026-06-07 | v1.16.2 P0 hotfix completion |

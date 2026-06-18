@@ -145,6 +145,10 @@ export const JA_TEXTS = {
     queryModalErrorPrefix: 'エラー：',
     queryModalHint: '問い合わせはWikiの内容に基づきます。「Wikiに保存」をクリックすると、価値のある会話をWikiページとして抽出できます。',
 
+    // v1.20.0: Query Wiki 思考ブロック折り畳み見出し
+    queryThinkingSummary: '思考プロセス',
+    queryThinkingSteps: 'ステップ',
+
     // Error Messages
     errorLLMClientNotInit: 'LLM Clientが初期化されていません。設定を保存してください。',
     errorIngestFailed: '取り込み失敗：',
@@ -406,11 +410,11 @@ export const JA_TEXTS = {
 
     // Advanced LLM Settings (Issues #99 / #128)
     advancedSettingsModeName: '高度なパラメータ設定',
-    advancedSettingsModeDesc: '標準モードでは、すべての高度なパラメータが非表示になり、「思考を無効にする」が有効になります。ほとんどのユーザーにとって適切な選択です。カスタムモードでは、思考のトグル、抽出温度、クエリ温度、繰り返しペナルティが表示されます。モデルの動作を細かく調整したい場合や、出力の問題を調査する場合にのみカスタムに切り替えてください。',
-    advancedSettingsDefault: '標準',
-    advancedSettingsCustom: 'カスタム',
+    advancedSettingsModeDesc: 'デフォルトではプロバイダー自身の動作を使用し、思考制御・温度・反復ペナルティのフィールドは送信されません。ほとんどのユーザーに適しています。プロバイダーのデフォルトを明示的に上書きする必要がある場合（特定の思考制御方言を強制する、デフォルト以外の温度を設定するなど）のみ、カスタムに切り替えてください。',
+    advancedSettingsDefault: 'デフォルト（プロバイダーの動作）',
+    advancedSettingsCustom: 'カスタム（プロバイダーのデフォルトを上書き）',
     disableThinkingName: '思考を無効にする',
-    disableThinkingDesc: 'デフォルトでオン。モデルの出力が正常で、抽出品質を向上させたい場合のみオフにしてください。オフにするとコストが増加し、一部のモデルで出力が乱れる可能性があります。',
+    disableThinkingDesc: 'オプトインです。有効にすると、プラグインはプロバイダーに思考制御ディレクティブを送信し、プロバイダーが拒否した場合は3層のダイアレクトフォールバックチェーン（anthropic → openai → none）を実行します。これは、プロバイダーが推論内容を回答に漏らし、それを抑制する必要がある場合にのみ使用してください。ほとんどのプロバイダーは推論を正しく処理するため、これを無効のままにしておく（デフォルト）方が品質が高くなります。',
     // Issue #137: 互換性に関する注意事項（簡潔；プロバイダ一覧は省略）
     extractionTemperatureName: '抽出温度',
     extractionTemperatureDesc: '範囲 0–2。低いほどLLMの出力は確定的で忠実に。高いほど創造的に。空欄 = プロバイダのデフォルト。プロバイダがこの値を拒否した場合、プラグインは自動的にフィールドを削除し、通知を一度だけ表示します。',

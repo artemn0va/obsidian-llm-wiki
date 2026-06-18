@@ -92,7 +92,7 @@ export async function mergeDuplicatePages(
           'merge'
         ),
         messages: [{ role: 'user', content: prompt }],
-        enableThinking: !ctx.settings.disableThinking,
+        ...(ctx.settings.disableThinking ? { enableThinking: false } : {}),
       });
 
       const cleaned = cleanMarkdownResponse(mergedContent);

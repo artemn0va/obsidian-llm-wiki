@@ -306,6 +306,55 @@
   /* markdown rendered by Obsidian has its own styling */
 }
 
+/* v1.20.0: collapsible thinking-block panel inside the assistant answer.
+   Renders above the visible markdown, default collapsed (ChatGPT-style). */
+.llm-wiki-query-thinking-block {
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  margin: 0 0 12px 0;
+  padding: 6px 12px;
+  font-size: 0.85em;
+}
+
+.llm-wiki-query-thinking-block > summary {
+  cursor: pointer;
+  color: var(--text-muted);
+  user-select: none;
+  list-style: none;
+  padding: 4px 0;
+}
+
+.llm-wiki-query-thinking-block > summary::-webkit-details-marker {
+  display: none;
+}
+
+.llm-wiki-query-thinking-block > summary::before {
+  content: '▸ ';
+  display: inline-block;
+  transition: transform 0.15s ease;
+  margin-right: 4px;
+}
+
+.llm-wiki-query-thinking-block[open] > summary::before {
+  content: '▾ ';
+}
+
+.llm-wiki-query-thinking-content {
+  background: var(--background-primary);
+  border-radius: 4px;
+  padding: 8px 10px;
+  margin: 6px 0 4px 0;
+  font-family: var(--font-monospace);
+  font-size: 0.9em;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--text-muted);
+  max-height: 240px;
+  overflow-y: auto;
+}
+
 /* Live response (currently generating) */
 .llm-wiki-query-response-live {
   margin-bottom: 16px;

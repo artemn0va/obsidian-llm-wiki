@@ -132,22 +132,23 @@ export interface LLMWikiSettings {
   //   'none'      → backend rejects both; skip thinking control entirely
   thinkingControlCache?: Record<string, 'anthropic' | 'openai' | 'none' | boolean>;
 
-  // Issue #99 v2 / v3: when true (default), createMessage sends a directive
-  // to suppress the model's reasoning output. Setting name kept for data.json
-  // backward compatibility with v1.18.2. The internal LLMClient interface
-  // inverts this to the affirmative `enableThinking` at the call sites.
-  // If the first directive (`thinking.type='disabled'`) is rejected by the
-  // provider, the code automatically falls back to an alternative mechanism
-  // (`chat_template_kwargs`) — the user does not need to know the difference.
-  // Optional in the interface for test fixtures.
+  // v1.20.0: when true, the plugin explicitly sends a thinking-control
+  // directive to the provider (with 3-tier dialect fallback). When false
+  // (default), the plugin does NOT send any thinking-control field — the
+  // provider decides whether to emit reasoning, and any reasoning that
+  // does leak into the response is folded into a collapsible block in the
+  // Query Wiki modal so it never visually intrudes on the answer.
+  //
+  // Setting name kept for data.json backward compatibility with v1.18.2+
+  // (where it was opt-out). The semantic is now opt-in: the user must
+  // explicitly enable "Disable thinking" in Custom Advanced Settings.
   disableThinking?: boolean;
 
   // Advanced settings mode — 'default' hides the toggles/inputs; 'custom'
-  // reveals them. 'default' also forces disableThinking=true.
+  // reveals them. In v1.20.0, 'default' no longer forces anything — the
+  // plugin simply omits all custom fields, letting the provider's defaults
+  // apply. 'custom' exposes the explicit opt-in controls.
   advancedSettingsMode?: 'default' | 'custom';
-
-  // enableThinkingViaChatTemplate removed — merged into disableThinking's
-  // automatic fallback (see llm-client.ts OpenAICompatibleClient).
 
   // Issue #128: per-task sampling temperature. Leave undefined to use the
   // provider's default. Low values (e.g. 0.15) improve fidelity for extraction
@@ -504,12 +505,13 @@ export const DEFAULT_SETTINGS: LLMWikiSettings = {
   // custom, or anthropic-compatible.
   maxTokensPerCall: 0,
 
-  // Issue #99 v2: default true so thinking-capable models output final answers
-  // without reasoning preamble. Setting name kept for v1.18.2 data.json
-  // compatibility. Removed enableThinkingViaChatTemplate — the code now
-  // automatically falls back to the chat-template kwarg if the first directive
-  // is rejected (see llm-client.ts OpenAICompatibleClient fallback path).
-  disableThinking: true,
+  // v1.20.0: default false. The plugin does NOT send any thinking-control
+  // field unless the user explicitly enables "Disable thinking" in Custom
+  // Advanced Settings. The provider decides its own reasoning behavior; any
+  // reasoning that does appear in the response is folded into a collapsible
+  // <details> block in the Query Wiki UI so it never visually intrudes on
+  // the answer. Setting name kept for v1.18.2 data.json backward compat.
+  disableThinking: false,
   // Advanced settings mode — default hides the toggles, custom reveals them.
   advancedSettingsMode: 'default',
   // Issue #111: default to 'lower' for backwards compatibility.

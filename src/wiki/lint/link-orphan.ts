@@ -41,7 +41,7 @@ export async function linkOrphanPage(
     ),
     messages: [{ role: 'user', content: prompt }],
     response_format: { type: 'json_object' },
-    enableThinking: !ctx.settings.disableThinking,
+    ...(ctx.settings.disableThinking ? { enableThinking: false } : {}),
   });
 
   const result = (await parseJsonResponse(response)) as {

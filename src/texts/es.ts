@@ -145,6 +145,10 @@ export const ES_TEXTS = {
     queryModalErrorPrefix: 'Error: ',
     queryModalHint: 'Las consultas se basan en el contenido de la Wiki. Pulsa "Guardar en Wiki" para extraer conversaciones valiosas como páginas Wiki.',
 
+    // v1.20.0: Resumen del bloque de pensamiento plegable de Query Wiki
+    queryThinkingSummary: 'Proceso de pensamiento',
+    queryThinkingSteps: 'pasos',
+
     // Error Messages
     errorLLMClientNotInit: 'Cliente LLM no inicializado. Guarda la configuración.',
     errorIngestFailed: 'La ingestión falló: ',
@@ -406,11 +410,11 @@ export const ES_TEXTS = {
 
     // Advanced LLM Settings (Issues #99 / #128)
     advancedSettingsModeName: 'Configuración de parámetros avanzados',
-    advancedSettingsModeDesc: 'El modo predeterminado mantiene todos los parámetros avanzados ocultos y la opción “Deshabilitar pensamiento” activada, lo cual es adecuado para la mayoría de usuarios. El modo personalizado muestra el interruptor de pensamiento, la temperatura de extracción, la temperatura de consulta y la penalización por repetición. Solo cambia a Personalizado si necesitas ajustar el comportamiento del modelo o resolver problemas de salida.',
-    advancedSettingsDefault: 'Predeterminado',
-    advancedSettingsCustom: 'Personalizado',
+    advancedSettingsModeDesc: 'El modo predeterminado usa el comportamiento nativo de tu proveedor — no se envía ningún campo de control de pensamiento, temperatura o penalización por repetición. Esto funciona para la mayoría de los usuarios. Solo cambia a Personalizado si necesitas anular explícitamente los valores predeterminados del proveedor (por ejemplo, forzar un dialecto de control de pensamiento específico, establecer una temperatura distinta a la predeterminada, etc.).',
+    advancedSettingsDefault: 'Predeterminado (usar comportamiento del proveedor)',
+    advancedSettingsCustom: 'Personalizado (anular valores predeterminados del proveedor)',
     disableThinkingName: 'Deshabilitar pensamiento',
-    disableThinkingDesc: 'Activado por defecto. Desactívalo solo si tu modelo produce resultados limpios y deseas mejorar la calidad de extracción. Desactivarlo aumenta el costo y puede causar resultados distorsionados en algunos modelos.',
+    disableThinkingDesc: 'Opcional. Cuando está activado, el complemento envía una directiva de control de pensamiento al proveedor y recorre una cadena de respaldo de dialecto de 3 niveles (anthropic → openai → none) si el proveedor la rechaza. Usa esto solo si tu proveedor filtra contenido de razonamiento en la respuesta y necesitas suprimirlo. La mayoría de los proveedores manejan el razonamiento correctamente por sí mismos — dejarlo desactivado (predeterminado) ofrece mejor calidad.',
     // Issue #137: Notas de compatibilidad (breves; sin lista de proveedores)
     extractionTemperatureName: 'Temperatura de extracción',
     extractionTemperatureDesc: 'Rango 0–2. Cuanto más bajo, más determinista y fiel es la salida del LLM. Cuanto más alto, más creativo. Déjalo vacío para usar el valor por defecto del proveedor. Si su proveedor rechaza este valor, el plugin elimina el campo automáticamente y muestra un aviso único.',

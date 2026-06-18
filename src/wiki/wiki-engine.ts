@@ -704,7 +704,7 @@ export class WikiEngine {
       max_tokens: TOKENS_PAGE_GENERATION,
       system: await this.buildSystemPrompt('summary'),
       messages: [{ role: 'user', content: finalPrompt }],
-      enableThinking: !this.settings.disableThinking,
+      ...(this.settings.disableThinking ? { enableThinking: false } : {}),
     });
 
     const cleanedContent = cleanMarkdownResponse(pageContent);

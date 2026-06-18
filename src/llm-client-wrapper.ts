@@ -1,28 +1,23 @@
 // Thin wrapper that injects advanced settings into createMessage calls.
-// Default behavior: pass-through unchanged (zero behavior change).
-// Each setting is injected only when the caller did not already pass the
-// parameter explicitly and when the user has configured a value.
+// v1.20.0: by default the plugin does NOT inject any provider-specific
+// thinking-control / temperature / repetition_penalty field. Each setting
+// is only sent when the caller explicitly passed it AND when the user has
+// configured a value in Custom Advanced Settings. This keeps backward
+// compatibility: empty/undefined settings mean "use provider default".
 //
-// Issue #99: disableThinking (data.json field, default true) sends a
-// thinking-control directive. The LLM client handles all dialect-level
-// fallback internally (anthropic → openai → none, see llm-client.ts
-// OpenAICompatibleClient). The wrapper only forwards the boolean toggle.
+// Issue #99: disableThinking (data.json field) was a v1.18.2 opt-out that
+// was flipped to opt-in in v1.20.0 — see types.ts for the new semantics.
+// When the user does enable it, the LLMClient itself walks the 3-tier
+// dialect fallback (anthropic → openai → none). The wrapper stays passive.
 // Issue #128: extractionTemperature / chatTemperature inject `temperature`.
 // Issue #128 follow-up: repetitionPenalty injects `repetition_penalty`.
 // Issue #75: maxTokensPerCall cap wraps max_tokens via capMaxTokens.
-//
-// Note: v1.19.0 used to inject chat_template_kwargs here as a thinking-
-// control fallback. #137 removed that — the OpenAICompatibleClient now
-// has its own complete dialect fallback chain, and Gemini (and other
-// modern backends) reject chat_template_kwargs outright. Wrappers must
-// stay passive; dialect logic lives in the client.
 
 import { LLMClient } from './types';
 import { capMaxTokens } from './core/token-cap';
 
 export interface WrapperSettings {
   maxTokensPerCall: number;
-  enableThinking?: boolean;
   extractionTemperature?: number;
   chatTemperature?: number;
   repetitionPenalty?: number;
@@ -47,8 +42,6 @@ export function wrapWithAdvancedSettings(
       ...(capTokens ? { max_tokens: capMaxTokens(params.max_tokens, { maxTokensPerCall: settings.maxTokensPerCall }), maxTokensPerCall: settings.maxTokensPerCall } : {}),
       ...(params.temperature === undefined && settings.extractionTemperature !== undefined ? { temperature: settings.extractionTemperature } : {}),
       ...(params.repetition_penalty === undefined && settings.repetitionPenalty !== undefined ? { repetition_penalty: settings.repetitionPenalty } : {}),
-      // #137: chat_template_kwargs injection removed — client handles dialect
-      // fallback internally. Wrapper stays passive for thinking-control.
     });
   };
 

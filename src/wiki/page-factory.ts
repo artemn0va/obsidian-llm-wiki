@@ -174,7 +174,7 @@ export class PageFactory {
         system: await this.ctx.buildSystemPrompt('full'),
         messages: [{ role: 'user', content: prompt }],
         response_format: { type: 'json_object' },
-      enableThinking: !this.ctx.settings.disableThinking,
+      // v1.20.0: thinking-control is opt-in; only sent when user explicitly enables "Disable thinking"
     });
 
       const result = await parseJsonResponse(response) as {
@@ -354,7 +354,7 @@ export class PageFactory {
       max_tokens: TOKENS_PAGE_GENERATION,
       system: await this.ctx.buildSystemPrompt(pageType),
       messages: [{ role: 'user', content: finalPrompt }],
-      enableThinking: !this.ctx.settings.disableThinking,
+      // v1.20.0: thinking-control is opt-in; only sent when user explicitly enables "Disable thinking"
     });
 
     const cleanedContent = cleanMarkdownResponse(pageContent);
@@ -403,7 +403,7 @@ export class PageFactory {
       max_tokens: TOKENS_PAGE_GENERATION,
       system: await this.ctx.buildSystemPrompt('merge'),
       messages: [{ role: 'user', content: finalPrompt }],
-      enableThinking: !this.ctx.settings.disableThinking,
+      // v1.20.0: thinking-control is opt-in; only sent when user explicitly enables "Disable thinking"
     });
 
     const cleanedBody = cleanMarkdownResponse(mergedBody);
@@ -451,7 +451,7 @@ export class PageFactory {
       max_tokens: TOKENS_APPEND_REVIEWED,
       system: await this.ctx.buildSystemPrompt('merge'),
       messages: [{ role: 'user', content: finalPrompt }],
-      enableThinking: !this.ctx.settings.disableThinking,
+      // v1.20.0: thinking-control is opt-in; only sent when user explicitly enables "Disable thinking"
     });
 
     const cleanedContent = cleanMarkdownResponse(newContent);
@@ -519,7 +519,7 @@ export class PageFactory {
       max_tokens: TOKENS_PAGE_GENERATION,
       system: await this.ctx.buildSystemPrompt('related'),
       messages: [{ role: 'user', content: prompt }],
-      enableThinking: !this.ctx.settings.disableThinking,
+      // v1.20.0: thinking-control is opt-in; only sent when user explicitly enables "Disable thinking"
     });
 
     const cleanedBody = cleanMarkdownResponse(updatedBody);

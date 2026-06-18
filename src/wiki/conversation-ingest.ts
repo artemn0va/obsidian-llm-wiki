@@ -156,7 +156,7 @@ CRITICAL RULES:
         content: analysisPrompt
       }],
       response_format: { type: 'json_object' },
-      enableThinking: !this.ctx.settings.disableThinking,
+      // v1.20.0: thinking-control is opt-in; only sent when user explicitly enables "Disable thinking"
     });
 
     const parsed = await parseJsonResponse(analysis, async (malformedJson: string) => {
@@ -167,7 +167,7 @@ CRITICAL RULES:
         system: await this.ctx.buildSystemPrompt('conversation'),
         messages: [{ role: 'user', content: repairPrompt }],
         response_format: { type: 'json_object' },
-        enableThinking: !this.ctx.settings.disableThinking,
+        // v1.20.0: thinking-control is opt-in; only sent when user explicitly enables "Disable thinking"
       });
     }) as SourceAnalysis | null;
     if (!parsed) {
@@ -222,7 +222,7 @@ CRITICAL RULES:
       max_tokens: TOKENS_CONVERSATION_PAGE,
       system: await this.ctx.buildSystemPrompt('summary'),
       messages: [{ role: 'user', content: finalSummaryPrompt }],
-      enableThinking: !this.ctx.settings.disableThinking,
+      // v1.20.0: thinking-control is opt-in; only sent when user explicitly enables "Disable thinking"
     });
 
     const cleanedSummary = cleanMarkdownResponse(summaryPageContent);
@@ -311,7 +311,7 @@ CRITICAL RULES:
       system: await this.ctx.buildSystemPrompt('conversation'),
       messages: [{ role: 'user', content: prompt }],
       response_format: { type: 'json_object' },
-      enableThinking: !this.ctx.settings.disableThinking,
+      // v1.20.0: thinking-control is opt-in; only sent when user explicitly enables "Disable thinking"
     });
 
     const parsed = await parseJsonResponse(response) as { status?: string } | null;

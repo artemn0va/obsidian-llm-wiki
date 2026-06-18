@@ -189,7 +189,7 @@ ${contradiction.source_page}
         'full'
       ),
       messages: [{ role: 'user', content: finalPrompt }],
-      enableThinking: !this.ctx.settings.disableThinking,
+      // v1.20.0: thinking-control is opt-in; only sent when user explicitly enables "Disable thinking"
     });
 
     const cleaned = cleanMarkdownResponse(fixedContent);

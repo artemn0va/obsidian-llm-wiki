@@ -108,7 +108,6 @@ describe('wrapWithAdvancedSettings — advanced settings injection (Issue #99 / 
     const client = makeClient();
     const wrapped = wrapWithAdvancedSettings(client, {
       maxTokensPerCall: 0,
-      enableThinking: false,
     });
 
     await wrapped.createMessage({

@@ -145,6 +145,10 @@ export const DE_TEXTS = {
     queryModalErrorPrefix: 'Fehler: ',
     queryModalHint: 'Anfragen basieren auf Wiki-Inhalten. Klicke auf "Im Wiki speichern", um wertvolle Konversationen als Wiki-Seiten zu extrahieren.',
 
+    // v1.20.0: Query Wiki Denkblock-Einklapp-Zusammenfassung
+    queryThinkingSummary: 'Denkprozess',
+    queryThinkingSteps: 'Schritte',
+
     // Error Messages
     errorLLMClientNotInit: 'LLM-Client nicht initialisiert. Bitte Einstellungen speichern.',
     errorIngestFailed: 'Aufnahme fehlgeschlagen: ',
@@ -406,11 +410,11 @@ export const DE_TEXTS = {
 
     // Advanced LLM Settings (Issues #99 / #128)
     advancedSettingsModeName: 'Erweiterte Parametereinstellungen',
-    advancedSettingsModeDesc: 'Im Standardmodus bleiben alle erweiterten Parameter ausgeblendet und „Thinking deaktivieren” ist eingeschaltet — das ist für die meisten Nutzer die richtige Wahl. Benutzerdefiniert zeigt den Schalter für den Denkmodus, Extraktions- und Abfragetemperatur sowie die Wiederholungsstrafe. Wechseln Sie nur dann zu Benutzerdefiniert, wenn Sie das Modellverhalten feinsteuern oder Ausgabeprobleme untersuchen müssen.',
-    advancedSettingsDefault: 'Standard',
-    advancedSettingsCustom: 'Benutzerdefiniert',
+    advancedSettingsModeDesc: 'Im Standardmodus wird das Standardverhalten Ihres Providers verwendet — es werden keine Felder für Denksteuerung, Temperatur oder Wiederholungsstrafe gesendet. Dies funktioniert für die meisten Benutzer. Wechseln Sie nur dann zu „Benutzerdefiniert“, wenn Sie die Provider-Standards explizit überschreiben müssen (z. B. einen bestimmten Denksteuerungsdialekt erzwingen, eine andere als die Standardtemperatur festlegen usw.).',
+    advancedSettingsDefault: 'Standard (Provider-Verhalten verwenden)',
+    advancedSettingsCustom: 'Benutzerdefiniert (Provider-Standards überschreiben)',
     disableThinkingName: 'Thinking deaktivieren',
-    disableThinkingDesc: 'Standardmäßig eingeschaltet. Nur ausschalten, wenn Ihr Modell saubere Ausgaben liefert und Sie die Extraktionsqualität verbessern möchten. Das Ausschalten erhöht die Kosten und kann bei manchen Modellen zu verstümmelten Ausgaben führen.',
+    disableThinkingDesc: 'Opt-in. Wenn aktiviert, sendet das Plugin eine Denksteuerungsanweisung an den Provider und durchläuft eine 3-stufige Dialekt-Fallback-Kette (anthropic → openai → none), falls der Provider sie ablehnt. Verwenden Sie dies nur, wenn Ihr Provider Denkinhalte in die Antwort einstreut und Sie diese unterdrücken müssen. Die meisten Provider verarbeiten Denkprozesse korrekt von selbst — sie deaktiviert zu lassen (Standard) bietet bessere Qualität.',
     // Issue #137: Kompatibilitätshinweise (kurz gehalten; keine Provider-Liste)
     extractionTemperatureName: 'Extraktionstemperatur',
     extractionTemperatureDesc: 'Bereich 0–2. Niedrigere Werte machen die LLM-Ausgabe deterministischer und originalgetreuer. Höhere Werte machen sie kreativer. Leer lassen = Provider-Standard. Lehnt Ihr Anbieter diesen Wert ab, entfernt das Plugin das Feld automatisch und zeigt einen einmaligen Hinweis.',

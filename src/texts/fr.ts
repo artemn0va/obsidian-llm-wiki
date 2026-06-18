@@ -145,6 +145,10 @@ export const FR_TEXTS = {
     queryModalErrorPrefix: 'Erreur : ',
     queryModalHint: "Les requêtes s'appuient sur le contenu du wiki. Cliquez sur « Enregistrer dans le wiki » pour extraire les conversations utiles en pages wiki.",
 
+    // v1.20.0: Résumé du bloc de réflexion pliable de Query Wiki
+    queryThinkingSummary: 'Processus de réflexion',
+    queryThinkingSteps: 'étapes',
+
     // Error Messages
     errorLLMClientNotInit: 'Client LLM non initialisé. Veuillez enregistrer les paramètres.',
     errorIngestFailed: "Échec de l'import : ",
@@ -406,11 +410,11 @@ export const FR_TEXTS = {
 
     // Advanced LLM Settings (Issues #99 / #128)
     advancedSettingsModeName: 'Paramètres avancés',
-    advancedSettingsModeDesc: 'Le mode par défaut garde tous les paramètres avancés masqués et laisse "Désactiver le raisonnement" activé — c\'est le bon choix pour la plupart des utilisateurs. Le mode personnalisé affiche l\'interrupteur de raisonnement, les températures d\'extraction et de requête, ainsi que la pénalité de répétition. Ne passez à Personnalisé que si vous devez ajuster finement le comportement du modèle ou diagnostiquer des problèmes de sortie.',
-    advancedSettingsDefault: 'Par défaut',
-    advancedSettingsCustom: 'Personnalisé',
+    advancedSettingsModeDesc: 'Le mode par défaut utilise le comportement natif de votre fournisseur — aucun champ de contrôle du raisonnement, de température ou de pénalité de répétition n\'est envoyé. Cela convient à la plupart des utilisateurs. Ne passez en mode Personnalisé que si vous devez explicitement remplacer les paramètres par défaut du fournisseur (par exemple, forcer un dialecte de raisonnement spécifique, définir une température autre que celle par défaut, etc.).',
+    advancedSettingsDefault: 'Par défaut (comportement du fournisseur)',
+    advancedSettingsCustom: 'Personnalisé (remplacer les paramètres par défaut du fournisseur)',
     disableThinkingName: 'Désactiver le raisonnement',
-    disableThinkingDesc: 'Activé par défaut. Désactivez uniquement si votre modèle produit des résultats propres et que vous souhaitez potentiellement améliorer la qualité d\'extraction. La désactivation augmente les coûts et peut provoquer des résultats dégradés sur certains modèles.',
+    disableThinkingDesc: 'Optionnel. Lorsqu\'il est activé, le plugin envoie une directive de contrôle du raisonnement au fournisseur et parcourt une chaîne de repli dialectal en 3 niveaux (anthropic → openai → none) si le fournisseur la refuse. Utilisez-le uniquement si votre fournisseur laisse le raisonnement s\'infiltrer dans la réponse et que vous devez le supprimer. La plupart des fournisseurs gèrent correctement le raisonnement d\'eux-mêmes — laisser cette option désactivée (par défaut) offre une meilleure qualité.',
     // Issue #137 : Notes de compatibilité (courtes ; pas de liste de fournisseurs)
     extractionTemperatureName: 'Température d\'extraction',
     extractionTemperatureDesc: 'Plage 0–2. Plus la valeur est basse, plus la sortie LLM est déterministe et fidèle. Plus elle est haute, plus elle est créative. Laissez vide pour utiliser la valeur par défaut du fournisseur. Si votre fournisseur refuse cette valeur, le plugin supprime le champ automatiquement et affiche un avis unique.',

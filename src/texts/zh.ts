@@ -146,6 +146,10 @@ export const ZH_TEXTS = {
     queryModalErrorPrefix: '错误：',
     queryModalHint: '查询基于Wiki内容。点击"保存到Wiki"可将有价值对话提炼为Wiki页面。',
 
+    // v1.20.0: Query Wiki 思考内容折叠摘要
+    queryThinkingSummary: '思考过程',
+    queryThinkingSteps: '步',
+
     // 错误消息
     errorLLMClientNotInit: 'LLM Client 未初始化。请保存设置。',
     errorIngestFailed: '摄入失败：',
@@ -408,11 +412,11 @@ export const ZH_TEXTS = {
 
     // Advanced LLM Settings (Issues #99 / #128)
     advancedSettingsModeName: '高级参数设置',
-    advancedSettingsModeDesc: '默认模式下所有高级参数保持隐藏，并启用“禁用思考”，适合大多数用户。自定义模式会显示思考开关、提取温度、查询温度和重复惩罚。仅当你需要精细调整模型行为或排查输出问题时，再选择自定义。',
-    advancedSettingsDefault: '默认',
-    advancedSettingsCustom: '自定义',
+    advancedSettingsModeDesc: '默认模式使用 provider 自身的行为，不发送任何思考控制、温度或重复惩罚字段。适合大多数用户。仅当需要显式覆盖 provider 默认值时（例如强制特定思考控制方言、设置非默认温度等），再切换到自定义模式。',
+    advancedSettingsDefault: '默认（使用 provider 行为）',
+    advancedSettingsCustom: '自定义（覆盖 provider 默认）',
     disableThinkingName: '禁用思考',
-    disableThinkingDesc: '请保持开启（默认）。仅当你的模型输出正常且希望提升提取效果时，再考虑关闭。关闭会增加成本，并可能在部分模型上导致乱码。',
+    disableThinkingDesc: '显式启用。开启后，插件会向 provider 发送思考控制指令，并在 provider 拒绝时回退到 3 层级方言链（anthropic → openai → none）。仅当你的 provider 把思考内容泄露到回答中并需要抑制时才使用。大多数 provider 自身能正确处理思考，关闭它（默认）通常能获得更高质量。',
     // Issue #137: 兼容性提示（简短；不列举 provider，避免维护负担）
     extractionTemperatureName: '提取温度',
     extractionTemperatureDesc: '范围 0–2。越低则 LLM 输出越确定、越忠于原文；越高则越有创意。留空表示使用提供商默认值。若提供商拒绝此值，插件会自动剥离该字段并显示一次性通知。',

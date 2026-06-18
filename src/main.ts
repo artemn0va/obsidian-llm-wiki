@@ -65,13 +65,13 @@ export function createLLMClient(settings: LLMWikiSettings): LLMClient {
     client.language = settings.language;
   }
 
-  // Wrap createMessage so advanced settings are applied consistently.
-  // Each setting is only injected when the caller did not already pass the
-  // parameter explicitly and when the user has configured a value. This keeps
-  // backward compatibility: empty/undefined settings mean "use provider default".
+  // Wrap createMessage so user-configured advanced settings are applied.
+  // v1.20.0: by default the plugin does NOT inject any thinking-control
+  // field. The provider decides its own reasoning behavior. The wrapper
+  // only injects the explicit opt-in fields (temperature, repetitionPenalty)
+  // when the user has configured a value in Custom Advanced Settings.
   return wrapWithAdvancedSettings(client, {
     maxTokensPerCall: settings.maxTokensPerCall,
-    enableThinking: !settings.disableThinking,
     extractionTemperature: settings.extractionTemperature,
     chatTemperature: settings.chatTemperature,
     repetitionPenalty: settings.repetitionPenalty,
@@ -282,6 +282,22 @@ export default class LLMWikiPlugin extends Plugin {
     // can toggle off after this one-time migration.
     if (savedData && savedData.startupCheck === false) {
       this.settings.startupCheck = true;
+    }
+
+    // v1.20.0 migration: reset disableThinking from old default (true) to
+    // new default (false). Old behavior sent thinking.type='disabled' which
+    // caused HTTP 400 on many providers (OpenAI, Gemini, Ollama, etc.).
+    // New behavior: disableThinking=false means "don't send any thinking
+    // control field" — the provider decides its own default. This is safe
+    // for all providers and eliminates the 400 cascade. Users who
+    // explicitly want thinking control can re-enable it in Custom mode.
+    // Also reset advancedSettingsMode to 'default' so Custom-mode remnants
+    // (temperature, repetition_penalty, thinking toggle) don't leak into
+    // the new "provider decides" behavior.
+    if (savedData && savedData.disableThinking === true) {
+      this.settings.disableThinking = false;
+      this.settings.advancedSettingsMode = 'default';
+      console.debug('loadSettings: v1.20.0 migration — reset disableThinking to false, advancedSettingsMode to default');
     }
 
     // Migrate existing users: if they already have a working config, trust it
@@ -651,7 +667,15 @@ export default class LLMWikiPlugin extends Plugin {
       // The result is cached as a dialect string in settings so subsequent
       // LLM calls skip the 400 probe round-trip. The in-request fallback
       // chain still handles any mismatch between probe and runtime.
-      if (testClient instanceof OpenAICompatibleClient || testClient instanceof AnthropicCompatibleClient || testClient instanceof AnthropicClient) {
+      // v1.20.0: skip the thinking-control probe when disableThinking is
+      // false (default). No thinking field will ever be sent in this mode,
+      // so probing wastes requests and can trigger rate limits (e.g. MiniMax
+      // 429). The probe is only needed when the user explicitly enables
+      // "Disable thinking" in Custom Advanced Settings.
+      if (
+        this.settings.disableThinking &&
+        (testClient instanceof OpenAICompatibleClient || testClient instanceof AnthropicCompatibleClient || testClient instanceof AnthropicClient)
+      ) {
         let detectedDialect: 'anthropic' | 'openai' | 'none' = 'anthropic';
         let probeSucceeded = false;
 

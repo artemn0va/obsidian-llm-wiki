@@ -381,7 +381,14 @@ export class AnthropicClient implements LLMClient {
 
   constructor(apiKey: string, baseUrl?: string) {
     this.apiKey = apiKey;
-    this.baseUrl = baseUrl || 'https://api.anthropic.com';
+    // Issue #141 / #134: normalize baseUrl to include /v1 suffix. The official
+    // Anthropic API path is /v1/messages (not /messages), and AnthropicCompatibleClient
+    // (line ~150) already does this. Without this normalization, requests hit a 404.
+    const normalized = (baseUrl || 'https://api.anthropic.com')
+      .replace(/\/v1\/?$/, '')
+      .replace(/\/+$/, '');
+    this.baseUrl = normalized + '/v1';
+    this.apiVersion = '2023-06-01';
   }
 
   async createMessage(params: {
@@ -567,7 +574,7 @@ export class AnthropicClient implements LLMClient {
 
   async listModels(): Promise<string[]> {
     const response = await requestUrl({
-      url: 'https://api.anthropic.com/v1/models',
+      url: `${this.baseUrl}/models`,
       headers: {
         'x-api-key': this.apiKey,
         'Anthropic-Version': '2023-06-01'
@@ -740,7 +747,7 @@ export class OpenAICompatibleClient implements LLMClient {
 
       const data = response.json as {
         choices?: Array<{
-          message?: { content?: string };
+          message?: { content?: string; reasoning_content?: string };
           finish_reason?: string;
         }>;
         error?: { message: string };
@@ -753,7 +760,12 @@ export class OpenAICompatibleClient implements LLMClient {
       if (data.error) throw new Error(`status ${response.status}: ${data.error.message}`);
 
       const initialChoices = data.choices;
-      const initialText = data.choices?.[0]?.message?.content || '';
+      // v1.20.0: extract reasoning_content (DeepSeek thinking) from non-stream
+      // response and prepend as <think> block so extractThinkingBlocks can find it.
+      const reasoning = data.choices?.[0]?.message?.reasoning_content || '';
+      const initialText = (data.choices?.[0]?.message?.content || '')
+        ? (reasoning ? '<think>' + reasoning + '</think>\n\n' : '') + (data.choices?.[0]?.message?.content || '')
+        : '';
 
       return withTruncationRetry<{ choices: NonNullable<typeof data.choices>; initialText: string; usage?: typeof data.usage }>({
         initialFn: async () => {
@@ -763,11 +775,16 @@ export class OpenAICompatibleClient implements LLMClient {
           return { choices: initialChoices ?? [], initialText, usage: data.usage };
         },
         retryFn: async (retryTokens) => {
+          // v1.20.0: preserve the token key that buildRequestBody() chose
+          // (max_completion_tokens for gpt-5, max_tokens otherwise).
+          // Hardcoding 'max_tokens' would break GPT-5 truncation retries.
+          const retryTokenKey = 'max_completion_tokens' in bodyToUse
+            ? 'max_completion_tokens' : 'max_tokens';
           const retryResponse = await requestUrl({
             url: this.baseUrl + '/chat/completions',
             method: 'POST',
             headers: this.getHeaders(),
-            body: JSON.stringify({ ...bodyToUse, max_tokens: retryTokens })
+            body: JSON.stringify({ ...bodyToUse, [retryTokenKey]: retryTokens }),
           });
           const retryData = retryResponse.json as typeof data;
           if (retryData.error) throw new Error(`status ${retryResponse.status}: ${retryData.error.message}`);
@@ -829,14 +846,24 @@ export class OpenAICompatibleClient implements LLMClient {
     messages: Array<{role: 'system' | 'user' | 'assistant'; content: string}>,
     streaming: boolean,
   ): Record<string, unknown> {
+    // v1.20.0: gpt-5-* models require max_completion_tokens instead of max_tokens.
+    // OpenAI changed the parameter name for the gpt-5 series to disambiguate
+    // it from the legacy max_tokens that some endpoints no longer recognize.
+    // Issue #143.
+    const isGpt5 = params.model.startsWith('gpt-5');
+    const tokenKey = isGpt5 ? 'max_completion_tokens' : 'max_tokens';
+
     const body: Record<string, unknown> = {
       model: params.model,
-      max_tokens: params.max_tokens,
+      [tokenKey]: params.max_tokens,
       messages,
     };
     if (streaming) body.stream = true;
 
-    // #137: pre-strip fields this baseUrl has already rejected.
+    // v1.20.0: by default (caller does not pass these), do not inject
+    // temperature / repetition_penalty / chat_template_kwargs. Each field is
+    // only sent when the caller explicitly provides it (Custom Advanced mode)
+    // AND this baseUrl has not previously rejected it.
     if (params.temperature !== undefined && !this.unsupportedFields.has('temperature')) {
       body.temperature = params.temperature;
     }
@@ -1011,11 +1038,25 @@ export class OpenAICompatibleClient implements LLMClient {
         // Parse SSE events using shared parser
         const deltas = parseSSEEvents(responseText, 'openai');
         let fullText = '';
+        let reasoningContent = '';
         for (const delta of deltas) {
+          // v1.20.0: accumulate reasoning_content from DeepSeek-style providers
+          // that return thinking in a separate delta field (not <think> tags).
+          // Prepend as <think>...</think> so extractThinkingBlocks() can find it.
+          if (delta.reasoning) {
+            reasoningContent += delta.reasoning;
+          }
           if (delta.text) {
             fullText += delta.text;
             params.onChunk(delta.text);
           }
+        }
+
+        // Prepend accumulated reasoning as <think> block (never sent to onChunk
+        // to avoid double-render; only included in the returned string so the
+        // Query Wiki's extractThinkingBlocks can find it).
+        if (reasoningContent) {
+          fullText = '<think>' + reasoningContent + '</think>\n\n' + fullText;
         }
 
         // Fallback: if SSE parsing yielded nothing, try non-streaming JSON format.
@@ -1023,15 +1064,16 @@ export class OpenAICompatibleClient implements LLMClient {
           console.debug('[OpenAICompat SSE] SSE parsing empty, trying non-streaming JSON fallback');
           try {
             const data = JSON.parse(responseText) as {
-              choices?: Array<{ message?: { content?: string } }>;
+              choices?: Array<{ message?: { content?: string; reasoning_content?: string } }>;
               error?: { message: string };
             };
             if (data.error) throw new Error(data.error.message);
             const text = data.choices?.[0]?.message?.content || '';
-            if (text) {
+            const reasoning = data.choices?.[0]?.message?.reasoning_content || '';
+            if (text || reasoning) {
               console.debug('[OpenAICompat SSE] Non-streaming fallback successful, length:', text.length);
-              fullText = text;
-              params.onChunk(text);
+              fullText = (reasoning ? '<think>' + reasoning + '</think>\n\n' : '') + text;
+              if (text) params.onChunk(text);
             }
           } catch (parseErr) {
             console.debug('[OpenAICompat SSE] Non-streaming JSON parse also failed:', parseErr);

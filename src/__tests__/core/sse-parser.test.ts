@@ -116,6 +116,43 @@ describe('parseSSEEvents — OpenAI format', () => {
     expect(deltas).toHaveLength(1);
     expect(deltas[0].text).toBe('Hi');
   });
+
+  it('extracts reasoning_content from delta (DeepSeek thinking)', () => {
+    const sse = [
+      'data: {"choices":[{"delta":{"reasoning_content":"Let me think..."},"finish_reason":null}]}',
+      '',
+      'data: {"choices":[{"delta":{"content":"The answer is 42."},"finish_reason":null}]}',
+      '',
+      'data: [DONE]',
+      '',
+    ].join('\n');
+
+    const deltas = parseSSEEvents(sse, 'openai');
+    expect(deltas).toHaveLength(2);
+    expect(deltas[0].reasoning).toBe('Let me think...');
+    expect(deltas[0].text).toBe('');
+    expect(deltas[1].text).toBe('The answer is 42.');
+    expect(deltas[1].reasoning).toBeUndefined();
+  });
+
+  it('handles interleaved reasoning_content and content chunks', () => {
+    const sse = [
+      'data: {"choices":[{"delta":{"reasoning_content":"Step 1: "},"finish_reason":null}]}',
+      '',
+      'data: {"choices":[{"delta":{"reasoning_content":"analyze."},"finish_reason":null}]}',
+      '',
+      'data: {"choices":[{"delta":{"content":"Result."},"finish_reason":null}]}',
+      '',
+      'data: [DONE]',
+      '',
+    ].join('\n');
+
+    const deltas = parseSSEEvents(sse, 'openai');
+    const reasoning = deltas.filter(d => d.reasoning).map(d => d.reasoning);
+    expect(reasoning).toEqual(['Step 1: ', 'analyze.']);
+    const texts = deltas.filter(d => d.text).map(d => d.text);
+    expect(texts).toEqual(['Result.']);
+  });
 });
 
 describe('parseSSEEvents — format dispatch', () => {

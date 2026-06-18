@@ -146,6 +146,10 @@ export const KO_TEXTS = {
     queryModalErrorPrefix: '오류: ',
     queryModalHint: '위키 콘텐츠 기반 질의입니다. "위키에 저장"을 클릭하면 가치 있는 대화를 위키 페이지로 추출할 수 있습니다.',
 
+    // v1.20.0: Query Wiki 사고 블록 접기 요약
+    queryThinkingSummary: '사고 과정',
+    queryThinkingSteps: '단계',
+
     // Error Messages
     errorLLMClientNotInit: 'LLM 클라이언트가 초기화되지 않았습니다. 설정을 저장하세요.',
     errorIngestFailed: '수집 실패: ',
@@ -407,11 +411,11 @@ export const KO_TEXTS = {
 
     // Advanced LLM Settings (Issues #99 / #128)
     advancedSettingsModeName: '고급 매개변수 설정',
-    advancedSettingsModeDesc: '기본 모드에서는 모든 고급 매개변수가 숨겨지고 "생각 비활성화"가 켜져 있어 대부분의 사용자에게 적합합니다. 사용자 정의 모드에서는 생각 토글, 추출 온도, 쿼리 온도, 반복 패널티가 표시됩니다. 모델 동작을 세밀하게 조정하거나 출력 문제를 해결해야 할 때만 사용자 정의로 전환하세요.',
-    advancedSettingsDefault: '기본값',
-    advancedSettingsCustom: '사용자 정의',
+    advancedSettingsModeDesc: '기본값은 공급자의 자체 동작을 사용하며, 사고 제어, 온도, 반복 페널티 필드를 전송하지 않습니다. 대부분의 사용자에게 적합합니다. 공급자 기본값을 명시적으로 재정의해야 하는 경우(예: 특정 사고 제어 방언 강제, 기본값이 아닌 온도 설정 등)에만 사용자 정의로 전환하세요.',
+    advancedSettingsDefault: '기본값 (공급자 동작 사용)',
+    advancedSettingsCustom: '사용자 정의 (공급자 기본값 재정의)',
     disableThinkingName: '생각 비활성화',
-    disableThinkingDesc: '기본적으로 켜져 있습니다. 모델 출력이 정상이고 추출 품질을 개선하려는 경우에만 끄세요. 끄면 비용이 증가하고 일부 모델에서 출력이 깨질 수 있습니다.',
+    disableThinkingDesc: '옵트인입니다. 활성화하면 플러그인은 사고 제어 지시문을 공급자에게 보내고, 공급자가 거부하면 3단계 방언 폴백 체인(anthropic → openai → none)을 실행합니다. 공급자가 추론 내용을 답변에 누설하고 이를 억제해야 할 때만 사용하세요. 대부분의 공급자는 추론을 올바르게 처리하므로, 이를 비활성화(기본값)로 두는 것이 더 나은 품질을 제공합니다.',
     // Issue #137: 호환성 안내 (간결하게; 공급자 목록 생략)
     extractionTemperatureName: '추출 온도',
     extractionTemperatureDesc: '범위 0–2. 낮을수록 LLM 출력이 결정적이고 원본에 충실해집니다. 높을수록 창의적입니다. 비워 두면 제공자 기본값이 사용됩니다. 제공자가 이 값을 거부하면 플러그인이 자동으로 필드를 제거하고 한 번 알림을 표시합니다.',

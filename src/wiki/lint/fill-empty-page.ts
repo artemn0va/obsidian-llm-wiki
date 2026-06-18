@@ -65,7 +65,7 @@ export async function fillEmptyPage(
       'full'
     ),
     messages: [{ role: 'user', content: finalPrompt }],
-    enableThinking: !ctx.settings.disableThinking,
+    ...(ctx.settings.disableThinking ? { enableThinking: false } : {}),
   });
 
   const cleaned = cleanMarkdownResponse(filledContent);

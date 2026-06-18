@@ -429,9 +429,10 @@ export class LLMWikiSettingTab extends PluginSettingTab {
     }
 
     // Advanced LLM settings — hidden behind a Default/Custom dropdown
-    // like the Tag Vocabulary mode selector. Default keeps things simple:
-    // disableThinking=on, all other params unset. Custom reveals the
-    // individual toggles and number inputs.
+    // v1.20.0 inverted semantics: default mode = no provider-specific
+    // overrides (provider decides its own behavior). Custom mode = user
+    // explicitly opts in to disable thinking / temperature / repetition
+    // penalty overrides.
     new Setting(containerEl)
       .setName(this.getText('advancedSettingsModeName'))
       .setDesc(this.getText('advancedSettingsModeDesc'))
@@ -443,7 +444,8 @@ export class LLMWikiSettingTab extends PluginSettingTab {
           .onChange((value: string) => {
             this.tempSettings.advancedSettingsMode = value as 'default' | 'custom';
             if (value === 'default') {
-              this.tempSettings.disableThinking = true;
+              // Default mode: no overrides — provider decides its own behavior
+              this.tempSettings.disableThinking = false;
               this.tempSettings.extractionTemperature = undefined;
               this.tempSettings.chatTemperature = undefined;
               this.tempSettings.repetitionPenalty = undefined;
@@ -457,8 +459,10 @@ export class LLMWikiSettingTab extends PluginSettingTab {
       .setName(this.getText('disableThinkingName'))
       .setDesc(this.getText('disableThinkingDesc'))
       .addToggle(toggle => toggle
-        .setValue(this.tempSettings.disableThinking !== false)
+        .setValue(this.tempSettings.disableThinking === true)
         .onChange((value) => {
+          // v1.20.0: opt-in. When enabled, the LLM client walks the 3-tier
+          // dialect fallback (anthropic → openai → none) on 400.
           this.tempSettings.disableThinking = value;
         }));
 

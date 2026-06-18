@@ -145,6 +145,10 @@ export const PT_TEXTS = {
     queryModalErrorPrefix: 'Erro: ',
     queryModalHint: 'Consultas baseadas no conteúdo da Wiki. Clique em "Salvar na Wiki" para extrair conversas valiosas como páginas.',
 
+    // v1.20.0: Resumo do bloco de raciocínio colapsável do Query Wiki
+    queryThinkingSummary: 'Processo de raciocínio',
+    queryThinkingSteps: 'passos',
+
     // Error Messages
     errorLLMClientNotInit: 'LLM Client não inicializado. Salve as configurações.',
     errorIngestFailed: 'Falha na ingestão: ',
@@ -406,11 +410,11 @@ export const PT_TEXTS = {
 
     // Advanced LLM Settings (Issues #99 / #128)
     advancedSettingsModeName: 'Configuração de parâmetros avançados',
-    advancedSettingsModeDesc: 'O modo padrão mantém todos os parâmetros avançados ocultos e a opção "Desabilitar pensamento" ativada — a escolha certa para a maioria dos usuários. O modo personalizado exibe a opção de pensamento, temperatura de extração, temperatura de consulta e penalidade de repetição. Só mude para Personalizado se precisar de controle fino sobre o comportamento do modelo ou estiver diagnosticando problemas de saída.',
-    advancedSettingsDefault: 'Padrão',
-    advancedSettingsCustom: 'Personalizado',
+    advancedSettingsModeDesc: 'O modo padrão usa o comportamento nativo do seu provedor — nenhum campo de controle de raciocínio, temperatura ou penalidade de repetição é enviado. Isso funciona para a maioria dos usuários. Só mude para Personalizado se precisar substituir explicitamente os padrões do provedor (por exemplo, forçar um dialeto de controle de raciocínio específico, definir uma temperatura diferente da padrão, etc.).',
+    advancedSettingsDefault: 'Padrão (usar comportamento do provedor)',
+    advancedSettingsCustom: 'Personalizado (substituir padrões do provedor)',
     disableThinkingName: 'Desabilitar pensamento',
-    disableThinkingDesc: 'Ativado por padrão. Desative apenas se seu modelo produzir resultados limpos e você quiser potencialmente melhorar a qualidade da extração. Desativar aumenta o custo e pode causar saída distorcida em alguns modelos.',
+    disableThinkingDesc: 'Opt-in. Quando ativado, o plugin envia uma diretiva de controle de raciocínio ao provedor e percorre uma cadeia de fallback de dialeto de 3 níveis (anthropic → openai → none) se o provedor a rejeitar. Use isso apenas se o seu provedor vazar conteúdo de raciocínio na resposta e você precisar suprimi-lo. A maioria dos provedores trata o raciocínio corretamente por conta própria — deixar isso desativado (padrão) oferece melhor qualidade.',
     // Issue #137: Avisos de compatibilidade (breves; sem lista de provedores)
     extractionTemperatureName: 'Temperatura de extração',
     extractionTemperatureDesc: 'Intervalo 0–2. Valores mais baixos tornam a saída do LLM mais determinística e fiel. Valores mais altos tornam mais criativa. Deixe vazio para usar o padrão do provedor. Se o provedor rejeitar este valor, o plugin remove o campo automaticamente e mostra um aviso único.',

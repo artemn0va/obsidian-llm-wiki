@@ -11,7 +11,7 @@ interface AnthropicDelta {
 
 interface OpenAIDelta {
   choices?: Array<{
-    delta?: { content?: string };
+    delta?: { content?: string; reasoning_content?: string };
     finish_reason?: string;
   }>;
 }
@@ -19,6 +19,8 @@ interface OpenAIDelta {
 export interface SSEDelta {
   /** Text chunk extracted from this event. Empty string if no text content. */
   text: string;
+  /** Reasoning/thinking content chunk (e.g. DeepSeek reasoning_content). */
+  reasoning?: string;
   /** Provider-specific finish signal (e.g. 'stop', 'length'). */
   finishReason?: string;
 }
@@ -67,8 +69,11 @@ export function parseSSEEvents(responseText: string, format: SSEFormat): SSEDelt
       } else {
         const oai = parsed as OpenAIDelta;
         const content = oai.choices?.[0]?.delta?.content;
+        const reasoning = oai.choices?.[0]?.delta?.reasoning_content;
         const finish = oai.choices?.[0]?.finish_reason;
-        if (content) deltas.push({ text: content });
+        if (content || reasoning) {
+          deltas.push({ text: content ?? '', reasoning: reasoning ?? undefined });
+        }
         if (finish) deltas.push({ text: '', finishReason: finish });
       }
     } catch {

@@ -157,6 +157,10 @@ export const EN_TEXTS = {
     queryModalErrorPrefix: 'Error: ',
     queryModalHint: 'Queries based on Wiki content. Click "Save to Wiki" to extract valuable conversations as Wiki pages.',
 
+    // v1.20.0: Query Wiki thinking-block collapsible summary
+    queryThinkingSummary: 'Thinking process',
+    queryThinkingSteps: 'steps',
+
     // Error Messages
     errorLLMClientNotInit: 'LLM Client not initialized. Please save settings.',
     errorIngestFailed: 'Ingest failed: ',
@@ -413,13 +417,13 @@ export const EN_TEXTS = {
     lintReportTitle: 'Wiki lint report',
     lintReportSummary: 'Wiki status overview: {total} pages total, {aliasesMissing} pages missing aliases, {duplicates} duplicate pages, {deadLinks} dead links ({deadLinkFromDup} involve duplicates), {orphans} orphan pages ({orphanFromDup} are duplicates), {emptyPages} empty pages, {ungroundedQuotes} ungrounded quotes, {tagViolations} out-of-vocabulary tags. Lint elapsed: {elapsedSeconds}s',
 
-    // Advanced LLM Settings (Issues #99 / #128)
+    // Advanced LLM Settings (v1.20.0: default = no provider-specific overrides)
     advancedSettingsModeName: 'Advanced parameter settings',
-    advancedSettingsModeDesc: 'Default keeps all advanced parameters hidden and "Disable thinking" enabled — this is the right choice for most users. Custom reveals the thinking toggle, extraction temperature, query temperature, and repetition penalty. Only switch to Custom if you need fine-grained control over model behavior or are troubleshooting output issues.',
-    advancedSettingsDefault: 'Default',
-    advancedSettingsCustom: 'Custom',
+    advancedSettingsModeDesc: 'Default uses your provider\'s own behavior — no thinking-control, temperature, or repetition-penalty fields are sent. This works for most users. Switch to Custom only if you need to explicitly override the provider defaults (e.g. force a specific thinking-control dialect, set a non-default temperature, etc.).',
+    advancedSettingsDefault: 'Default (use provider behavior)',
+    advancedSettingsCustom: 'Custom (override provider defaults)',
     disableThinkingName: 'Disable thinking',
-    disableThinkingDesc: 'Leave this on (default). Turn it off only if your model produces clean output and you want to potentially improve extraction quality. Disabling adds cost and may cause garbled output on some models.',
+    disableThinkingDesc: 'Opt-in. When enabled, the plugin sends a thinking-control directive to the provider and walks a 3-tier dialect fallback chain (anthropic → openai → none) if the provider rejects it. Use this only if your provider leaks reasoning content into the answer and you need to suppress it. Most providers handle reasoning correctly on their own — leaving this off gives better quality.',
     // Issue #137: compatibility hints for advanced settings (kept short; no
     // provider list to avoid maintenance burden when providers change).
     extractionTemperatureName: 'Extraction temperature',

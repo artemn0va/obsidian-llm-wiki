@@ -66,3 +66,54 @@ export function cleanMarkdownResponse(response: string): string {
 
   return cleaned.trim();
 }
+
+/**
+ * Extract reasoning blocks from LLM response content.
+ *
+ * v1.20.0: When the user runs thinking-capable models with the default
+ * "no explicit thinking control" mode, providers may emit reasoning as:
+ *   - <think>...</think> blocks
+ *   - <thinking>...</thinking> blocks (alternative XML)
+ *   - <think role="assistant">...</think> (with attributes)
+ *
+ * The Query Wiki UI renders the visible content normally and shows the
+ * reasoning inside a <details> collapsible block (default collapsed), so
+ * reasoning never visually leaks into the main answer. This extractor
+ * normalizes all three forms into a single shape.
+ *
+ * Pure function — no side effects.
+ *
+ * @param content - Raw LLM response text
+ * @returns Object with `thinkingBlocks: string[]` (in order) and
+ *          `visibleContent: string` (with the blocks removed)
+ */
+export function extractThinkingBlocks(content: string): {
+  thinkingBlocks: string[];
+  visibleContent: string;
+} {
+  if (!content) {
+    return { thinkingBlocks: [], visibleContent: '' };
+  }
+
+  // Match both <think>...</think> and <thinking>...</thinking> with optional
+  // attributes on the opening tag. Use non-greedy [\s\S]*? so multiple blocks
+  // are matched individually rather than as one giant block.
+  // Require a closing tag — incomplete blocks (no close) are left in the
+  // visible content to avoid swallowing the rest of the response.
+  const blockRegex = /<think(?:ing)?\b[^>]*>[\s\S]*?<\/think(?:ing)?>\s*/gi;
+  const thinkingBlocks: string[] = [];
+  let visibleContent = content.replace(blockRegex, (_match) => {
+    return '';
+  });
+
+  // Re-extract the inner content of each block for the result. Doing the
+  // replacement in two passes (strip with whitespace, then collect inner)
+  // is simpler than passing through a callback with capture groups.
+  const innerRegex = /<think(?:ing)?\b[^>]*>([\s\S]*?)<\/think(?:ing)?>/gi;
+  let m: RegExpExecArray | null;
+  while ((m = innerRegex.exec(content)) !== null) {
+    thinkingBlocks.push(m[1].trim());
+  }
+
+  return { thinkingBlocks, visibleContent: visibleContent.trimStart() };
+}

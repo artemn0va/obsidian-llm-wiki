@@ -38,6 +38,7 @@ export function renderThinkingBlocksUI(
   // v1.20.0: use activeDocument for popout-window compatibility.
   // Test environment stubs activeDocument on globalThis (see setup.ts).
   const doc = activeDocument;
+  if (!doc) return null;
   const details = doc.createElement('details');
   details.className = 'llm-wiki-query-thinking-block';
 
@@ -466,6 +467,7 @@ export class QueryModal extends Modal {
                 system: wikiContext,
                 messages: conversationMessages,
                 ...(this.plugin.settings.disableThinking ? { enableThinking: false } : {}),
+                ...(this.plugin.settings.chatTemperature !== undefined ? { temperature: this.plugin.settings.chatTemperature } : {}),
               });
               if (this.aborted) {
                 cleanupTimer();
@@ -502,7 +504,7 @@ export class QueryModal extends Modal {
         // from reasoning_content). During streaming, onChunk only received
         // delta.text — the thinking content was accumulated separately by
         // createMessageStream and prepended as <think> tags in the return value.
-        if (fullResponse) {
+        if (fullResponse !== undefined && fullResponse !== null) {
           this.renderMarkdownContent(fullResponse, contentDiv);
           this.scrollToBottom();
         }
@@ -599,7 +601,8 @@ export class QueryModal extends Modal {
     // collapsible <details> panel above it (default collapsed, ChatGPT-style).
     // Fast guard: skip regex during streaming (onChunk only receives text deltas,
     // never <think> tags). Only run the full extraction when delimiters are present.
-    const hasThinkTags = content.includes('<think>') || content.includes('<thinking');
+    const lower = content.toLowerCase();
+    const hasThinkTags = lower.includes('<think');
     const { thinkingBlocks, visibleContent } = hasThinkTags
       ? extractThinkingBlocks(content)
       : { thinkingBlocks: [] as string[], visibleContent: content };

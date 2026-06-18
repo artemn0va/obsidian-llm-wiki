@@ -112,7 +112,7 @@ export function extractThinkingBlocks(content: string): {
   const innerRegex = /<think(?:ing)?\b[^>]*>([\s\S]*?)<\/think(?:ing)?>/gi;
   let m: RegExpExecArray | null;
   while ((m = innerRegex.exec(content)) !== null) {
-    thinkingBlocks.push(m[1].trim());
+    thinkingBlocks.push(unescapeThinkingTag(m[1].trim()));
   }
 
   return { thinkingBlocks, visibleContent: visibleContent.trimStart() };
@@ -129,5 +129,16 @@ export function extractThinkingBlocks(content: string): {
  */
 export function wrapReasoningContent(reasoning: string, text: string): string {
   if (!reasoning) return text;
-  return '<think>' + reasoning + '</think>\n\n' + text;
+  // Escape any literal </think> inside reasoning to prevent premature block close
+  // by extractThinkingBlocks regex. The escaped form is harmless in rendered pre text.
+  const safeReasoning = reasoning.replace(/<\/think/gi, '<\\/think');
+  return '<think>' + safeReasoning + '</think>\n\n' + text;
+}
+
+/**
+ * Unescape <think> tags that were escaped by wrapReasoningContent.
+ * Called by extractThinkingBlocks before returning inner content.
+ */
+export function unescapeThinkingTag(s: string): string {
+  return s.replace(/<\\\/think/gi, '</think');
 }

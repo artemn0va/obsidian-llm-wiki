@@ -608,6 +608,11 @@ export class OpenAICompatibleClient implements LLMClient {
   // chat_template_kwargs injection for the OpenAI dialect fallback.
   unsupportedFields: Set<string> = new Set();
 
+  // v1.20.0: fields that must never be stripped even if a 400 error
+  // mentions them (e.g., "Unknown name 'model'"). Stripping these
+  // would break all subsequent requests.
+  private static PROTECTED_FIELDS = new Set(['model', 'messages', 'stream']);
+
   // #137: language tag for localized fallback notices. Wired by
   // createLLMClient so that queueFallbackNotice can resolve templates via
   // getText() instead of hard-coding TEXTS.en (which would discard the
@@ -736,7 +741,9 @@ export class OpenAICompatibleClient implements LLMClient {
             // caller's catch can strip them and retry.
             const unknown = parseUnknownFields(err);
             if (unknown.length > 0) {
-              for (const f of unknown) this.unsupportedFields.add(f);
+              for (const f of unknown) {
+                if (!OpenAICompatibleClient.PROTECTED_FIELDS.has(f)) this.unsupportedFields.add(f);
+              }
               logFallback('field-strip', `fields rejected by ${this.baseUrl}: ${unknown.join(', ')}`);
             }
             console.debug('[OpenAICompat Debug] 400 error body:', JSON.stringify(json) || text || 'no body');
@@ -788,10 +795,16 @@ export class OpenAICompatibleClient implements LLMClient {
           });
           const retryData = retryResponse.json as typeof data;
           if (retryData.error) throw new Error(`status ${retryResponse.status}: ${retryData.error.message}`);
-          return { choices: retryData.choices ?? [], initialText, usage: retryData.usage };
+          return { choices: retryData.choices ?? [], initialText, usage: retryData.usage, retryReasoning: retryData.choices?.[0]?.message?.reasoning_content || '' };
         },
         isTruncated: (r) => r.choices[0]?.finish_reason === 'length',
-        extractText: (r) => r.choices[0]?.message?.content || r.initialText,
+        extractText: (r) => {
+          const content = r.choices[0]?.message?.content || '';
+          const retryReasoning = (r as { retryReasoning?: string }).retryReasoning || '';
+          return retryReasoning
+            ? wrapReasoningContent(retryReasoning, content)
+            : (content || r.initialText);
+        },
         getMaxTokens: () => params.max_tokens,
         getStopReason: (r) => r.choices[0]?.finish_reason,
         maxCap: params.maxTokensPerCall || MAX_TOKENS_BATCH,
@@ -850,7 +863,7 @@ export class OpenAICompatibleClient implements LLMClient {
     // OpenAI changed the parameter name for the gpt-5 series to disambiguate
     // it from the legacy max_tokens that some endpoints no longer recognize.
     // Issue #143.
-    const isGpt5 = params.model.startsWith('gpt-5');
+    const isGpt5 = params.model === 'gpt-5' || params.model.startsWith('gpt-5-');
     const tokenKey = isGpt5 ? 'max_completion_tokens' : 'max_tokens';
 
     const body: Record<string, unknown> = {
@@ -1026,7 +1039,9 @@ export class OpenAICompatibleClient implements LLMClient {
           if (is400) {
             const unknown = parseUnknownFields(err);
             if (unknown.length > 0) {
-              for (const f of unknown) this.unsupportedFields.add(f);
+              for (const f of unknown) {
+                if (!OpenAICompatibleClient.PROTECTED_FIELDS.has(f)) this.unsupportedFields.add(f);
+              }
               logFallback('field-strip', `fields rejected by ${this.baseUrl}: ${unknown.join(', ')}`);
             }
           }

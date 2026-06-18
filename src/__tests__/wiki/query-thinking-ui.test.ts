@@ -26,6 +26,8 @@ afterEach(() => {
   // eslint-disable-next-line obsidianmd/no-global-this
   delete (globalThis as Record<string, unknown>).document;
   // eslint-disable-next-line obsidianmd/no-global-this
+  delete (globalThis as Record<string, unknown>).activeDocument;
+  // eslint-disable-next-line obsidianmd/no-global-this
   delete (globalThis as Record<string, unknown>).HTMLElement;
   vi.restoreAllMocks();
 });

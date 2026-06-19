@@ -1,4 +1,5 @@
 import { activeVaultRoot, labRoot } from '../config.js';
+import { markPluginReloaded } from './plugin.js';
 import { runProcess } from './process.js';
 
 const OBSIDIAN_VAULT_NAME = 'Roadmap';
@@ -56,5 +57,10 @@ Start-Process ('obsidian://open?vault=' + [uri]::EscapeDataString($vaultName))
 Write-Host "Reloaded Obsidian for vault $vaultName at $vaultRoot"
 `;
 
-  return runProcess('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', script], labRoot);
+  const result = await runProcess('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', script], labRoot);
+  if (result.exitCode === 0) {
+    await markPluginReloaded();
+  }
+
+  return result;
 }

@@ -1822,17 +1822,48 @@ function BridgeView({
         <Card>
           <CardHeader>
             <CardTitle>Plugin Build</CardTitle>
-            <CardDescription>Build fork and copy safe plugin artifacts into the active vault.</CardDescription>
+            <CardDescription>{status?.plugin.workflowMessage || 'Build, deploy, then reload Obsidian.'}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
-            <div className="grid gap-3 md:grid-cols-2">
-              <StatusCard title="Installed Version" value={status?.plugin.version || 'Unknown'} ok={Boolean(status?.plugin.installed)} />
-              <StatusCard title="Hash Match" value={status?.plugin.hashMatch ? 'Matched' : 'Mismatch'} ok={Boolean(status?.plugin.hashMatch)} />
+            <div className="grid gap-3 md:grid-cols-3">
+              <StatusCard title="Fork Version" value={status?.plugin.forkVersion || 'Unknown'} ok={Boolean(status?.plugin.forkVersion)} />
+              <StatusCard title="Installed Version" value={status?.plugin.installedVersion || 'Unknown'} ok={Boolean(status?.plugin.installed)} />
+              <StatusCard title="Reload Needed" value={status?.plugin.reloadNeeded ? 'Yes' : 'No'} ok={!status?.plugin.reloadNeeded} />
             </div>
-            <TooltipButton tooltip="Install plugin" disabled={Boolean(busyLabel)} onClick={() => void runAction('Build + Deploy', () => api.buildDeploy())}>
-              <HammerIcon data-icon="inline-start" />
-              Build + Deploy
-            </TooltipButton>
+
+            <div className="grid gap-3 md:grid-cols-2">
+              <HashLine label="Fork main.js" hash={status?.plugin.forkMainHash} />
+              <HashLine label="Installed main.js" hash={status?.plugin.installedMainHash} />
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-2">
+              <StatusLine label="Hash match" ok={Boolean(status?.plugin.hashMatch)} value={status?.plugin.hashMatch ? 'Fork and installed plugin match' : 'Build + Deploy needed'} />
+              <StatusLine label="Last build" ok={Boolean(status?.plugin.deploy.lastBuildAt)} value={deployTimeLabel(status?.plugin.deploy.lastBuildAt, status?.plugin.deploy.lastBuildExitCode)} />
+              <StatusLine label="Last deploy" ok={Boolean(status?.plugin.deploy.lastDeployAt)} value={status?.plugin.deploy.lastDeployAt ? formatDate(status.plugin.deploy.lastDeployAt) : 'Never'} />
+              <StatusLine label="Safe artifacts" ok={Boolean(status?.plugin.deploy.lastDeployFiles.length)} value={status?.plugin.deploy.lastDeployFiles.length ? status.plugin.deploy.lastDeployFiles.join(', ') : 'main.js, manifest.json, styles.css'} />
+            </div>
+
+            <div className="rounded-md border p-3">
+              <div className="mb-2 text-sm font-medium">Action order</div>
+              <div className="grid gap-2 text-xs text-muted-foreground md:grid-cols-3">
+                <span>1. Build fork</span>
+                <span>2. Deploy safe artifacts</span>
+                <span>3. Reload Obsidian</span>
+              </div>
+            </div>
+
+            <DeployLogPreview lines={status?.plugin.deploy.lastDeployLog || []} />
+
+            <div className="flex flex-wrap gap-2">
+              <TooltipButton tooltip="Build and copy artifacts" disabled={Boolean(busyLabel)} onClick={() => void runAction('Build + Deploy', () => api.buildDeploy())}>
+                <HammerIcon data-icon="inline-start" />
+                Build + Deploy
+              </TooltipButton>
+              <TooltipButton tooltip="Reload Obsidian" variant="outline" disabled={Boolean(busyLabel)} onClick={() => void runAction('Reload Obsidian', () => api.reloadObsidian())}>
+                <RefreshCwIcon data-icon="inline-start" />
+                Reload Obsidian
+              </TooltipButton>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -2452,10 +2483,41 @@ function StatusLine({ label, value, ok }: { label: string; value: string; ok: bo
   );
 }
 
+function HashLine({ label, hash }: { label: string; hash?: string | null }) {
+  return (
+    <div className="rounded-md border p-3">
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className="mt-1 truncate font-mono text-sm">{shortHash(hash)}</div>
+    </div>
+  );
+}
+
+function DeployLogPreview({ lines }: { lines: string[] }) {
+  return (
+    <div className="rounded-md border p-3">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <div className="text-sm font-medium">Deploy log preview</div>
+        <Badge variant="outline">{lines.length}</Badge>
+      </div>
+      <pre className="max-h-40 overflow-auto rounded-md bg-muted p-3 text-xs text-muted-foreground">
+        {lines.length ? lines.join('\n') : 'No build/deploy log yet.'}
+      </pre>
+    </div>
+  );
+}
+
 function StatusBadges({ status, loading }: { status: LabStatus | null; loading: boolean }) {
   if (loading && !status) return <Skeleton className="h-6 w-48" />;
   return (
     <div className="hidden items-center gap-2 md:flex">
+      {status?.plugin.reloadNeeded ? (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Badge variant="destructive">Reload Needed</Badge>
+          </TooltipTrigger>
+          <TooltipContent>Deploy finished; reload Obsidian to load the new plugin.</TooltipContent>
+        </Tooltip>
+      ) : null}
       <Tooltip>
         <TooltipTrigger asChild>
           <Badge variant={status?.plugin.hashMatch ? 'secondary' : 'destructive'}>Hash Match</Badge>
@@ -2650,6 +2712,10 @@ function shortId(value: string) {
   return value.slice(0, 8);
 }
 
+function shortHash(value?: string | null) {
+  return value ? value.slice(0, 12) : 'Missing';
+}
+
 function formatDuration(value: number | null) {
   if (typeof value !== 'number') return 'Pending';
   const totalSeconds = Math.max(0, Math.round(value / 1000));
@@ -2662,6 +2728,11 @@ function formatDuration(value: number | null) {
 function qaShort(report?: QAReport | null) {
   if (!report) return 'No QA';
   return `E${report.counts.error} W${report.counts.warning} I${report.counts.info}`;
+}
+
+function deployTimeLabel(value?: string | null, exitCode?: number | null) {
+  if (!value) return 'Never';
+  return `${formatDate(value)} · exit ${exitCode ?? 'unknown'}`;
 }
 
 function qualityShort(quality: RunRecord['quality']) {

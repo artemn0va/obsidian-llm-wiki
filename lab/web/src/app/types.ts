@@ -9,14 +9,29 @@ export interface LabStatus {
   plugin: {
     installed: boolean;
     version: string | null;
+    forkVersion: string | null;
+    installedVersion: string | null;
     forkMainHash: string | null;
     installedMainHash: string | null;
     hashMatch: boolean;
+    deploy: DeployStatus;
+    reloadNeeded: boolean;
+    workflowMessage: string;
   };
   bridge: {
     stateRoot: string;
     runtimeStatus: BridgeRuntimeStatus | null;
   };
+}
+
+export interface DeployStatus {
+  lastBuildAt: string | null;
+  lastBuildExitCode: number | null;
+  lastDeployAt: string | null;
+  lastDeployHash: string | null;
+  lastDeployFiles: string[];
+  lastDeployLog: string[];
+  reloadNeeded: boolean;
 }
 
 export interface BridgeRuntimeStatus {

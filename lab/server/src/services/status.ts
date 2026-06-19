@@ -10,6 +10,7 @@ import {
   wikiRoot,
 } from '../config.js';
 import { getWikiFiles, hashFile, pathExists, readJson } from './fs.js';
+import { getDeployStatus, type DeployStatus } from './plugin.js';
 import { scoreIngestQuality, type IngestQualityScore } from './quality-score.js';
 import type { QAReport } from './qa.js';
 import { getRunReview, type RunReviewState } from './run-review.js';
@@ -25,9 +26,14 @@ export interface LabStatus {
   plugin: {
     installed: boolean;
     version: string | null;
+    forkVersion: string | null;
+    installedVersion: string | null;
     forkMainHash: string | null;
     installedMainHash: string | null;
     hashMatch: boolean;
+    deploy: DeployStatus;
+    reloadNeeded: boolean;
+    workflowMessage: string;
   };
   bridge: {
     stateRoot: string;
@@ -42,10 +48,13 @@ export async function getStatus(): Promise<LabStatus> {
     return counts;
   }, {});
 
-  const manifest = await readJson<{ version?: string }>(path.join(pluginInstallRoot, 'manifest.json'));
+  const forkManifest = await readJson<{ version?: string }>(path.join(forkRoot, 'manifest.json'));
+  const installedManifest = await readJson<{ version?: string }>(path.join(pluginInstallRoot, 'manifest.json'));
   const forkMainHash = await hashFile(path.join(forkRoot, 'main.js'));
   const installedMainHash = await hashFile(path.join(pluginInstallRoot, 'main.js'));
   const runtimeStatus = await readJson(path.join(labStateRoot, 'runtime-status.json'));
+  const deploy = await getDeployStatus();
+  const hashMatch = Boolean(forkMainHash && installedMainHash && forkMainHash === installedMainHash);
 
   return {
     activeVaultRoot,
@@ -57,16 +66,28 @@ export async function getStatus(): Promise<LabStatus> {
     wikiCounts,
     plugin: {
       installed: await pathExists(pluginInstallRoot),
-      version: manifest?.version ?? null,
+      version: installedManifest?.version ?? null,
+      forkVersion: forkManifest?.version ?? null,
+      installedVersion: installedManifest?.version ?? null,
       forkMainHash,
       installedMainHash,
-      hashMatch: Boolean(forkMainHash && installedMainHash && forkMainHash === installedMainHash),
+      hashMatch,
+      deploy,
+      reloadNeeded: deploy.reloadNeeded,
+      workflowMessage: pluginWorkflowMessage(hashMatch, deploy),
     },
     bridge: {
       stateRoot: labStateRoot,
       runtimeStatus,
     },
   };
+}
+
+function pluginWorkflowMessage(hashMatch: boolean, deploy: DeployStatus): string {
+  if (!deploy.lastDeployAt) return 'Build and deploy the fork, then reload Obsidian.';
+  if (!hashMatch) return 'Installed plugin differs from the fork. Run Build + Deploy, then reload Obsidian.';
+  if (deploy.reloadNeeded) return 'Deploy finished. Reload Obsidian so it loads the new plugin files.';
+  return 'Installed plugin matches the fork and no reload is pending.';
 }
 
 interface RunCommand {

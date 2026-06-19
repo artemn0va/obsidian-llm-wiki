@@ -285,6 +285,15 @@ Developer-facing roadmap for the next Wiki Lab iterations. This file is not gene
 
 ## 8. Build / Deploy Clarity
 
+### Progress
+
+- [x] 2026-06-19: Added deploy status metadata under `.llm-wiki-lab/deploy-status.json`.
+- [x] 2026-06-19: Build/deploy actions now record last build time, build exit code, last deploy time, copied safe artifacts, and log preview lines.
+- [x] 2026-06-19: `/api/status` now exposes fork/installed versions, fork/installed hashes, deploy metadata, reload-needed state, and readable workflow message.
+- [x] 2026-06-19: `Plugin Bridge` UI now shows hashes, versions, last build/deploy, deploy log preview, reload-needed status, and build/deploy/reload order.
+- [ ] Next: add deploy history list instead of only latest deploy metadata.
+- [ ] Next: show separate build-only and deploy-only buttons for debugging failed builds.
+
 ### Goal
 
 Сделать plugin/dev workflow прозрачным: какой build установлен, совпадают ли hashes, когда deploy был сделан, нужен ли reload Obsidian.
@@ -297,11 +306,11 @@ Developer-facing roadmap for the next Wiki Lab iterations. This file is not gene
 
 ### TODO checklist
 
-- [ ] Показывать fork hash, installed hash, manifest version.
-- [ ] Показывать last build time and last deploy time.
-- [ ] Показывать `Obsidian needs reload` после deploy.
-- [ ] Добавить deploy log preview.
-- [ ] Добавить action order guidance: build, deploy, reload.
+- [x] Показывать fork hash, installed hash, manifest version.
+- [x] Показывать last build time and last deploy time.
+- [x] Показывать `Obsidian needs reload` после deploy.
+- [x] Добавить deploy log preview.
+- [x] Добавить action order guidance: build, deploy, reload.
 
 ### Acceptance criteria
 

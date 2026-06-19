@@ -21,6 +21,7 @@ export interface LabStatus {
   bridge: {
     stateRoot: string;
     runtimeStatus: BridgeRuntimeStatus | null;
+    queue: BridgeQueueStatus;
   };
 }
 
@@ -57,6 +58,46 @@ export interface BridgeProgress {
   percent?: number;
   target?: string;
   updatedAt: string;
+}
+
+export type BridgeQueueState = 'pending' | 'running' | 'stale' | 'failed' | 'done';
+
+export interface BridgeQueueItem {
+  id: string;
+  type: string;
+  path: string | null;
+  state: BridgeQueueState;
+  reason: string;
+  createdAt: string | null;
+  updatedAt: string | null;
+  lastHeartbeatAt: string | null;
+  ageMs: number | null;
+  commandFile: string | null;
+  responseStatus: string | null;
+  canClearStale: boolean;
+  canCancel: boolean;
+}
+
+export interface BridgeQueueStatus {
+  generatedAt: string;
+  staleThresholdMs: number;
+  activeCommandAgeMs: number | null;
+  lastHeartbeatAt: string | null;
+  disabledReason: string | null;
+  warnings: string[];
+  counts: Record<BridgeQueueState, number>;
+  items: BridgeQueueItem[];
+}
+
+export interface BridgeQueueActionResult {
+  cleared: string[];
+  skipped: Array<{ id: string; reason: string }>;
+}
+
+export interface BridgeCancelResult {
+  queued: boolean;
+  commandId: string | null;
+  reason: string;
 }
 
 export interface WikiFileInfo {

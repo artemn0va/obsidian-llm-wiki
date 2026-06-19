@@ -1,5 +1,8 @@
 import type {
   BridgeCommandResponse,
+  BridgeCancelResult,
+  BridgeQueueActionResult,
+  BridgeQueueStatus,
   CleanLastIngestPreview,
   CleanLastIngestResult,
   IngestCandidates,
@@ -89,6 +92,17 @@ export const api = {
     request<BridgeCommandResponse>('/api/bridge/command', {
       method: 'POST',
       body: JSON.stringify(body),
+    }),
+  bridgeQueue: () => request<BridgeQueueStatus>('/api/bridge/queue'),
+  clearStaleBridgeCommands: (ids?: string[]) =>
+    request<BridgeQueueActionResult>('/api/bridge/queue/clear-stale', {
+      method: 'POST',
+      body: JSON.stringify({ ids }),
+    }),
+  cancelActiveBridgeWork: () =>
+    request<BridgeCancelResult>('/api/bridge/cancel-active', {
+      method: 'POST',
+      body: JSON.stringify({}),
     }),
   bridgeCommandStatus: (id: string) => request<Record<string, unknown>>(`/api/bridge/command/${id}`),
 };

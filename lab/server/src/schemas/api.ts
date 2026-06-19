@@ -25,6 +25,10 @@ export const staleRunCleanupSchema = z.object({
   ids: z.array(z.string().min(8)).optional(),
 });
 
+export const bridgeQueueActionSchema = z.object({
+  ids: z.array(z.string().min(8)).optional(),
+});
+
 export const qaFixApplySchema = z.object({
   ids: z.array(z.string().min(1)).optional(),
 });

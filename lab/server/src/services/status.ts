@@ -9,6 +9,7 @@ import {
   webDistRoot,
   wikiRoot,
 } from '../config.js';
+import { getBridgeQueueStatus, type BridgeQueueStatus } from './bridge-queue.js';
 import { getWikiFiles, hashFile, pathExists, readJson } from './fs.js';
 import { getDeployStatus, type DeployStatus } from './plugin.js';
 import { scoreIngestQuality, type IngestQualityScore } from './quality-score.js';
@@ -38,6 +39,7 @@ export interface LabStatus {
   bridge: {
     stateRoot: string;
     runtimeStatus: unknown;
+    queue: BridgeQueueStatus;
   };
 }
 
@@ -52,7 +54,8 @@ export async function getStatus(): Promise<LabStatus> {
   const installedManifest = await readJson<{ version?: string }>(path.join(pluginInstallRoot, 'manifest.json'));
   const forkMainHash = await hashFile(path.join(forkRoot, 'main.js'));
   const installedMainHash = await hashFile(path.join(pluginInstallRoot, 'main.js'));
-  const runtimeStatus = await readJson(path.join(labStateRoot, 'runtime-status.json'));
+  const runtimeStatus = await readJson<RuntimeStatus>(path.join(labStateRoot, 'runtime-status.json'));
+  const queue = await getBridgeQueueStatus(runtimeStatus);
   const deploy = await getDeployStatus();
   const hashMatch = Boolean(forkMainHash && installedMainHash && forkMainHash === installedMainHash);
 
@@ -79,6 +82,7 @@ export async function getStatus(): Promise<LabStatus> {
     bridge: {
       stateRoot: labStateRoot,
       runtimeStatus,
+      queue,
     },
   };
 }

@@ -1,6 +1,7 @@
 import express from 'express';
-import { commandIdSchema, bridgeCommandSchema, qaFixApplySchema, resetSchema, runReviewSchema, staleRunCleanupSchema } from '../schemas/api.js';
+import { commandIdSchema, bridgeCommandSchema, bridgeQueueActionSchema, qaFixApplySchema, resetSchema, runReviewSchema, staleRunCleanupSchema } from '../schemas/api.js';
 import { createBridgeCommand, getBridgeCommand } from '../services/bridge.js';
+import { clearStaleBridgeCommands, getBridgeQueueStatus, requestActiveBridgeCancel } from '../services/bridge-queue.js';
 import { readWikiFile, getWikiFiles } from '../services/fs.js';
 import { getIngestCandidates } from '../services/ingest-candidates.js';
 import { cleanLastIngest, previewCleanLastIngest } from '../services/last-ingest-clean.js';
@@ -107,6 +108,19 @@ apiRouter.post('/obsidian/reload', asyncHandler(async (_req, res) => {
 apiRouter.post('/bridge/command', asyncHandler(async (req, res) => {
   const body = bridgeCommandSchema.parse(req.body);
   res.json(await createBridgeCommand(body));
+}));
+
+apiRouter.get('/bridge/queue', asyncHandler(async (_req, res) => {
+  res.json(await getBridgeQueueStatus());
+}));
+
+apiRouter.post('/bridge/queue/clear-stale', asyncHandler(async (req, res) => {
+  const body = bridgeQueueActionSchema.parse(req.body);
+  res.json(await clearStaleBridgeCommands(body.ids));
+}));
+
+apiRouter.post('/bridge/cancel-active', asyncHandler(async (_req, res) => {
+  res.json(await requestActiveBridgeCancel());
 }));
 
 apiRouter.get('/bridge/command/:id', asyncHandler(async (req, res) => {

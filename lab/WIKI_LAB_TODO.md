@@ -325,6 +325,16 @@ Developer-facing roadmap for the next Wiki Lab iterations. This file is not gene
 
 ## 9. Bridge Reliability
 
+### Progress
+
+- [x] 2026-06-19: Added deterministic bridge queue status with `pending`, `running`, `stale`, `failed`, and `done` states.
+- [x] 2026-06-19: `/api/status` now includes bridge queue counts, warnings, stale threshold, active command age, and last heartbeat.
+- [x] 2026-06-19: Added `Clear stale` endpoint/action that removes stale command files while preserving run history.
+- [x] 2026-06-19: Added `Cancel active` endpoint/action and plugin-side busy-loop cancel handling.
+- [x] 2026-06-19: Bridge UI now shows disabled/closed warnings, heartbeat, active age, queue table, and explicit stale threshold.
+- [ ] Next: add per-command retry for failed commands.
+- [ ] Next: persist bridge reliability events into a separate audit log.
+
 ### Goal
 
 Сделать bridge queue observable and controllable: pending/running/stale/failed commands должны быть видны и управляемы.
@@ -337,12 +347,12 @@ Developer-facing roadmap for the next Wiki Lab iterations. This file is not gene
 
 ### TODO checklist
 
-- [ ] Показывать queue state: `pending`, `running`, `stale`, `failed`, `done`.
-- [ ] Показывать active command age and last heartbeat.
-- [ ] Добавить `Clear stale command`.
-- [ ] Добавить `Cancel active work` with explicit status.
-- [ ] Показывать disabled bridge reason.
-- [ ] Добавить warning, если Obsidian closed or bridge disabled.
+- [x] Показывать queue state: `pending`, `running`, `stale`, `failed`, `done`.
+- [x] Показывать active command age and last heartbeat.
+- [x] Добавить `Clear stale command`.
+- [x] Добавить `Cancel active work` with explicit status.
+- [x] Показывать disabled bridge reason.
+- [x] Добавить warning, если Obsidian closed or bridge disabled.
 
 ### Acceptance criteria
 

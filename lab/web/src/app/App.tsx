@@ -31,7 +31,7 @@ import {
 import { useEffect, useMemo, useState, type ComponentProps, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { toast } from 'sonner';
 import { api } from './api';
-import type { BridgeProgress, CleanLastIngestPreview, CleanLastIngestResult, IngestCandidate, IngestCandidates, IngestGranularity, LabStatus, QAFixPreview, QAFixPreviewItem, QAReport, QAFinding, RunDiffFileContent, RunRecord, WikiFileInfo } from './types';
+import type { BridgeProgress, BridgeQueueItem, CleanLastIngestPreview, CleanLastIngestResult, IngestCandidate, IngestCandidates, IngestGranularity, LabStatus, QAFixPreview, QAFixPreviewItem, QAReport, QAFinding, RunDiffFileContent, RunRecord, WikiFileInfo } from './types';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -1801,6 +1801,10 @@ function BridgeView({
   busyLabel: string;
   runAction: (label: string, action: () => Promise<unknown>) => Promise<void>;
 }) {
+  const queue = status?.bridge.queue || null;
+  const staleItems = queue?.items.filter((item) => item.canClearStale) || [];
+  const canCancelActive = Boolean(queue?.items.some((item) => item.canCancel));
+
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto pr-1">
       <ActiveProgressPanel status={status} showWhenIdle />
@@ -1816,6 +1820,8 @@ function BridgeView({
             <StatusLine label="Running" ok={Boolean(status?.bridge.runtimeStatus?.running)} value={String(Boolean(status?.bridge.runtimeStatus?.running))} />
             <StatusLine label="Busy" ok={!status?.bridge.runtimeStatus?.busy} value={String(Boolean(status?.bridge.runtimeStatus?.busy))} />
             <StatusLine label="Updated" ok={Boolean(status?.bridge.runtimeStatus?.updatedAt)} value={status?.bridge.runtimeStatus?.updatedAt ? formatDate(status.bridge.runtimeStatus.updatedAt) : 'Never'} />
+            <StatusLine label="Last heartbeat" ok={Boolean(queue?.lastHeartbeatAt && !queue.disabledReason)} value={queue?.lastHeartbeatAt ? formatDate(queue.lastHeartbeatAt) : 'No heartbeat'} />
+            <StatusLine label="Active age" ok={!queue?.activeCommandAgeMs || queue.activeCommandAgeMs <= queue.staleThresholdMs} value={formatDuration(queue?.activeCommandAgeMs ?? null)} />
           </CardContent>
         </Card>
 
@@ -1867,8 +1873,151 @@ function BridgeView({
           </CardContent>
         </Card>
       </div>
+
+      <BridgeQueuePanel
+        queue={queue}
+        busy={Boolean(busyLabel)}
+        staleItems={staleItems}
+        canCancelActive={canCancelActive}
+        runAction={runAction}
+      />
     </div>
   );
+}
+
+function BridgeQueuePanel({
+  queue,
+  busy,
+  staleItems,
+  canCancelActive,
+  runAction,
+}: {
+  queue: LabStatus['bridge']['queue'] | null;
+  busy: boolean;
+  staleItems: BridgeQueueItem[];
+  canCancelActive: boolean;
+  runAction: (label: string, action: () => Promise<unknown>) => Promise<void>;
+}) {
+  if (!queue) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Bridge Queue</CardTitle>
+          <CardDescription>No bridge queue status is available.</CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader className="flex-row items-start justify-between gap-3">
+        <div className="min-w-0">
+          <CardTitle>Bridge Queue</CardTitle>
+          <CardDescription>Pending, running, stale, failed, and completed bridge commands.</CardDescription>
+        </div>
+        <Badge variant={queue.disabledReason ? 'destructive' : 'secondary'}>
+          {queue.disabledReason ? 'Attention' : 'Observable'}
+        </Badge>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
+        <div className="grid gap-2 md:grid-cols-5">
+          <QueueCount label="Pending" value={queue.counts.pending} />
+          <QueueCount label="Running" value={queue.counts.running} />
+          <QueueCount label="Stale" value={queue.counts.stale} />
+          <QueueCount label="Failed" value={queue.counts.failed} />
+          <QueueCount label="Done" value={queue.counts.done} />
+        </div>
+
+        {queue.warnings.length ? (
+          <div className="rounded-md border p-3">
+            <div className="mb-2 flex items-center gap-2 text-sm font-medium">
+              <AlertTriangleIcon />
+              Bridge signals
+            </div>
+            <ul className="flex flex-col gap-1 text-xs text-muted-foreground">
+              {queue.warnings.map((warning) => (
+                <li key={warning}>{warning}</li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+
+        <div className="flex flex-wrap gap-2">
+          <TooltipButton
+            tooltip="Clear stale commands"
+            variant="outline"
+            disabled={busy || !staleItems.length}
+            onClick={() => void runAction('Clear Stale Commands', () => api.clearStaleBridgeCommands(staleItems.map((item) => item.id)))}
+          >
+            <Trash2Icon data-icon="inline-start" />
+            Clear stale
+          </TooltipButton>
+          <TooltipButton
+            tooltip="Cancel active work"
+            variant="outline"
+            disabled={busy || !canCancelActive}
+            onClick={() => void runAction('Cancel Active Work', () => api.cancelActiveBridgeWork())}
+          >
+            <XCircleIcon data-icon="inline-start" />
+            Cancel active
+          </TooltipButton>
+        </div>
+
+        <ScrollArea className="max-h-80 rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Command</TableHead>
+                <TableHead>State</TableHead>
+                <TableHead>Age</TableHead>
+                <TableHead>Heartbeat</TableHead>
+                <TableHead>Reason</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {queue.items.length ? queue.items.map((item) => (
+                <TableRow key={item.id}>
+                  <TableCell className="min-w-72">
+                    <div className="truncate text-sm font-medium">{item.path || item.type}</div>
+                    <div className="truncate font-mono text-xs text-muted-foreground">{shortId(item.id)} · {item.type}</div>
+                  </TableCell>
+                  <TableCell><QueueStateBadge item={item} /></TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{formatDuration(item.ageMs)}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{item.lastHeartbeatAt ? formatDate(item.lastHeartbeatAt) : 'None'}</TableCell>
+                  <TableCell className="max-w-96 truncate text-xs text-muted-foreground">{item.reason}</TableCell>
+                </TableRow>
+              )) : (
+                <TableRow>
+                  <TableCell colSpan={5}>
+                    <EmptyLine text="No bridge commands found." />
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </ScrollArea>
+      </CardContent>
+    </Card>
+  );
+}
+
+function QueueCount({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-md border p-3">
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className="text-lg font-semibold tabular-nums">{value}</div>
+    </div>
+  );
+}
+
+function QueueStateBadge({ item }: { item: BridgeQueueItem }) {
+  const variant = item.state === 'failed' || item.state === 'stale'
+    ? 'destructive'
+    : item.state === 'running'
+      ? 'secondary'
+      : 'outline';
+  return <Badge variant={variant}>{item.state}</Badge>;
 }
 
 function ActiveProgressPanel({

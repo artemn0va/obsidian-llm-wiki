@@ -22,6 +22,7 @@ interface BridgeCommand {
   granularity?: ExtractionGranularity;
   createdAt?: string;
   source?: string;
+  targetCommandId?: string;
 }
 
 const LAB_GRANULARITIES: ExtractionGranularity[] = ['fine', 'standard', 'coarse', 'minimal'];
@@ -65,6 +66,7 @@ export class LabBridge {
   private async tick(): Promise<void> {
     await this.ensureBridgeFolders();
     if (this.busy) {
+      await this.processCancelCommandIfPresent();
       await this.writeRuntimeStatus(this.activeProgress?.message || 'Bridge busy.');
       return;
     }
@@ -92,6 +94,54 @@ export class LabBridge {
     }
 
     await this.processCommand(command, commandPath);
+  }
+
+  private async processCancelCommandIfPresent(): Promise<void> {
+    const adapter = this.host.app.vault.adapter;
+    const listing = await adapter.list(COMMANDS);
+    const commandFiles = listing.files
+      .filter((file) => file.endsWith('.json'))
+      .sort((a, b) => a.localeCompare(b));
+    let cancelPath: string | null = null;
+
+    for (const file of commandFiles) {
+      try {
+        const command = JSON.parse(await adapter.read(file)) as BridgeCommand;
+        if (command.type === 'cancel') {
+          cancelPath = file;
+          break;
+        }
+      } catch {
+        // Normal command processing handles invalid JSON when not busy.
+      }
+    }
+
+    if (!cancelPath) return;
+
+    let command: BridgeCommand;
+    try {
+      command = JSON.parse(await adapter.read(cancelPath)) as BridgeCommand;
+    } catch (error) {
+      await adapter.remove(cancelPath);
+      console.error('[WikiLabBridge] Invalid cancel command removed:', cancelPath, error);
+      return;
+    }
+
+    if (command.type !== 'cancel') return;
+
+    if (this.host.wikiEngine.isIngesting()) this.host.wikiEngine.cancelIngestion();
+    if (this.host.wikiEngine.isLintRunning()) this.host.wikiEngine.cancelLint();
+    this.activeProgress = this.buildProgress('Cancellation requested.', undefined, this.activeCommand?.path);
+    await this.writeRuntimeStatus('Cancellation requested.');
+    await this.writeResponse(command, 'cancelled', 'Cancel request sent to active work.', {
+      targetCommandId: command.targetCommandId || this.activeCommand?.id || null,
+    }, this.activeProgress);
+
+    try {
+      await adapter.remove(cancelPath);
+    } catch {
+      // Command may already be gone.
+    }
   }
 
   private async processCommand(command: BridgeCommand, commandPath: string): Promise<void> {

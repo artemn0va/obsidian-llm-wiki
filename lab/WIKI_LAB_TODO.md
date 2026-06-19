@@ -83,6 +83,15 @@ Developer-facing roadmap for the next Wiki Lab iterations. This file is not gene
 
 ## 3. Safer Clean Last Ingest v2
 
+### Progress
+
+- [x] 2026-06-19: New ingest commands save pre-ingest markdown backups under `.llm-wiki-lab/runs/<id>/backups/`.
+- [x] 2026-06-19: Backup manifest records original wiki path, backup path, before hash, size, and capture time.
+- [x] 2026-06-19: `Clean Last Ingest` now deletes created files and restores changed files when current hash matches the expected after-ingest hash.
+- [x] 2026-06-19: Protected schema files are skipped during restore; changed files with post-ingest edits are skipped instead of overwritten.
+- [ ] Next: add a dry-run rollback preview endpoint and UI before applying rollback.
+- [ ] Next: expose skipped restore reasons in the UI after rollback.
+
 ### Goal
 
 Сделать rollback последнего ingest полноценным: не только удалить created files, но и восстановить старое содержимое changed files.

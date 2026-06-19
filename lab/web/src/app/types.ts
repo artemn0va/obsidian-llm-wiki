@@ -134,6 +134,7 @@ export interface CleanLastIngestResult {
   mode: 'diff' | 'current-vs-before';
   deleted: string[];
   skipped: Array<{ path: string; reason: string }>;
+  restoredChanged: string[];
   preservedChanged: string[];
 }
 

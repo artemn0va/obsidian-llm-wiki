@@ -147,10 +147,11 @@ export function App() {
   const cleanLastIngest = () =>
     runAction('Clean Last Ingest', async () => {
       const result = await api.cleanLastIngest();
+      const touched = result.deleted.length + result.restoredChanged.length;
       toast.info(
-        result.deleted.length
-          ? `Deleted ${result.deleted.length} files from ${result.commandPath || result.runId}.`
-          : 'No new files found for the last ingest.',
+        touched
+          ? `Deleted ${result.deleted.length} and restored ${result.restoredChanged.length} files from ${result.commandPath || result.runId}.`
+          : 'No restorable changes found for the last ingest.',
       );
     });
 
@@ -961,9 +962,9 @@ function RunFileList({
         <div className="flex items-center gap-2">
           <Badge variant="outline">{files.length}</Badge>
           {onDeleteCreated ? (
-            <TooltipButton tooltip="Delete created" variant="outline" size="sm" disabled={busy} onClick={() => setDeleteOpen(true)}>
+            <TooltipButton tooltip="Rollback ingest" variant="outline" size="sm" disabled={busy} onClick={() => setDeleteOpen(true)}>
               <Trash2Icon data-icon="inline-start" />
-              Delete created
+              Rollback ingest
             </TooltipButton>
           ) : null}
           <TooltipButton tooltip="Keep files" variant="outline" size="sm" disabled={busy || !paths.length} onClick={() => onKeep(paths)}>
@@ -1002,9 +1003,9 @@ function RunFileList({
         <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Delete created files from the last ingest?</AlertDialogTitle>
+              <AlertDialogTitle>Rollback the last ingest?</AlertDialogTitle>
               <AlertDialogDescription>
-                This removes files that were created by the latest tracked ingest. Files that existed before that ingest are kept.
+                This removes files created by the latest tracked ingest and restores changed files from backup when their current hashes are safe.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -1015,7 +1016,7 @@ function RunFileList({
                   onDeleteCreated();
                 }}
               >
-                Delete created
+                Rollback ingest
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
@@ -1244,7 +1245,7 @@ function CleanLastIngestButton({
         <AlertDialogHeader>
           <AlertDialogTitle>Clean only the last ingest?</AlertDialogTitle>
           <AlertDialogDescription>
-            This deletes only wiki markdown files that were created after the last Lab-tracked ingest snapshot. Files that already existed before that ingest are kept.
+            This deletes wiki markdown files created by the last Lab-tracked ingest and restores changed files from the pre-ingest backup when hashes are safe.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <label className="flex items-center gap-2 text-sm">

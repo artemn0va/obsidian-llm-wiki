@@ -33,7 +33,9 @@ export async function createBridgeCommand(input: BridgeCommandInput): Promise<Br
   await ensureDir(commandsRoot);
   await ensureDir(runRoot);
   await writeJson(path.join(runRoot, 'command.json'), command);
-  await writeJson(path.join(runRoot, 'before.json'), await snapshotWiki());
+  const before = await snapshotWiki();
+  await writeJson(path.join(runRoot, 'before.json'), before);
+  await backupWikiFiles(runRoot, before);
   await writeJson(path.join(runRoot, 'qa-before.json'), await runQA());
   await writeJson(path.join(commandsRoot, `${id}.json`), command);
 
@@ -95,6 +97,16 @@ export interface WikiSnapshot {
   }>;
 }
 
+export interface WikiBackupManifest {
+  capturedAt: string;
+  files: Array<{
+    path: string;
+    backupPath: string;
+    sha256: string | null;
+    size: number;
+  }>;
+}
+
 async function snapshotWiki(): Promise<WikiSnapshot> {
   const files = await listMarkdownFiles(wikiRoot);
   const snapshotFiles = await Promise.all(
@@ -127,4 +139,30 @@ function diffSnapshots(before: WikiSnapshot | null, after: WikiSnapshot) {
       return previous && previous.sha256 !== file.sha256;
     }),
   };
+}
+
+async function backupWikiFiles(runRoot: string, snapshot: WikiSnapshot): Promise<void> {
+  const backupsRoot = path.join(runRoot, 'backups');
+  const manifest: WikiBackupManifest = {
+    capturedAt: new Date().toISOString(),
+    files: [],
+  };
+
+  await ensureDir(backupsRoot);
+
+  for (const file of snapshot.files) {
+    const fullPath = assertInside(wikiRoot, path.join(activeVaultRoot, file.path));
+    const backupName = `${Buffer.from(file.path).toString('base64url')}.md`;
+    const backupPath = path.join(backupsRoot, backupName);
+
+    await fs.copyFile(fullPath, backupPath);
+    manifest.files.push({
+      path: file.path,
+      backupPath: toPosix(path.relative(runRoot, backupPath)),
+      sha256: file.sha256,
+      size: file.size,
+    });
+  }
+
+  await writeJson(path.join(backupsRoot, 'manifest.json'), manifest);
 }

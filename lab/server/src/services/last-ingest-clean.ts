@@ -1,8 +1,8 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { activeVaultRoot, assertInside, labStateRoot, toPosix, wikiRoot } from '../config.js';
-import { listMarkdownFiles, readJson, writeJson } from './fs.js';
-import type { WikiSnapshot } from './bridge.js';
+import { ensureDir, hashFile, listMarkdownFiles, readJson, writeJson } from './fs.js';
+import type { WikiBackupManifest, WikiSnapshot } from './bridge.js';
 
 interface IngestCommand {
   id: string;
@@ -30,12 +30,18 @@ export interface CleanLastIngestResult {
   mode: 'diff' | 'current-vs-before';
   deleted: string[];
   skipped: Array<{ path: string; reason: string }>;
+  restoredChanged: string[];
   preservedChanged: string[];
 }
 
 const protectedWikiFiles = new Set([
   'wiki/index.md',
   'wiki/log.md',
+  'wiki/schema/config.md',
+  'wiki/concepts/llm-wiki-schema.md',
+]);
+
+const protectedRestoreFiles = new Set([
   'wiki/schema/config.md',
   'wiki/concepts/llm-wiki-schema.md',
 ]);
@@ -54,7 +60,10 @@ export async function cleanLastIngest(): Promise<CleanLastIngestResult> {
 
   const mode: CleanLastIngestResult['mode'] = diff ? 'diff' : 'current-vs-before';
   const created = diff?.created || await createdSinceSnapshot(before);
-  const preservedChanged = (diff?.changed || []).map((file) => file.path);
+  const changed = diff?.changed || [];
+  const backupManifest = await readJson<WikiBackupManifest>(path.join(run.runRoot, 'backups', 'manifest.json'));
+  const preservedChanged: string[] = [];
+  const restoredChanged: string[] = [];
   const deleted: string[] = [];
   const skipped: CleanLastIngestResult['skipped'] = [];
 
@@ -74,12 +83,59 @@ export async function cleanLastIngest(): Promise<CleanLastIngestResult> {
     }
   }
 
+  for (const file of changed) {
+    const safeRelative = normalizeRestorableWikiFile(file.path);
+    if (!safeRelative) {
+      skipped.push({ path: file.path, reason: 'Not a restorable generated wiki markdown file.' });
+      continue;
+    }
+
+    if (!backupManifest) {
+      preservedChanged.push(safeRelative);
+      skipped.push({ path: safeRelative, reason: 'No backup manifest exists for this run.' });
+      continue;
+    }
+
+    const backup = backupManifest.files.find((item) => item.path === safeRelative);
+    if (!backup) {
+      preservedChanged.push(safeRelative);
+      skipped.push({ path: safeRelative, reason: 'No backup exists for this changed file.' });
+      continue;
+    }
+
+    const fullPath = assertInside(wikiRoot, path.join(activeVaultRoot, safeRelative));
+    const currentHash = await hashFile(fullPath);
+    if (currentHash !== file.sha256) {
+      preservedChanged.push(safeRelative);
+      skipped.push({ path: safeRelative, reason: 'Current file changed after ingest; refusing to overwrite.' });
+      continue;
+    }
+
+    const backupPath = assertInside(run.runRoot, path.join(run.runRoot, backup.backupPath));
+    const backupHash = await hashFile(backupPath);
+    if (backupHash !== backup.sha256) {
+      preservedChanged.push(safeRelative);
+      skipped.push({ path: safeRelative, reason: 'Backup hash does not match before snapshot.' });
+      continue;
+    }
+
+    try {
+      await ensureDir(path.dirname(fullPath));
+      await fs.copyFile(backupPath, fullPath);
+      restoredChanged.push(safeRelative);
+    } catch (error) {
+      preservedChanged.push(safeRelative);
+      skipped.push({ path: safeRelative, reason: error instanceof Error ? error.message : String(error) });
+    }
+  }
+
   await pruneEmptyWikiDirs(wikiRoot);
   await writeJson(path.join(run.runRoot, 'clean-last-ingest.json'), {
     generatedAt: new Date().toISOString(),
     mode,
     deleted,
     skipped,
+    restoredChanged,
     preservedChanged,
   });
 
@@ -89,6 +145,7 @@ export async function cleanLastIngest(): Promise<CleanLastIngestResult> {
     mode,
     deleted,
     skipped,
+    restoredChanged,
     preservedChanged,
   };
 }
@@ -130,6 +187,17 @@ function normalizeDeletableWikiFile(relativePath: string): string | null {
 
   if (!lowered.startsWith('wiki/') || !lowered.endsWith('.md') || normalized.includes('../')) return null;
   if (protectedWikiFiles.has(normalized)) return null;
+  if (lowered.startsWith('wiki/schema/')) return null;
+
+  return normalized;
+}
+
+function normalizeRestorableWikiFile(relativePath: string): string | null {
+  const normalized = toPosix(path.normalize(relativePath)).replace(/^\/+/, '');
+  const lowered = normalized.toLowerCase();
+
+  if (!lowered.startsWith('wiki/') || !lowered.endsWith('.md') || normalized.includes('../')) return null;
+  if (protectedRestoreFiles.has(normalized)) return null;
   if (lowered.startsWith('wiki/schema/')) return null;
 
   return normalized;

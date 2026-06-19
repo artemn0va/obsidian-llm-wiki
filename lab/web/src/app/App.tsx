@@ -448,7 +448,7 @@ function Dashboard({
                 </TooltipButton>
                 <CleanWikiButton busy={Boolean(busyLabel)} runAction={runAction} />
                 <CleanLastIngestButton busy={Boolean(busyLabel)} cleanLastIngest={cleanLastIngest} />
-                <IngestCommandButton busy={Boolean(busyLabel)} runAction={runAction} />
+                <IngestCommandButton status={status} busy={Boolean(busyLabel)} runAction={runAction} />
                 <TooltipButton
                   tooltip="Install plugin"
                   variant="outline"
@@ -1848,9 +1848,11 @@ function RollbackSkipGroup({ skipped, result }: { skipped: Array<{ path: string;
 }
 
 function IngestCommandButton({
+  status,
   busy,
   runAction,
 }: {
+  status: LabStatus | null;
   busy: boolean;
   runAction: (label: string, action: () => Promise<unknown>) => Promise<void>;
 }) {
@@ -1867,6 +1869,10 @@ function IngestCommandButton({
   const recentCandidates = type === 'ingest-file' ? candidates?.recent || [] : [];
   const recentCandidatePaths = new Set(recentCandidates.map((candidate) => candidate.path));
   const primaryCandidates = targetCandidates.filter((candidate) => !recentCandidatePaths.has(candidate.path));
+  const selectedCandidate = targetCandidates.find((candidate) => candidate.path === targetPath) || null;
+  const pathWarnings = needsTarget ? validateIngestPath(targetPath, type, selectedCandidate) : [];
+  const bridgeRequirements = getBridgeRequirements(status);
+  const canQueue = (!needsTarget || Boolean(targetPath.trim())) && pathWarnings.length === 0;
 
   useEffect(() => {
     if (!open || candidates || loadingCandidates) return;
@@ -1968,10 +1974,18 @@ function IngestCommandButton({
               <Input value={targetPath} onChange={(event) => setTargetPath(event.target.value)} placeholder="wiki-start/Personal/2026-06-18.md" />
             </>
           ) : null}
+          <IngestPreviewPanel
+            type={type}
+            targetPath={needsTarget ? targetPath : undefined}
+            granularity={needsGranularity ? granularity : undefined}
+            candidate={selectedCandidate}
+            warnings={pathWarnings}
+            requirements={bridgeRequirements}
+          />
         </div>
         <DialogFooter>
           <TooltipButton tooltip="Close dialog" variant="outline" onClick={() => setOpen(false)}>Cancel</TooltipButton>
-          <TooltipButton tooltip="Queue command" disabled={needsTarget && !targetPath.trim()} onClick={() => void runActionFromDialog('Queue Command', submit, runAction)}>Queue</TooltipButton>
+          <TooltipButton tooltip="Queue command" disabled={!canQueue} onClick={() => void runActionFromDialog('Queue Command', submit, runAction)}>Queue</TooltipButton>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -1983,6 +1997,103 @@ function formatIngestCandidate(candidate: IngestCandidate): string {
     ? `${candidate.markdownCount ?? 0} files`
     : candidate.root;
   return `${candidate.path} (${detail})`;
+}
+
+function IngestPreviewPanel({
+  type,
+  targetPath,
+  granularity,
+  candidate,
+  warnings,
+  requirements,
+}: {
+  type: string;
+  targetPath?: string;
+  granularity?: IngestGranularity;
+  candidate: IngestCandidate | null;
+  warnings: string[];
+  requirements: Array<{ label: string; ok: boolean; value: string }>;
+}) {
+  const payload = {
+    type,
+    ...(targetPath ? { path: targetPath } : {}),
+    ...(granularity ? { granularity } : {}),
+  };
+
+  return (
+    <div className="flex flex-col gap-3 rounded-md border p-3">
+      <div className="flex items-center justify-between gap-3">
+        <div className="text-sm font-medium">Command preview</div>
+        {candidate ? <Badge variant="secondary">{candidate.root}</Badge> : <Badge variant="outline">manual path</Badge>}
+      </div>
+      <div className="grid gap-2 md:grid-cols-3">
+        {requirements.map((item) => (
+          <div key={item.label} className="rounded-md border p-2">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs text-muted-foreground">{item.label}</span>
+              <Badge variant={item.ok ? 'secondary' : 'destructive'}>{item.ok ? 'OK' : 'Check'}</Badge>
+            </div>
+            <div className="mt-1 truncate text-xs">{item.value}</div>
+          </div>
+        ))}
+      </div>
+      <code className="rounded-md bg-muted p-2 text-xs text-muted-foreground">{JSON.stringify(payload)}</code>
+      {warnings.length ? (
+        <div className="flex flex-col gap-1">
+          {warnings.map((warning) => (
+            <div key={warning} className="flex items-center gap-2 text-xs text-destructive">
+              <AlertTriangleIcon />
+              <span>{warning}</span>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="text-xs text-muted-foreground">Path is allowlisted and ready to queue.</div>
+      )}
+    </div>
+  );
+}
+
+function getBridgeRequirements(status: LabStatus | null): Array<{ label: string; ok: boolean; value: string }> {
+  const runtime = status?.bridge.runtimeStatus;
+  const updatedAt = runtime?.updatedAt ? new Date(runtime.updatedAt).getTime() : 0;
+  const fresh = updatedAt > 0 && Date.now() - updatedAt < 30_000;
+
+  return [
+    {
+      label: 'Obsidian',
+      ok: Boolean(runtime && fresh),
+      value: runtime?.updatedAt ? `Seen ${formatDate(runtime.updatedAt)}` : 'No runtime status',
+    },
+    {
+      label: 'Lab Bridge',
+      ok: Boolean(runtime?.enabled),
+      value: runtime?.enabled ? 'Enabled' : 'Disabled',
+    },
+    {
+      label: 'Queue',
+      ok: !runtime?.busy,
+      value: runtime?.busy ? 'Busy' : 'Ready',
+    },
+  ];
+}
+
+function validateIngestPath(pathValue: string, type: string, candidate: IngestCandidate | null): string[] {
+  const normalized = pathValue.replace(/\\/g, '/').replace(/^\/+/, '').trim();
+  const lowered = normalized.toLowerCase();
+  const warnings: string[] = [];
+
+  if (!normalized) warnings.push('Select a source path.');
+  if (/^[a-z]:/i.test(pathValue) || pathValue.startsWith('/') || pathValue.startsWith('\\\\')) warnings.push('Path must be vault-relative.');
+  if (normalized.includes('../') || normalized === '..') warnings.push('Parent directory traversal is blocked.');
+  if (lowered === '.obsidian' || lowered.startsWith('.obsidian/')) warnings.push('.obsidian is blocked.');
+  if (lowered === '.llm-wiki-lab' || lowered.startsWith('.llm-wiki-lab/')) warnings.push('.llm-wiki-lab is blocked.');
+  if (lowered === 'wiki' || lowered.startsWith('wiki/')) warnings.push('Generated wiki output is blocked as ingest input.');
+  if (normalized && !lowered.startsWith('wiki-start/') && !lowered.startsWith('sources/')) warnings.push('Use an allowlisted source under wiki-start/ or sources/.');
+  if (type === 'ingest-file' && candidate?.kind === 'folder') warnings.push('Selected target is a folder, but command is ingest-file.');
+  if (type === 'ingest-folder' && candidate?.kind === 'file') warnings.push('Selected target is a file, but command is ingest-folder.');
+
+  return [...new Set(warnings)];
 }
 
 async function runActionFromDialog(

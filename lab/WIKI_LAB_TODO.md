@@ -142,13 +142,13 @@ Developer-facing roadmap for the next Wiki Lab iterations. This file is not gene
 
 ### TODO checklist
 
-- [ ] Добавить file picker по `wiki-start/`.
-- [ ] Добавить file/folder picker по `sources/`.
-- [ ] Добавить recent notes list.
-- [ ] Добавить command type selector: `ingest-file`, `ingest-folder`.
-- [ ] Добавить granularity selector: `Coarse`, `Fine`.
-- [ ] Добавить dry-run-ish preview: выбранный path, expected command, blocked path warnings.
-- [ ] Показывать bridge requirements: Obsidian open, Lab Bridge enabled.
+- [x] Добавить file picker по `wiki-start/`.
+- [x] Добавить file/folder picker по `sources/`.
+- [x] Добавить recent notes list.
+- [x] Добавить command type selector: `ingest-file`, `ingest-folder`.
+- [x] Добавить granularity selector: `Coarse`, `Fine`.
+- [x] Добавить dry-run-ish preview: выбранный path, expected command, blocked path warnings.
+- [x] Показывать bridge requirements: Obsidian open, Lab Bridge enabled.
 
 ### Acceptance criteria
 
@@ -167,8 +167,9 @@ Developer-facing roadmap for the next Wiki Lab iterations. This file is not gene
 - [x] 2026-06-19: `Ingest` dialog теперь показывает source picker для файлов/папок, recent notes и ручной fallback input.
 - [x] 2026-06-19: Добавлен per-command `granularity` (`Coarse`, `Standard`, `Fine`, `Minimal`) в Lab UI, server command JSON и plugin bridge.
 - [x] 2026-06-19: Plugin bridge временно применяет выбранный `granularity` только на время ingest и возвращает прежнюю настройку после завершения.
-- [ ] Next: добавить dry-run-ish preview с выбранным path, command payload и blocked path warnings.
+- [x] 2026-06-19: Добавлен dry-run-ish preview с выбранным path, command payload, bridge requirements и blocked path warnings.
 - [ ] Next: добавить search/filter внутри picker, если список `sources/` станет слишком большим.
+- [ ] Next: заменить ручной fallback input на advanced/manual section, скрытую по умолчанию.
 
 ## 5. QA Fix Center
 

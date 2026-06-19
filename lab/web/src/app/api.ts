@@ -7,6 +7,7 @@ import type {
   LabStatus,
   ProcessResult,
   QAFixReport,
+  QAFixPreview,
   QAReport,
   RunDiffFileContent,
   RunReviewState,
@@ -62,6 +63,12 @@ export const api = {
     request<QAFixReport>('/api/qa/fix', {
       method: 'POST',
       body: JSON.stringify({}),
+    }),
+  qaFixPreview: () => request<QAFixPreview>('/api/qa/fix/preview'),
+  qaFixApply: (ids?: string[]) =>
+    request<QAFixReport>('/api/qa/fix/apply', {
+      method: 'POST',
+      body: JSON.stringify({ ids }),
     }),
   reset: (execute: boolean) =>
     request<ProcessResult>('/api/reset', {

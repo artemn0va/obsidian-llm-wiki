@@ -1,12 +1,12 @@
 import express from 'express';
-import { commandIdSchema, bridgeCommandSchema, resetSchema, runReviewSchema, staleRunCleanupSchema } from '../schemas/api.js';
+import { commandIdSchema, bridgeCommandSchema, qaFixApplySchema, resetSchema, runReviewSchema, staleRunCleanupSchema } from '../schemas/api.js';
 import { createBridgeCommand, getBridgeCommand } from '../services/bridge.js';
 import { readWikiFile, getWikiFiles } from '../services/fs.js';
 import { getIngestCandidates } from '../services/ingest-candidates.js';
 import { cleanLastIngest, previewCleanLastIngest } from '../services/last-ingest-clean.js';
 import { buildAndDeployPlugin, buildPlugin, deployPlugin } from '../services/plugin.js';
 import { reloadObsidian } from '../services/obsidian.js';
-import { fixQA, runQA } from '../services/qa.js';
+import { applyQAFixes, fixQA, previewQAFixes, runQA } from '../services/qa.js';
 import { resetWiki } from '../services/reset.js';
 import { cleanupStaleRuns } from '../services/run-cleanup.js';
 import { readRunDiffFile } from '../services/run-diff.js';
@@ -72,6 +72,15 @@ apiRouter.get('/qa', asyncHandler(async (_req, res) => {
 
 apiRouter.post('/qa/fix', asyncHandler(async (_req, res) => {
   res.json(await fixQA());
+}));
+
+apiRouter.get('/qa/fix/preview', asyncHandler(async (_req, res) => {
+  res.json(await previewQAFixes());
+}));
+
+apiRouter.post('/qa/fix/apply', asyncHandler(async (req, res) => {
+  const body = qaFixApplySchema.parse(req.body);
+  res.json(await applyQAFixes(body.ids));
 }));
 
 apiRouter.post('/reset', asyncHandler(async (req, res) => {

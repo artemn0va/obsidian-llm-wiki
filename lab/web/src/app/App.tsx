@@ -31,7 +31,7 @@ import {
 import { useEffect, useMemo, useState, type ComponentProps, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { toast } from 'sonner';
 import { api } from './api';
-import type { BridgeProgress, CleanLastIngestPreview, CleanLastIngestResult, IngestCandidate, IngestCandidates, IngestGranularity, LabStatus, QAReport, QAFinding, RunDiffFileContent, RunRecord, WikiFileInfo } from './types';
+import type { BridgeProgress, CleanLastIngestPreview, CleanLastIngestResult, IngestCandidate, IngestCandidates, IngestGranularity, LabStatus, QAFixPreview, QAFixPreviewItem, QAReport, QAFinding, RunDiffFileContent, RunRecord, WikiFileInfo } from './types';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -265,7 +265,18 @@ export function App() {
                 {activeView === 'files' ? (
                   <WikiFiles files={files} selectedFile={selectedFile} selectedPath={selectedFilePath} setSelectedPath={setSelectedFilePath} content={selectedFileContent} />
                 ) : null}
-                {activeView === 'qa' ? <QAView qa={qa} busy={Boolean(busyLabel)} refreshQa={() => runAction('Run QA', async () => setQa(await api.qa()))} fixQa={fixQa} /> : null}
+                {activeView === 'qa' ? (
+                  <QAView
+                    qa={qa}
+                    busy={Boolean(busyLabel)}
+                    refreshQa={() => runAction('Run QA', async () => setQa(await api.qa()))}
+                    runAction={runAction}
+                    openWikiFile={(path) => {
+                      setSelectedFilePath(path);
+                      setActiveView('files');
+                    }}
+                  />
+                ) : null}
                 {activeView === 'runs' ? (
                   <RunsView
                     runs={runs}
@@ -632,13 +643,54 @@ function QAView({
   qa,
   busy,
   refreshQa,
-  fixQa,
+  runAction,
+  openWikiFile,
 }: {
   qa: QAReport | null;
   busy: boolean;
   refreshQa: () => void;
-  fixQa: () => Promise<void>;
+  runAction: (label: string, action: () => Promise<unknown>) => Promise<void>;
+  openWikiFile: (path: string) => void;
 }) {
+  const [preview, setPreview] = useState<QAFixPreview | null>(null);
+  const [ignoredIds, setIgnoredIds] = useState<Set<string>>(new Set());
+  const [loadingPreview, setLoadingPreview] = useState(false);
+
+  const loadPreview = async () => {
+    setLoadingPreview(true);
+    try {
+      setPreview(await api.qaFixPreview());
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to load QA fix preview');
+    } finally {
+      setLoadingPreview(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadPreview();
+  }, [qa?.generatedAt]);
+
+  const applyFixes = async (ids?: string[]) => {
+    await runAction(ids?.length === 1 ? 'Apply QA Fix' : 'Apply Safe QA Fixes', async () => {
+      const result = await api.qaFixApply(ids);
+      toast.info(
+        result.applied
+          ? `Applied ${result.applied} fixes in ${result.updatedFiles.length} files.`
+          : 'No selected QA fixes were applied.',
+      );
+      const nextQa = await api.qa();
+      const nextPreview = await api.qaFixPreview();
+      setPreview(nextPreview);
+      return nextQa;
+    });
+    refreshQa();
+  };
+
+  const ignoreIssue = (id: string) => {
+    setIgnoredIds((current) => new Set([...current, id]));
+  };
+
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto pr-1">
       <div className="grid gap-4 md:grid-cols-3">
@@ -646,16 +698,20 @@ function QAView({
         <MetricCard title="Warnings" value={qa?.counts.warning || 0} description="Review before keeping output" />
         <MetricCard title="Info" value={qa?.counts.info || 0} description="Quality and structure hints" />
       </div>
-      <Card>
+      <Card className="min-h-0">
         <CardHeader className="flex-row items-center justify-between gap-3">
           <div>
-            <CardTitle>QA Findings</CardTitle>
-            <CardDescription>{qa?.generatedAt ? `Generated ${formatDate(qa.generatedAt)}` : 'No QA report loaded.'}</CardDescription>
+            <CardTitle>QA Fix Center</CardTitle>
+            <CardDescription>
+              {preview
+                ? `${preview.fixableCount} safe fixes, ${preview.nonFixableCount} review-only findings`
+                : qa?.generatedAt ? `Generated ${formatDate(qa.generatedAt)}` : 'No QA report loaded.'}
+            </CardDescription>
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            <TooltipButton tooltip="Fix safe QA issues" variant="outline" size="sm" disabled={busy} onClick={() => void fixQa()}>
+            <TooltipButton tooltip="Apply safe fixes" variant="outline" size="sm" disabled={busy || !preview?.fixableCount} onClick={() => void applyFixes()}>
               <WandSparklesIcon data-icon="inline-start" />
-              Fix QA
+              Apply safe fixes
             </TooltipButton>
             <TooltipButton tooltip="Scan wiki" variant="outline" size="sm" disabled={busy} onClick={refreshQa}>
               <ShieldCheckIcon data-icon="inline-start" />
@@ -663,10 +719,173 @@ function QAView({
             </TooltipButton>
           </div>
         </CardHeader>
-        <CardContent>
-          <FindingsTable findings={qa?.findings || []} />
+        <CardContent className="min-h-0">
+          {loadingPreview ? (
+            <Skeleton className="h-96" />
+          ) : (
+            <QAFixCenter
+              preview={preview}
+              ignoredIds={ignoredIds}
+              busy={busy}
+              onApply={(id) => void applyFixes([id])}
+              onIgnore={ignoreIssue}
+              onOpenFile={openWikiFile}
+            />
+          )}
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+const qaFixTypeLabels: Record<string, string> = {
+  'broken-links': 'Broken links',
+  'prompt-leaks': 'Prompt leaks',
+  source_file: 'source_file',
+  'bad-slug': 'Bad slug',
+  'source-tag-pollution': 'Source tag pollution',
+  other: 'Other',
+};
+
+function QAFixCenter({
+  preview,
+  ignoredIds,
+  busy,
+  onApply,
+  onIgnore,
+  onOpenFile,
+}: {
+  preview: QAFixPreview | null;
+  ignoredIds: Set<string>;
+  busy: boolean;
+  onApply: (id: string) => void;
+  onIgnore: (id: string) => void;
+  onOpenFile: (path: string) => void;
+}) {
+  if (!preview) return <EmptyLine text="No QA fix preview loaded." />;
+
+  const entries = Object.entries(preview.groups) as Array<[keyof QAFixPreview['groups'], QAFixPreviewItem[]]>;
+
+  return (
+    <ScrollArea className="h-[calc(100vh-17rem)] rounded-md border">
+      <div className="flex flex-col gap-3 p-3">
+        {entries.map(([type, items]) => (
+          <QAFixGroup
+            key={type}
+            title={qaFixTypeLabels[type] || type}
+            items={items}
+            ignoredIds={ignoredIds}
+            busy={busy}
+            onApply={onApply}
+            onIgnore={onIgnore}
+            onOpenFile={onOpenFile}
+          />
+        ))}
+      </div>
+    </ScrollArea>
+  );
+}
+
+function QAFixGroup({
+  title,
+  items,
+  ignoredIds,
+  busy,
+  onApply,
+  onIgnore,
+  onOpenFile,
+}: {
+  title: string;
+  items: QAFixPreviewItem[];
+  ignoredIds: Set<string>;
+  busy: boolean;
+  onApply: (id: string) => void;
+  onIgnore: (id: string) => void;
+  onOpenFile: (path: string) => void;
+}) {
+  const visibleItems = items.filter((item) => !ignoredIds.has(item.id));
+  const fixable = visibleItems.filter((item) => item.fixable).length;
+
+  return (
+    <div className="rounded-md border p-3">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <div className="text-sm font-medium">{title}</div>
+          <Badge variant={fixable ? 'secondary' : 'outline'}>{fixable} fixable</Badge>
+        </div>
+        <Badge variant="outline">{visibleItems.length}</Badge>
+      </div>
+      <div className="flex flex-col gap-2">
+        {visibleItems.length ? visibleItems.map((item) => (
+          <QAFixIssueRow
+            key={item.id}
+            item={item}
+            busy={busy}
+            onApply={onApply}
+            onIgnore={onIgnore}
+            onOpenFile={onOpenFile}
+          />
+        )) : <EmptyLine text="No findings in this group." />}
+      </div>
+    </div>
+  );
+}
+
+function QAFixIssueRow({
+  item,
+  busy,
+  onApply,
+  onIgnore,
+  onOpenFile,
+}: {
+  item: QAFixPreviewItem;
+  busy: boolean;
+  onApply: (id: string) => void;
+  onIgnore: (id: string) => void;
+  onOpenFile: (path: string) => void;
+}) {
+  return (
+    <div className="rounded-md border p-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <SeverityBadge severity={item.severity} />
+            <span className="truncate text-sm font-medium">{item.message}</span>
+          </div>
+          <div className="mt-1 truncate font-mono text-xs text-muted-foreground">{item.file}{item.line ? `:${item.line}` : ''}</div>
+          <div className="mt-2 text-xs text-muted-foreground">{item.proposedChange}</div>
+          {item.explanation ? <div className="mt-1 text-xs text-muted-foreground">{item.explanation}</div> : null}
+        </div>
+        <div className="flex shrink-0 items-center gap-1">
+          <TooltipButton tooltip="Open file" variant="ghost" size="sm" onClick={() => onOpenFile(item.file)}>
+            <BookOpenIcon data-icon="inline-start" />
+            Open
+          </TooltipButton>
+          <TooltipButton tooltip="Ignore in UI" variant="ghost" size="sm" onClick={() => onIgnore(item.id)}>
+            <XCircleIcon data-icon="inline-start" />
+            Ignore
+          </TooltipButton>
+          <TooltipButton tooltip={item.fixable ? 'Apply fix' : 'Manual review required'} variant="outline" size="sm" disabled={busy || !item.fixable} onClick={() => onApply(item.id)}>
+            <WandSparklesIcon data-icon="inline-start" />
+            Apply
+          </TooltipButton>
+        </div>
+      </div>
+      {(item.beforeSnippet !== undefined || item.afterSnippet !== undefined) ? (
+        <div className="mt-3 grid gap-2 md:grid-cols-2">
+          <SnippetPreview title="Before" value={item.beforeSnippet} />
+          <SnippetPreview title="After" value={item.afterSnippet} />
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function SnippetPreview({ title, value }: { title: string; value?: string }) {
+  return (
+    <div className="rounded-md border bg-muted/30 p-2">
+      <div className="mb-1 text-xs text-muted-foreground">{title}</div>
+      <pre className="whitespace-pre-wrap break-words font-mono text-xs">{value || 'No text change preview.'}</pre>
     </div>
   );
 }

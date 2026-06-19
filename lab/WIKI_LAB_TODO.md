@@ -173,6 +173,15 @@ Developer-facing roadmap for the next Wiki Lab iterations. This file is not gene
 
 ## 5. QA Fix Center
 
+### Progress
+
+- [x] 2026-06-19: Added `/api/qa/fix/preview` and `/api/qa/fix/apply` for grouped deterministic QA fix previews and selected safe fixes.
+- [x] 2026-06-19: QA page now renders a `QA Fix Center` with grouped findings, proposed change previews, `Apply`, `Ignore`, and `Open file` actions.
+- [x] 2026-06-19: Added bulk `Apply safe fixes`; successful fixes rerun QA and refresh the preview.
+- [x] 2026-06-19: Non-fixable findings are shown separately with manual-review explanations.
+- [ ] Next: persist ignored/reviewed QA fix state instead of keeping `Ignore` UI-local.
+- [ ] Next: add richer bad-slug rename previews with planned link updates before applying.
+
 ### Goal
 
 Заменить одну общую кнопку `Fix QA` на понятный центр исправлений: какие issues fixable, что именно будет изменено, и какие fixes требуют ручного review.
@@ -185,12 +194,12 @@ Developer-facing roadmap for the next Wiki Lab iterations. This file is not gene
 
 ### TODO checklist
 
-- [ ] Группировать QA findings по типам: `broken links`, `prompt leaks`, `source_file`, `bad slug`, `source tag pollution`.
-- [ ] Для каждого fixable issue показывать proposed change preview.
-- [ ] Добавить per-issue actions: `Apply`, `Ignore`, `Open file`.
-- [ ] Добавить bulk action: `Apply safe fixes`.
-- [ ] Добавить non-fixable section with explanation.
-- [ ] После fix автоматически перезапускать QA.
+- [x] Группировать QA findings по типам: `broken links`, `prompt leaks`, `source_file`, `bad slug`, `source tag pollution`.
+- [x] Для каждого fixable issue показывать proposed change preview.
+- [x] Добавить per-issue actions: `Apply`, `Ignore`, `Open file`.
+- [x] Добавить bulk action: `Apply safe fixes`.
+- [x] Добавить non-fixable section with explanation.
+- [x] После fix автоматически перезапускать QA.
 
 ### Acceptance criteria
 

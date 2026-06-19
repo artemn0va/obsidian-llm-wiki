@@ -82,6 +82,29 @@ export interface QAFixReport {
   }>;
 }
 
+export type QAFixIssueType = 'broken-links' | 'prompt-leaks' | 'source_file' | 'bad-slug' | 'source-tag-pollution' | 'other';
+
+export interface QAFixPreviewItem {
+  id: string;
+  type: QAFixIssueType;
+  fixable: boolean;
+  file: string;
+  line?: number;
+  severity: QAFinding['severity'];
+  message: string;
+  proposedChange: string;
+  beforeSnippet?: string;
+  afterSnippet?: string;
+  explanation?: string;
+}
+
+export interface QAFixPreview {
+  generatedAt: string;
+  fixableCount: number;
+  nonFixableCount: number;
+  groups: Record<QAFixIssueType, QAFixPreviewItem[]>;
+}
+
 export interface RunRecord {
   id: string;
   modifiedAt: string;

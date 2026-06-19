@@ -214,6 +214,15 @@ Developer-facing roadmap for the next Wiki Lab iterations. This file is not gene
 
 ## 6. Schema Health Panel
 
+### Progress
+
+- [x] 2026-06-19: Added `/api/schema/health` with active schema path, modified time, detected sections, required sections, task coverage, language policy preview, wiki language, and warnings.
+- [x] 2026-06-19: Added `Schema Health` sidebar view with coverage table for `analyze`, `summary`, `entity`, `concept`, `related`, `merge`, and `full`.
+- [x] 2026-06-19: UI highlights missing schema sections, unused important sections, missing language policy, and unavailable wiki language settings.
+- [x] 2026-06-19: Added `Open schema` action that opens `wiki/schema/config.md` in Wiki Files.
+- [ ] Next: expose exact prompt-context preview per task without copying the full schema.
+- [ ] Next: add schema history/diff when `config.md` changes.
+
 ### Goal
 
 Показать, какая schema активна и реально доходит ли она до prompt/tasks. Это нужно, чтобы ловить ситуацию: schema exists, but model does not see the right rules.
@@ -225,12 +234,12 @@ Developer-facing roadmap for the next Wiki Lab iterations. This file is not gene
 
 ### TODO checklist
 
-- [ ] Показывать active schema path and modified time.
-- [ ] Показывать detected schema sections.
-- [ ] Показывать task coverage: `analyze`, `summary`, `entity`, `concept`, `related`, `merge`, `full`.
-- [ ] Подсвечивать missing required sections.
-- [ ] Показывать current wiki language and language policy.
-- [ ] Добавить `Open schema` action.
+- [x] Показывать active schema path and modified time.
+- [x] Показывать detected schema sections.
+- [x] Показывать task coverage: `analyze`, `summary`, `entity`, `concept`, `related`, `merge`, `full`.
+- [x] Подсвечивать missing required sections.
+- [x] Показывать current wiki language and language policy.
+- [x] Добавить `Open schema` action.
 
 ### Acceptance criteria
 

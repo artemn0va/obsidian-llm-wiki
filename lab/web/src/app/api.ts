@@ -15,6 +15,7 @@ import type {
   RunDiffFileContent,
   RunReviewState,
   RunRecord,
+  SchemaHealth,
   StaleRunCleanupResult,
   WikiFileInfo,
 } from './types';
@@ -73,6 +74,7 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ ids }),
     }),
+  schemaHealth: () => request<SchemaHealth>('/api/schema/health'),
   reset: (execute: boolean) =>
     request<ProcessResult>('/api/reset', {
       method: 'POST',

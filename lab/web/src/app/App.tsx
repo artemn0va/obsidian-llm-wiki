@@ -18,6 +18,7 @@ import {
   HammerIcon,
   LayoutDashboardIcon,
   Loader2Icon,
+  ScrollTextIcon,
   PanelLeftCloseIcon,
   PanelLeftOpenIcon,
   PlugZapIcon,
@@ -31,7 +32,7 @@ import {
 import { useEffect, useMemo, useState, type ComponentProps, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { toast } from 'sonner';
 import { api } from './api';
-import type { BridgeProgress, BridgeQueueItem, CleanLastIngestPreview, CleanLastIngestResult, IngestCandidate, IngestCandidates, IngestGranularity, LabStatus, QAFixPreview, QAFixPreviewItem, QAReport, QAFinding, RunDiffFileContent, RunRecord, WikiFileInfo } from './types';
+import type { BridgeProgress, BridgeQueueItem, CleanLastIngestPreview, CleanLastIngestResult, IngestCandidate, IngestCandidates, IngestGranularity, LabStatus, QAFixPreview, QAFixPreviewItem, QAReport, QAFinding, RunDiffFileContent, RunRecord, SchemaHealth, WikiFileInfo } from './types';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -53,7 +54,7 @@ import { Toaster } from '@/components/ui/sonner';
 import { ModeToggle } from '@/components/mode-toggle';
 import { cn } from '@/lib/utils';
 
-type ViewKey = 'dashboard' | 'files' | 'qa' | 'runs' | 'diff' | 'bridge';
+type ViewKey = 'dashboard' | 'files' | 'qa' | 'runs' | 'diff' | 'schema' | 'bridge';
 
 const navItems: Array<{ key: ViewKey; label: string; icon: typeof LayoutDashboardIcon }> = [
   { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboardIcon },
@@ -61,6 +62,7 @@ const navItems: Array<{ key: ViewKey; label: string; icon: typeof LayoutDashboar
   { key: 'qa', label: 'QA Report', icon: ShieldCheckIcon },
   { key: 'runs', label: 'Runs', icon: ActivityIcon },
   { key: 'diff', label: 'Last Diff', icon: FileDiffIcon },
+  { key: 'schema', label: 'Schema Health', icon: ScrollTextIcon },
   { key: 'bridge', label: 'Plugin Bridge', icon: PlugZapIcon },
 ];
 
@@ -296,6 +298,15 @@ export function App() {
                     busy={Boolean(busyLabel)}
                     runAction={runAction}
                     cleanLastIngest={cleanLastIngest}
+                    openWikiFile={(path) => {
+                      setSelectedFilePath(path);
+                      setActiveView('files');
+                    }}
+                  />
+                ) : null}
+                {activeView === 'schema' ? (
+                  <SchemaHealthView
+                    status={status}
                     openWikiFile={(path) => {
                       setSelectedFilePath(path);
                       setActiveView('files');
@@ -1151,6 +1162,186 @@ function RunDetailPanel({
         </ScrollArea>
       </CardContent>
     </Card>
+  );
+}
+
+function SchemaHealthView({
+  status,
+  openWikiFile,
+}: {
+  status: LabStatus | null;
+  openWikiFile: (path: string) => void;
+}) {
+  const [health, setHealth] = useState<SchemaHealth | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    api.schemaHealth()
+      .then((nextHealth) => {
+        if (!cancelled) setHealth(nextHealth);
+      })
+      .catch((error) => {
+        if (!cancelled) toast.error(error instanceof Error ? error.message : 'Failed to load schema health');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (loading) {
+    return <Skeleton className="min-h-96 flex-1" />;
+  }
+
+  if (!health) {
+    return (
+      <Card className="min-h-0 flex-1">
+        <CardHeader>
+          <CardTitle>Schema Health</CardTitle>
+          <CardDescription>Schema status is unavailable.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <EmptyLine text="Could not load schema health." />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto pr-1">
+      <Card>
+        <CardHeader className="flex-row items-start justify-between gap-3">
+          <div className="min-w-0">
+            <CardTitle>Schema Health</CardTitle>
+            <CardDescription className="truncate">{health.schemaPath}</CardDescription>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <Badge variant={health.warnings.length ? 'destructive' : 'secondary'}>
+              {health.warnings.length ? `${health.warnings.length} warning${health.warnings.length === 1 ? '' : 's'}` : 'Healthy'}
+            </Badge>
+            <TooltipButton tooltip="Open schema" variant="outline" size="sm" onClick={() => openWikiFile(health.schemaPath)}>
+              <BookOpenIcon data-icon="inline-start" />
+              Open schema
+            </TooltipButton>
+          </div>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <div className="grid gap-3 md:grid-cols-3">
+            <StatusLine label="Exists" ok={health.exists} value={String(health.exists)} />
+            <StatusLine label="Modified" ok={Boolean(health.modifiedAt)} value={health.modifiedAt ? formatDate(health.modifiedAt) : 'Missing'} />
+            <StatusLine label="Wiki language" ok={Boolean(health.wikiLanguage)} value={health.wikiLanguage || status?.bridge.runtimeStatus?.settings?.wikiLanguage || 'Unavailable'} />
+          </div>
+
+          {health.warnings.length ? (
+            <div className="rounded-md border p-3">
+              <div className="mb-2 flex items-center gap-2 text-sm font-medium">
+                <AlertTriangleIcon />
+                Schema warnings
+              </div>
+              <ul className="flex flex-col gap-1 text-xs text-muted-foreground">
+                {health.warnings.map((warning) => (
+                  <li key={warning}>{warning}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-4 xl:grid-cols-[0.85fr_1.15fr]">
+        <Card className="min-h-0">
+          <CardHeader>
+            <CardTitle>Detected Sections</CardTitle>
+            <CardDescription>{health.detectedSections.length} markdown sections from active schema.</CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            <div>
+              <div className="mb-2 text-sm font-medium">Required rule sections</div>
+              <div className="flex flex-wrap gap-2">
+                {health.requiredSections.map((section) => (
+                  <Badge key={section} variant={health.missingRequiredSections.includes(section) ? 'destructive' : 'secondary'}>
+                    {section}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+            <div>
+              <div className="mb-2 text-sm font-medium">All detected sections</div>
+              <ScrollArea className="h-60 rounded-md border p-3">
+                <div className="flex flex-wrap gap-2">
+                  {health.detectedSections.map((section) => (
+                    <Badge key={section} variant="outline">{section}</Badge>
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
+            <div className="rounded-md border p-3">
+              <div className="mb-2 text-sm font-medium">Language Policy</div>
+              {health.languagePolicy.present ? (
+                <ul className="flex flex-col gap-1 text-xs text-muted-foreground">
+                  {health.languagePolicy.preview.map((line) => (
+                    <li key={line}>{line}</li>
+                  ))}
+                </ul>
+              ) : (
+                <EmptyLine text="Language Policy section is missing." />
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="min-h-0">
+          <CardHeader>
+            <CardTitle>Task Coverage</CardTitle>
+            <CardDescription>Actual prompt routing from plugin `TASK_SECTIONS`.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ScrollArea className="max-h-[34rem] rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Task</TableHead>
+                    <TableHead>Coverage</TableHead>
+                    <TableHead>Sections</TableHead>
+                    <TableHead>Missing</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {health.taskCoverage.map((task) => (
+                    <TableRow key={task.task}>
+                      <TableCell className="font-mono text-sm">{task.task}</TableCell>
+                      <TableCell>
+                        <div className="flex min-w-28 flex-col gap-1">
+                          <span className="text-xs text-muted-foreground">{task.coveragePercent}%</span>
+                          <Progress value={task.coveragePercent} />
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex max-w-xl flex-wrap gap-1">
+                          {task.configuredSections.map((section) => (
+                            <Badge key={`${task.task}-${section}`} variant={task.availableSections.includes(section) ? 'outline' : 'destructive'}>
+                              {section}
+                            </Badge>
+                          ))}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {task.missingSections.length ? task.missingSections.join(', ') : 'None'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 }
 

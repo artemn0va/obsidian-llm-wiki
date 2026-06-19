@@ -117,6 +117,33 @@ export interface BridgeCancelResult {
   reason: string;
 }
 
+export interface SchemaHealth {
+  generatedAt: string;
+  schemaPath: string;
+  exists: boolean;
+  modifiedAt: string | null;
+  detectedSections: string[];
+  requiredSections: string[];
+  missingRequiredSections: string[];
+  taskCoverage: SchemaTaskCoverage[];
+  unusedImportantSections: string[];
+  wikiLanguage: string | null;
+  languagePolicy: {
+    present: boolean;
+    preview: string[];
+  };
+  warnings: string[];
+}
+
+export interface SchemaTaskCoverage {
+  task: 'analyze' | 'summary' | 'entity' | 'concept' | 'related' | 'merge' | 'full';
+  configuredSections: string[];
+  availableSections: string[];
+  missingSections: string[];
+  importantSectionsUsed: string[];
+  coveragePercent: number;
+}
+
 export interface WikiFileInfo {
   path: string;
   title: string;

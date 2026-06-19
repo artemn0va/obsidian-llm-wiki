@@ -12,6 +12,7 @@ import { resetWiki } from '../services/reset.js';
 import { cleanupStaleRuns } from '../services/run-cleanup.js';
 import { readRunDiffFile } from '../services/run-diff.js';
 import { updateRunReview } from '../services/run-review.js';
+import { getSchemaHealth } from '../services/schema-health.js';
 import { getRuns, getStatus } from '../services/status.js';
 
 export const apiRouter = express.Router();
@@ -69,6 +70,10 @@ apiRouter.get('/ingest/candidates', asyncHandler(async (_req, res) => {
 
 apiRouter.get('/qa', asyncHandler(async (_req, res) => {
   res.json(await runQA());
+}));
+
+apiRouter.get('/schema/health', asyncHandler(async (_req, res) => {
+  res.json(await getSchemaHealth());
 }));
 
 apiRouter.post('/qa/fix', asyncHandler(async (_req, res) => {

@@ -31,7 +31,7 @@ import {
 import { useEffect, useMemo, useState, type ComponentProps, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { toast } from 'sonner';
 import { api } from './api';
-import type { BridgeProgress, IngestCandidate, IngestCandidates, IngestGranularity, LabStatus, QAReport, QAFinding, RunDiffFileContent, RunRecord, WikiFileInfo } from './types';
+import type { BridgeProgress, CleanLastIngestPreview, CleanLastIngestResult, IngestCandidate, IngestCandidates, IngestGranularity, LabStatus, QAReport, QAFinding, RunDiffFileContent, RunRecord, WikiFileInfo } from './types';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -126,14 +126,16 @@ export function App() {
       .catch((error) => toast.error(error instanceof Error ? error.message : String(error)));
   }, [selectedFilePath]);
 
-  const runAction = async (label: string, action: () => Promise<unknown>) => {
+  const runAction = async <T,>(label: string, action: () => Promise<T>): Promise<T> => {
     setBusyLabel(label);
     try {
-      await action();
+      const result = await action();
       toast.success(`${label} complete`);
       await refresh();
+      return result;
     } catch (error) {
       toast.error(error instanceof Error ? error.message : String(error));
+      throw error;
     } finally {
       setBusyLabel('');
     }
@@ -157,6 +159,10 @@ export function App() {
           ? `Deleted ${result.deleted.length} and restored ${result.restoredChanged.length} files from ${result.commandPath || result.runId}.`
           : 'No restorable changes found for the last ingest.',
       );
+      if (result.skipped.length) {
+        toast.warning(`${result.skipped.length} rollback items were skipped. Open Clean Last Ingest details for reasons.`);
+      }
+      return result;
     });
 
   const selectedFile = files.find((file) => file.path === selectedFilePath);
@@ -400,7 +406,7 @@ function Dashboard({
   setDryRunOutput: (value: string) => void;
   runAction: (label: string, action: () => Promise<unknown>) => Promise<void>;
   fixQa: () => Promise<void>;
-  cleanLastIngest: () => Promise<void>;
+  cleanLastIngest: () => Promise<CleanLastIngestResult>;
 }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto pr-1">
@@ -676,7 +682,7 @@ function RunsView({
   runs: RunRecord[];
   busy: boolean;
   runAction: (label: string, action: () => Promise<unknown>) => Promise<void>;
-  cleanLastIngest: () => Promise<void>;
+  cleanLastIngest: () => Promise<CleanLastIngestResult>;
   openDiffView: () => void;
   openWikiFile: (path: string) => void;
 }) {
@@ -815,7 +821,7 @@ function RunDetailPanel({
   isLatest: boolean;
   busy: boolean;
   runAction: (label: string, action: () => Promise<unknown>) => Promise<void>;
-  cleanLastIngest: () => Promise<void>;
+  cleanLastIngest: () => Promise<CleanLastIngestResult>;
   openWikiFile: (path: string) => void;
 }) {
   if (!run) {
@@ -942,7 +948,7 @@ function LastIngestDiffView({
   runs: RunRecord[];
   busy: boolean;
   runAction: (label: string, action: () => Promise<unknown>) => Promise<void>;
-  cleanLastIngest: () => Promise<void>;
+  cleanLastIngest: () => Promise<CleanLastIngestResult>;
   openWikiFile: (path: string) => void;
 }) {
   const run = runs.find((item) => item.diff) || runs[0] || null;
@@ -1696,41 +1702,148 @@ function CleanLastIngestButton({
   cleanLastIngest,
 }: {
   busy: boolean;
-  cleanLastIngest: () => Promise<void>;
+  cleanLastIngest: () => Promise<CleanLastIngestResult>;
 }) {
   const [open, setOpen] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
+  const [preview, setPreview] = useState<CleanLastIngestPreview | null>(null);
+  const [lastResult, setLastResult] = useState<CleanLastIngestResult | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+
+    setConfirmed(false);
+    setLastResult(null);
+    setPreviewLoading(true);
+    api.cleanLastIngestPreview()
+      .then(setPreview)
+      .catch((error) => {
+        setPreview(null);
+        toast.error(error instanceof Error ? error.message : 'Failed to load rollback preview');
+      })
+      .finally(() => setPreviewLoading(false));
+  }, [open]);
+
+  const applyRollback = async () => {
+    const result = await cleanLastIngest();
+    setLastResult(result);
+    setConfirmed(false);
+  };
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <TooltipButton tooltip="Delete last ingest files" variant="outline" disabled={busy} onClick={() => setOpen(true)}>
+      <TooltipButton tooltip="Preview rollback" variant="outline" disabled={busy} onClick={() => setOpen(true)}>
         <RotateCcwIcon data-icon="inline-start" />
         Clean Last Ingest
       </TooltipButton>
-      <AlertDialogContent>
+      <AlertDialogContent className="max-w-3xl">
         <AlertDialogHeader>
           <AlertDialogTitle>Clean only the last ingest?</AlertDialogTitle>
           <AlertDialogDescription>
-            This deletes wiki markdown files created by the last Lab-tracked ingest and restores changed files from the pre-ingest backup when hashes are safe.
+            Preview the rollback before applying it. Created files can be deleted; changed files restore only when the current hash still matches the ingest output.
           </AlertDialogDescription>
         </AlertDialogHeader>
+        {previewLoading ? (
+          <Skeleton className="h-56" />
+        ) : preview ? (
+          <RollbackPreviewPanel preview={preview} result={lastResult} />
+        ) : (
+          <EmptyLine text="No rollback preview available." />
+        )}
         <label className="flex items-center gap-2 text-sm">
-          <Checkbox checked={confirmed} onCheckedChange={(value) => setConfirmed(value === true)} />
+          <Checkbox checked={confirmed} disabled={!preview} onCheckedChange={(value) => setConfirmed(value === true)} />
           I understand this deletes new files from the last ingest.
         </label>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
           <Tooltip>
             <TooltipTrigger asChild>
-              <AlertDialogAction disabled={!confirmed} onClick={() => void cleanLastIngest()}>
+              <AlertDialogAction
+                disabled={!confirmed || !preview || busy}
+                onClick={(event) => {
+                  event.preventDefault();
+                  void applyRollback();
+                }}
+              >
                 Clean Last Ingest
               </AlertDialogAction>
             </TooltipTrigger>
-            <TooltipContent>Delete last ingest</TooltipContent>
+            <TooltipContent>Apply rollback</TooltipContent>
           </Tooltip>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+  );
+}
+
+function RollbackPreviewPanel({
+  preview,
+  result,
+}: {
+  preview: CleanLastIngestPreview;
+  result: CleanLastIngestResult | null;
+}) {
+  const skipped = result?.skipped || preview.skipped;
+  const deleted = result?.deleted || preview.deleteCandidates;
+  const restored = result?.restoredChanged || preview.restoreCandidates;
+
+  return (
+    <div className="flex max-h-[60vh] flex-col gap-3 overflow-hidden">
+      <div className="grid gap-2 md:grid-cols-4">
+        <RunMiniStat label="Run" value={shortId(preview.runId)} />
+        <RunMiniStat label="Mode" value={preview.mode} />
+        <RunMiniStat label={result ? 'Deleted' : 'Will delete'} value={String(deleted.length)} />
+        <RunMiniStat label={result ? 'Restored' : 'Will restore'} value={String(restored.length)} />
+      </div>
+      <ScrollArea className="min-h-0 rounded-md border">
+        <div className="flex flex-col gap-3 p-3">
+          <RollbackPathGroup title={result ? 'Deleted files' : 'Will delete'} paths={deleted} empty="No created files to delete." />
+          <RollbackPathGroup title={result ? 'Restored changed files' : 'Will restore'} paths={restored} empty="No changed files can be restored." />
+          <RollbackSkipGroup skipped={skipped} result={Boolean(result)} />
+          {preview.preservedChanged.length ? (
+            <RollbackPathGroup title="Preserved changed files" paths={preview.preservedChanged} empty="No preserved changed files." />
+          ) : null}
+        </div>
+      </ScrollArea>
+    </div>
+  );
+}
+
+function RollbackPathGroup({ title, paths, empty }: { title: string; paths: string[]; empty: string }) {
+  return (
+    <div className="rounded-md border p-3">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <div className="text-sm font-medium">{title}</div>
+        <Badge variant="outline">{paths.length}</Badge>
+      </div>
+      <div className="flex flex-col gap-1">
+        {paths.length ? paths.slice(0, 12).map((path) => (
+          <div key={path} className="truncate font-mono text-xs text-muted-foreground">{path}</div>
+        )) : <EmptyLine text={empty} />}
+        {paths.length > 12 ? <div className="text-xs text-muted-foreground">+{paths.length - 12} more</div> : null}
+      </div>
+    </div>
+  );
+}
+
+function RollbackSkipGroup({ skipped, result }: { skipped: Array<{ path: string; reason: string }>; result: boolean }) {
+  return (
+    <div className="rounded-md border p-3">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <div className="text-sm font-medium">{result ? 'Skipped during rollback' : 'Will skip'}</div>
+        <Badge variant={skipped.length ? 'destructive' : 'outline'}>{skipped.length}</Badge>
+      </div>
+      <div className="flex flex-col gap-2">
+        {skipped.length ? skipped.slice(0, 12).map((item) => (
+          <div key={`${item.path}:${item.reason}`} className="rounded-md bg-muted/40 p-2">
+            <div className="truncate font-mono text-xs">{item.path}</div>
+            <div className="text-xs text-muted-foreground">{item.reason}</div>
+          </div>
+        )) : <EmptyLine text="No skipped rollback items." />}
+        {skipped.length > 12 ? <div className="text-xs text-muted-foreground">+{skipped.length - 12} more</div> : null}
+      </div>
+    </div>
   );
 }
 

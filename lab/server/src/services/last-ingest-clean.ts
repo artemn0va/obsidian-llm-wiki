@@ -34,6 +34,25 @@ export interface CleanLastIngestResult {
   preservedChanged: string[];
 }
 
+export interface CleanLastIngestPreview {
+  runId: string;
+  commandPath?: string;
+  mode: 'diff' | 'current-vs-before';
+  deleteCandidates: string[];
+  restoreCandidates: string[];
+  skipped: Array<{ path: string; reason: string }>;
+  preservedChanged: string[];
+}
+
+interface RestoreAction {
+  path: string;
+  backupPath: string;
+}
+
+interface RollbackPlan extends CleanLastIngestPreview {
+  restoreActions: RestoreAction[];
+}
+
 const protectedWikiFiles = new Set([
   'wiki/index.md',
   'wiki/log.md',
@@ -47,6 +66,55 @@ const protectedRestoreFiles = new Set([
 ]);
 
 export async function cleanLastIngest(): Promise<CleanLastIngestResult> {
+  const plan = await previewCleanLastIngest();
+  const deleted: string[] = [];
+  const restoredChanged: string[] = [];
+  const skipped: CleanLastIngestResult['skipped'] = [...plan.skipped];
+
+  for (const safeRelative of plan.deleteCandidates) {
+    const fullPath = assertInside(wikiRoot, path.join(activeVaultRoot, safeRelative));
+    try {
+      await fs.rm(fullPath, { force: true });
+      deleted.push(safeRelative);
+    } catch (error) {
+      skipped.push({ path: safeRelative, reason: error instanceof Error ? error.message : String(error) });
+    }
+  }
+
+  for (const action of plan.restoreActions) {
+    const fullPath = assertInside(wikiRoot, path.join(activeVaultRoot, action.path));
+    try {
+      await ensureDir(path.dirname(fullPath));
+      await fs.copyFile(action.backupPath, fullPath);
+      restoredChanged.push(action.path);
+    } catch (error) {
+      skipped.push({ path: action.path, reason: error instanceof Error ? error.message : String(error) });
+    }
+  }
+
+  await pruneEmptyWikiDirs(wikiRoot);
+  const runRoot = path.join(labStateRoot, 'runs', plan.runId);
+  await writeJson(path.join(runRoot, 'clean-last-ingest.json'), {
+    generatedAt: new Date().toISOString(),
+    mode: plan.mode,
+    deleted,
+    skipped,
+    restoredChanged,
+    preservedChanged: plan.preservedChanged,
+  });
+
+  return {
+    runId: plan.runId,
+    commandPath: plan.commandPath,
+    mode: plan.mode,
+    deleted,
+    skipped,
+    restoredChanged,
+    preservedChanged: plan.preservedChanged,
+  };
+}
+
+export async function previewCleanLastIngest(): Promise<RollbackPlan> {
   const run = await findLatestIngestRun();
   if (!run) {
     throw new Error('No Lab-tracked ingest run found.');
@@ -62,9 +130,9 @@ export async function cleanLastIngest(): Promise<CleanLastIngestResult> {
   const created = diff?.created || await createdSinceSnapshot(before);
   const changed = diff?.changed || [];
   const backupManifest = await readJson<WikiBackupManifest>(path.join(run.runRoot, 'backups', 'manifest.json'));
+  const deleteCandidates: string[] = [];
+  const restoreActions: RestoreAction[] = [];
   const preservedChanged: string[] = [];
-  const restoredChanged: string[] = [];
-  const deleted: string[] = [];
   const skipped: CleanLastIngestResult['skipped'] = [];
 
   for (const file of created) {
@@ -74,13 +142,7 @@ export async function cleanLastIngest(): Promise<CleanLastIngestResult> {
       continue;
     }
 
-    const fullPath = assertInside(wikiRoot, path.join(activeVaultRoot, safeRelative));
-    try {
-      await fs.rm(fullPath, { force: true });
-      deleted.push(safeRelative);
-    } catch (error) {
-      skipped.push({ path: safeRelative, reason: error instanceof Error ? error.message : String(error) });
-    }
+    deleteCandidates.push(safeRelative);
   }
 
   for (const file of changed) {
@@ -119,34 +181,18 @@ export async function cleanLastIngest(): Promise<CleanLastIngestResult> {
       continue;
     }
 
-    try {
-      await ensureDir(path.dirname(fullPath));
-      await fs.copyFile(backupPath, fullPath);
-      restoredChanged.push(safeRelative);
-    } catch (error) {
-      preservedChanged.push(safeRelative);
-      skipped.push({ path: safeRelative, reason: error instanceof Error ? error.message : String(error) });
-    }
+    restoreActions.push({ path: safeRelative, backupPath });
   }
-
-  await pruneEmptyWikiDirs(wikiRoot);
-  await writeJson(path.join(run.runRoot, 'clean-last-ingest.json'), {
-    generatedAt: new Date().toISOString(),
-    mode,
-    deleted,
-    skipped,
-    restoredChanged,
-    preservedChanged,
-  });
 
   return {
     runId: run.command.id,
     commandPath: run.command.path,
     mode,
-    deleted,
+    deleteCandidates,
     skipped,
-    restoredChanged,
+    restoreCandidates: restoreActions.map((action) => action.path),
     preservedChanged,
+    restoreActions,
   };
 }
 

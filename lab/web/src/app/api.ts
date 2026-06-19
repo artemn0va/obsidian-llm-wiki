@@ -1,5 +1,6 @@
 import type {
   BridgeCommandResponse,
+  CleanLastIngestPreview,
   CleanLastIngestResult,
   IngestCandidates,
   IngestGranularity,
@@ -55,6 +56,7 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({}),
     }),
+  cleanLastIngestPreview: () => request<CleanLastIngestPreview>('/api/wiki/clean-last-ingest/preview'),
   qa: () => request<QAReport>('/api/qa'),
   qaFix: () =>
     request<QAFixReport>('/api/qa/fix', {

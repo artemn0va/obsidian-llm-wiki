@@ -155,6 +155,16 @@ export interface CleanLastIngestResult {
   preservedChanged: string[];
 }
 
+export interface CleanLastIngestPreview {
+  runId: string;
+  commandPath?: string;
+  mode: 'diff' | 'current-vs-before';
+  deleteCandidates: string[];
+  restoreCandidates: string[];
+  skipped: Array<{ path: string; reason: string }>;
+  preservedChanged: string[];
+}
+
 export type IngestGranularity = 'fine' | 'standard' | 'coarse' | 'minimal';
 
 export interface IngestCandidate {

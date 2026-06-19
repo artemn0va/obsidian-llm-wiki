@@ -93,8 +93,10 @@ Developer-facing roadmap for the next Wiki Lab iterations. This file is not gene
 - [x] 2026-06-19: Backup manifest records original wiki path, backup path, before hash, size, and capture time.
 - [x] 2026-06-19: `Clean Last Ingest` now deletes created files and restores changed files when current hash matches the expected after-ingest hash.
 - [x] 2026-06-19: Protected schema files are skipped during restore; changed files with post-ingest edits are skipped instead of overwritten.
-- [ ] Next: add a dry-run rollback preview endpoint and UI before applying rollback.
-- [ ] Next: expose skipped restore reasons in the UI after rollback.
+- [x] 2026-06-19: Added dry-run rollback preview endpoint `/api/wiki/clean-last-ingest/preview` and preview UI before applying rollback.
+- [x] 2026-06-19: Rollback UI now shows skipped restore/delete reasons before and after applying rollback.
+- [ ] Next: add selective rollback for individual created files.
+- [ ] Next: add explicit protected-file override flow for schema restore, guarded by confirmation.
 
 ### Goal
 
@@ -108,12 +110,12 @@ Developer-facing roadmap for the next Wiki Lab iterations. This file is not gene
 
 ### TODO checklist
 
-- [ ] Перед ingest сохранять backup содержимого всех wiki markdown files, которые могут быть изменены.
-- [ ] Хранить backups внутри `.llm-wiki-lab/runs/<id>/backups/`.
-- [ ] Добавить manifest: original path, sha256 before, backup path, capturedAt.
-- [ ] После ingest вычислять changed files и связывать их с backups.
-- [ ] Добавить `Rollback last ingest` для restore changed + delete created.
-- [ ] Добавить dry-run preview для rollback.
+- [x] Перед ingest сохранять backup содержимого всех wiki markdown files, которые могут быть изменены.
+- [x] Хранить backups внутри `.llm-wiki-lab/runs/<id>/backups/`.
+- [x] Добавить manifest: original path, sha256 before, backup path, capturedAt.
+- [x] После ingest вычислять changed files и связывать их с backups.
+- [x] Добавить `Rollback last ingest` для restore changed + delete created.
+- [x] Добавить dry-run preview для rollback.
 
 ### Acceptance criteria
 

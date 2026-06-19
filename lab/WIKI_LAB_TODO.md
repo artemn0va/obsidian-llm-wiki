@@ -367,6 +367,16 @@ Developer-facing roadmap for the next Wiki Lab iterations. This file is not gene
 
 ## 10. Plugin Settings Mirror
 
+### Progress
+
+- [x] 2026-06-19: Plugin runtime status now exports sanitized read-only settings.
+- [x] 2026-06-19: Settings mirror includes provider, model, granularity, wiki language, UI language, wiki folder, bridge enabled, schema enabled, and safe watch settings.
+- [x] 2026-06-19: Wiki Lab UI shows `Plugin Settings Mirror` without reading raw `data.json`.
+- [x] 2026-06-19: Mirror explicitly states that secrets and raw settings are excluded.
+- [x] 2026-06-19: UI shows an unavailable warning when sanitized settings have not been exported yet.
+- [ ] Next: add sanitized plugin version/settings schema version to the mirror.
+- [ ] Next: add warning when Lab UI and plugin settings disagree on active vault assumptions.
+
 ### Goal
 
 Показать важные plugin settings в read-only виде, чтобы не открывать Obsidian settings ради проверки model/granularity/language/paths.
@@ -378,11 +388,11 @@ Developer-facing roadmap for the next Wiki Lab iterations. This file is not gene
 
 ### TODO checklist
 
-- [ ] Добавить read-only settings endpoint or bridge status section.
-- [ ] Показывать model, granularity, wiki language, bridge enabled, important paths.
-- [ ] Показывать settings source and updatedAt.
-- [ ] Явно скрывать/exclude secrets.
-- [ ] Добавить warning, если settings unavailable.
+- [x] Добавить read-only settings endpoint or bridge status section.
+- [x] Показывать model, granularity, wiki language, bridge enabled, important paths.
+- [x] Показывать settings source and updatedAt.
+- [x] Явно скрывать/exclude secrets.
+- [x] Добавить warning, если settings unavailable.
 
 ### Acceptance criteria
 

@@ -48,6 +48,23 @@ export interface BridgeRuntimeStatus {
     createdAt?: string;
   } | null;
   progress?: BridgeProgress | null;
+  settings?: PluginSettingsMirror | null;
+}
+
+export interface PluginSettingsMirror {
+  source: 'runtime-status';
+  updatedAt: string;
+  provider: string;
+  model: string;
+  extractionGranularity: string;
+  wikiLanguage: string;
+  uiLanguage: string;
+  wikiFolder: string;
+  labBridgeEnabled: boolean;
+  enableSchema: boolean;
+  autoWatchSources: boolean;
+  autoWatchMode: string;
+  watchedFolders: string[];
 }
 
 export interface BridgeProgress {

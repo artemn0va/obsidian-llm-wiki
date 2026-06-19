@@ -1874,6 +1874,8 @@ function BridgeView({
         </Card>
       </div>
 
+      <PluginSettingsMirrorCard status={status} />
+
       <BridgeQueuePanel
         queue={queue}
         busy={Boolean(busyLabel)}
@@ -1882,6 +1884,62 @@ function BridgeView({
         runAction={runAction}
       />
     </div>
+  );
+}
+
+function PluginSettingsMirrorCard({ status }: { status: LabStatus | null }) {
+  const settings = status?.bridge.runtimeStatus?.settings || null;
+
+  return (
+    <Card>
+      <CardHeader className="flex-row items-start justify-between gap-3">
+        <div className="min-w-0">
+          <CardTitle>Plugin Settings Mirror</CardTitle>
+          <CardDescription>Read-only sanitized settings exported by the Obsidian plugin.</CardDescription>
+        </div>
+        <Badge variant={settings ? 'secondary' : 'destructive'}>{settings ? 'Sanitized' : 'Unavailable'}</Badge>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
+        {!settings ? (
+          <div className="rounded-md border p-3">
+            <div className="mb-2 flex items-center gap-2 text-sm font-medium">
+              <AlertTriangleIcon />
+              Settings unavailable
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Reload Obsidian after deploying the latest plugin. Wiki Lab does not read raw data.json or secrets.
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="grid gap-3 md:grid-cols-3">
+              <StatusLine label="Model" ok={Boolean(settings.model)} value={settings.model || 'Not selected'} />
+              <StatusLine label="Granularity" ok={Boolean(settings.extractionGranularity)} value={settings.extractionGranularity} />
+              <StatusLine label="Wiki language" ok={Boolean(settings.wikiLanguage)} value={settings.wikiLanguage} />
+              <StatusLine label="Provider" ok={Boolean(settings.provider)} value={settings.provider} />
+              <StatusLine label="Bridge enabled" ok={settings.labBridgeEnabled} value={String(settings.labBridgeEnabled)} />
+              <StatusLine label="Schema enabled" ok={settings.enableSchema} value={String(settings.enableSchema)} />
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-2">
+              <StatusLine label="Wiki folder" ok={Boolean(settings.wikiFolder)} value={settings.wikiFolder} />
+              <StatusLine label="UI language" ok={Boolean(settings.uiLanguage)} value={settings.uiLanguage} />
+              <StatusLine label="Auto watch" ok={!settings.autoWatchSources || Boolean(settings.autoWatchMode)} value={`${settings.autoWatchSources ? 'on' : 'off'} · ${settings.autoWatchMode}`} />
+              <StatusLine label="Watched folders" ok value={settings.watchedFolders.length ? settings.watchedFolders.join(', ') : 'None'} />
+            </div>
+
+            <div className="rounded-md border p-3">
+              <div className="mb-2 text-sm font-medium">Source</div>
+              <div className="grid gap-2 text-xs text-muted-foreground md:grid-cols-3">
+                <span>{settings.source}</span>
+                <span>{formatDate(settings.updatedAt)}</span>
+                <span>Secrets excluded: apiKey, baseUrl, history, raw data.json</span>
+              </div>
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

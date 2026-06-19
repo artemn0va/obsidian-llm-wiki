@@ -15,6 +15,22 @@ interface BridgeProgress {
   updatedAt: string;
 }
 
+interface SanitizedSettingsMirror {
+  source: 'runtime-status';
+  updatedAt: string;
+  provider: string;
+  model: string;
+  extractionGranularity: ExtractionGranularity;
+  wikiLanguage: string;
+  uiLanguage: string;
+  wikiFolder: string;
+  labBridgeEnabled: boolean;
+  enableSchema: boolean;
+  autoWatchSources: boolean;
+  autoWatchMode: string;
+  watchedFolders: string[];
+}
+
 interface BridgeCommand {
   id: string;
   type: BridgeCommandType;
@@ -290,6 +306,7 @@ export class LabBridge {
   }
 
   private async writeRuntimeStatus(message: string, running = true): Promise<void> {
+    const updatedAt = new Date().toISOString();
     await this.host.app.vault.adapter.write(RUNTIME_STATUS, JSON.stringify({
       enabled: Boolean(this.host.settings.labBridgeEnabled),
       running,
@@ -297,8 +314,27 @@ export class LabBridge {
       message,
       activeCommand: this.activeCommand,
       progress: this.activeProgress,
-      updatedAt: new Date().toISOString(),
+      settings: this.sanitizedSettings(updatedAt),
+      updatedAt,
     }, null, 2));
+  }
+
+  private sanitizedSettings(updatedAt: string): SanitizedSettingsMirror {
+    return {
+      source: 'runtime-status',
+      updatedAt,
+      provider: this.host.settings.provider,
+      model: this.host.settings.model || '(not selected)',
+      extractionGranularity: this.host.settings.extractionGranularity,
+      wikiLanguage: this.host.settings.wikiLanguage || 'en',
+      uiLanguage: this.host.settings.language,
+      wikiFolder: this.host.settings.wikiFolder,
+      labBridgeEnabled: Boolean(this.host.settings.labBridgeEnabled),
+      enableSchema: Boolean(this.host.settings.enableSchema),
+      autoWatchSources: Boolean(this.host.settings.autoWatchSources),
+      autoWatchMode: this.host.settings.autoWatchMode,
+      watchedFolders: [...(this.host.settings.watchedFolders || [])],
+    };
   }
 
   private async writeResponse(

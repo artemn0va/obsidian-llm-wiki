@@ -1,4 +1,4 @@
-import { Plugin, Notice, TFile } from 'obsidian';
+import { Plugin, Notice, TFile, TFolder } from 'obsidian';
 
 import {
   PREDEFINED_PROVIDERS,
@@ -89,6 +89,7 @@ import { FileSuggestModal, FolderSuggestModal, IngestReportModal } from './ui/mo
 import { SchemaManager } from './schema/schema-manager';
 import { AutoMaintainManager } from './schema/auto-maintain';
 import { runLintWiki } from './wiki/lint/controller';
+import { LabBridge } from './lab-bridge';
 
 export default class LLMWikiPlugin extends Plugin {
   settings: LLMWikiSettings;
@@ -96,6 +97,7 @@ export default class LLMWikiPlugin extends Plugin {
   wikiEngine: WikiEngine;
   schemaManager: SchemaManager;
   autoMaintainManager: AutoMaintainManager;
+  labBridge: LabBridge;
   private progressNotice: Notice | null = null;
   private ingestStatusBar: HTMLElement | null = null;
 
@@ -253,11 +255,14 @@ export default class LLMWikiPlugin extends Plugin {
     );
 
     this.addSettingTab(new LLMWikiSettingTab(this.app, this));
+    this.labBridge = new LabBridge(this);
+    this.labBridge.start();
 
     console.debug('LLM Wiki Plugin loaded - Karpathy implementation');
   }
 
   onunload() {
+    void this.labBridge?.stop();
     this.autoMaintainManager?.stop();
     console.debug('LLM Wiki Plugin unloaded');
   }
@@ -386,6 +391,104 @@ export default class LLMWikiPlugin extends Plugin {
   private onIngestDone(report: IngestReport): void {
     this.dismissProgress();
     new IngestReportModal(this.app, report, this.settings.language).open();
+  }
+
+  private async ingestFileWithReport(file: TFile, onProgress?: (message: string) => void): Promise<IngestReport> {
+    let settled = false;
+
+    return new Promise<IngestReport>((resolve, reject) => {
+      this.wikiEngine.setDoneCallback((report: IngestReport) => {
+        settled = true;
+        this.dismissProgress();
+        resolve(report);
+      });
+
+      this.showProgress(`Ingesting: ${file.basename}`);
+      this.wikiEngine.ingestSource(file)
+        .catch(error => {
+          if (!settled) reject(error instanceof Error ? error : new Error(String(error)));
+        })
+        .finally(() => {
+          this.wikiEngine.setDoneCallback((report: IngestReport) => this.onIngestDone(report));
+        });
+
+      onProgress?.(`Ingesting: ${file.basename}`);
+    });
+  }
+
+  async runLabIngestFile(path: string, onProgress?: (message: string) => void): Promise<IngestReport> {
+    if (!this.requireLLMReady()) {
+      throw new Error(getText(this.settings.language, 'llmNotReady'));
+    }
+
+    const file = this.app.vault.getAbstractFileByPath(path);
+    if (!(file instanceof TFile) || file.extension !== 'md') {
+      throw new Error(`Markdown file not found: ${path}`);
+    }
+
+    return this.ingestFileWithReport(file, onProgress);
+  }
+
+  async runLabIngestFolder(path: string, onProgress?: (message: string) => void): Promise<IngestReport> {
+    if (!this.requireLLMReady()) {
+      throw new Error(getText(this.settings.language, 'llmNotReady'));
+    }
+
+    const folder = this.app.vault.getAbstractFileByPath(path);
+    if (!(folder instanceof TFolder)) {
+      throw new Error(`Folder not found: ${path}`);
+    }
+
+    const folderPrefix = folder.path.endsWith('/') ? folder.path : `${folder.path}/`;
+    const files = this.app.vault.getMarkdownFiles()
+      .filter(file => file.path.startsWith(folderPrefix));
+    const newFiles: TFile[] = [];
+    const reports: IngestReport[] = [];
+    let skippedFiles = 0;
+
+    onProgress?.(`Checking folder: ${folder.path}`);
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      onProgress?.(`[${i + 1}/${files.length}] Checking ${file.path}`);
+      if (await this.isAlreadyIngested(file)) {
+        skippedFiles += 1;
+        continue;
+      }
+      newFiles.push(file);
+    }
+
+    if (newFiles.length === 0) {
+      onProgress?.(`No new files to ingest in ${folder.path}`);
+    }
+
+    for (let i = 0; i < newFiles.length; i++) {
+      const file = newFiles[i];
+      const nextIndex = i + 1;
+      const totalNewFiles = newFiles.length;
+      onProgress?.(`[${nextIndex}/${totalNewFiles}] Ingesting ${file.path}`);
+      reports.push(await this.ingestFileWithReport(file, message => {
+        onProgress?.(`[${nextIndex}/${totalNewFiles}] ${message}`);
+      }));
+      if (this.wikiEngine.wasCancelled) break;
+    }
+
+    const allCreated = [...new Set(reports.flatMap(report => report.createdPages))];
+    const allUpdated = [...new Set(reports.flatMap(report => report.updatedPages))];
+    return {
+      sourceFile: `${reports.length} files from ${folder.path}`,
+      createdPages: allCreated,
+      updatedPages: allUpdated,
+      entitiesCreated: reports.reduce((sum, report) => sum + report.entitiesCreated, 0),
+      conceptsCreated: reports.reduce((sum, report) => sum + report.conceptsCreated, 0),
+      failedItems: reports.flatMap(report => report.failedItems),
+      collisions: reports.flatMap(report => report.collisions || []),
+      contradictionsFound: reports.reduce((sum, report) => sum + report.contradictionsFound, 0),
+      success: reports.every(report => report.success),
+      elapsedSeconds: reports.reduce((sum, report) => sum + (report.elapsedSeconds || 0), 0),
+      skippedFiles,
+      totalFilesInFolder: files.length,
+      cancelled: reports.some(report => report.cancelled),
+    };
   }
 
   // ==================== Ingestion ====================

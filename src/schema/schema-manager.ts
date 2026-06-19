@@ -15,16 +15,16 @@ export type SchemaTask = 'analyze' | 'summary' | 'entity' | 'concept' | 'related
 export { VALID_ENTITY_TAGS, VALID_CONCEPT_TAGS, DEFAULT_ENTITY_TAG, DEFAULT_CONCEPT_TAG };
 
 const TASK_SECTIONS: Record<SchemaTask, string[]> = {
-  analyze: ['Wiki Structure', 'Classification Rules', 'Naming Conventions'],
-  summary: ['Wiki Structure', 'Classification Rules'],
-  entity: ['Entity Page Template', 'Naming Conventions', 'Classification Rules'],
-  concept: ['Concept Page Template', 'Naming Conventions', 'Classification Rules'],
-  related: ['Naming Conventions', 'Classification Rules'],
-  conversation: ['Wiki Structure', 'Entity Page Template', 'Concept Page Template', 'Naming Conventions', 'Classification Rules'],
+  analyze: ['Wiki Structure', 'Extraction Philosophy', 'Page Worthiness', 'Language Policy', 'Ingest Granularity Policy', 'Domain Extraction Policy', 'Source Page Template', 'Naming Conventions', 'Classification Rules', 'Content Rules'],
+  summary: ['Wiki Structure', 'Extraction Philosophy', 'Page Worthiness', 'Language Policy', 'Domain Extraction Policy', 'Source Page Template', 'Naming Conventions', 'Classification Rules', 'Content Rules'],
+  entity: ['Entity Page Template', 'Extraction Philosophy', 'Page Worthiness', 'Language Policy', 'Naming Conventions', 'Classification Rules', 'Content Rules'],
+  concept: ['Concept Page Template', 'Extraction Philosophy', 'Page Worthiness', 'Language Policy', 'Naming Conventions', 'Classification Rules', 'Content Rules'],
+  related: ['Extraction Philosophy', 'Page Worthiness', 'Language Policy', 'Naming Conventions', 'Classification Rules', 'Content Rules'],
+  conversation: ['Wiki Structure', 'Extraction Philosophy', 'Page Worthiness', 'Entity Page Template', 'Concept Page Template', 'Naming Conventions', 'Classification Rules'],
   index: ['Wiki Structure'],
   lint: ['Maintenance Policies'],
-  merge: ['Entity Page Template', 'Concept Page Template', 'Naming Conventions', 'Classification Rules'],
-  full: ['Wiki Structure', 'Entity Page Template', 'Concept Page Template', 'Naming Conventions', 'Classification Rules', 'Maintenance Policies'],
+  merge: ['Extraction Philosophy', 'Page Worthiness', 'Entity Page Template', 'Concept Page Template', 'Language Policy', 'Naming Conventions', 'Classification Rules', 'Content Rules', 'Multi-Source Merge Rules'],
+  full: ['Wiki Structure', 'Extraction Philosophy', 'Page Worthiness', 'Entity Page Template', 'Concept Page Template', 'Source Page Template', 'Naming Conventions', 'Classification Rules', 'Maintenance Policies'],
 };
 
 export function buildDefaultSchemaBody(): string {
@@ -38,6 +38,22 @@ This file governs how the LLM builds and maintains your Wiki. Edit it freely.
 - Source pages: \`sources/\`
 - Index: \`index.md\`
 - Log: \`log.md\`
+
+## Extraction Philosophy
+- The Wiki extracts durable meaning units first and useful nouns second.
+- Durable meaning units include theses, mechanisms, workflows, architectures, principles, tradeoffs, source-of-truth models, synthesis loops, navigation systems, and reusable patterns.
+- Useful nouns include tools, products, projects, named standards, historical analogies, and named references, but they should not outrank the source's core ideas.
+- Every extracted entity/concept should carry \`role:\` and \`centrality:\` metadata.
+- Valid \`role\` values: core_idea, architecture, workflow, mechanism, principle, tradeoff, tool, source_navigation, historical_analogy, implementation_detail.
+- Valid \`centrality\` values: core, supporting, mention.
+- Tools are preserved, but not automatically promoted. Promote tools to standalone pages only when they help future queries, workflows, implementation choices, or architecture understanding.
+
+## Page Worthiness
+- Mention is searchable; page is reusable.
+- Create a standalone page when the item is likely to be linked from future notes, reused by agents, or needed as a stable anchor for synthesis.
+- Keep \`centrality: mention\` items in the source page only; do not create standalone pages for them.
+- Coarse extraction should keep the semantic backbone plus a small number of useful supporting tools.
+- Do not create standalone pages for hotkeys, attachment folder paths, UI labels, one-off plugin settings, ordinary nouns, or incidental implementation details unless the source is primarily about them.
 
 ## Entity Page Template
 Pages in \`entities/\` MUST follow this structure:
@@ -78,7 +94,7 @@ Pages in \`concepts/\` MUST follow this structure:
 
 ## Naming Conventions
 - Filenames: lowercase-with-hyphens (slugified)
-- Entity/concept names: Preserve original language from source, NEVER translate
+- Entity/concept names: Prefer English generated titles and slugs; preserve exact proper names and useful original-language terms as aliases
 - Wiki-links: Use full paths [[entities/page-name|Display Name]] or [[concepts/page-name|Display Name]]
 
 ## Source Page Template
@@ -94,6 +110,8 @@ Pages in \`sources/\` MUST follow this structure:
 1. **Summary**: Brief description of the source content (2-4 sentences)
 2. **Key Points**: Bullet list of main insights
 3. **Mentioned Pages**: List of [[entities/...]] and [[concepts/...]] pages created from this source
+
+4. **Mentioned Tools / Implementation Options**: Plain-text tools/options that were useful in the source but not promoted to standalone pages
 
 ## Date Fields
 - \`created:\` and \`updated:\` are filled by the system programmatically — NEVER LLM-generated
@@ -113,7 +131,7 @@ Rules:
 ## Content Rules
 - mentions_in_source MUST be VERBATIM quotes — never paraphrase or translate
 - Summaries/descriptions should use the wiki output language
-- Entity/concept names must match the source file's original language exactly
+- Entity/concept names should follow the wiki language policy; direct source quotes must preserve the original language exactly
 - All pages must include bidirectional links where relevant
 
 ## Classification Rules
@@ -122,6 +140,8 @@ Rules:
 - Entity subtypes (valid tags for type=entity): person, organization, project, product, event, place, other
 - Concept subtypes (valid tags for type=concept): theory, method, field, phenomenon, standard, term, other
 - Source types: document, conversation, note
+- \`role\` describes why the page exists in the knowledge system.
+- \`centrality\` ranks the page for retrieval and agent answers: core before supporting; mention-only content stays in source pages.
 - **Rule:** tags MUST only contain values from the corresponding subtype list above. A tag not in the valid list will be removed by the system.
 
 ## Multi-Source Merge Rules

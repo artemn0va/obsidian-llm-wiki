@@ -23,7 +23,7 @@ export function computeSlug(text: string, preserveCase = false): string {
   const afterRemoveInvalid = trimmed
     // eslint-disable-next-line no-control-regex -- deliberate control-char strip for filename safety
     .replace(/[\x00-\x1f]/g, '')
-    .replace(/[/\\:*?"<>|,()'!?、，。；：！？（）【】《》]/g, '');
+    .replace(/[/\\:*?"<>|#,()'!?、，。；：！？（）【】《》]/g, '');
 
   if (afterRemoveInvalid.length === 0) return 'untitled-' + Date.now();
 

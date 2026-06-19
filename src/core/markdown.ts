@@ -64,7 +64,30 @@ export function cleanMarkdownResponse(response: string): string {
     }
   }
 
-  return cleaned.trim();
+  return stripPromptArtifacts(cleaned).trim();
+}
+
+export function stripPromptArtifacts(content: string): string {
+  return content
+    .replace(/\n?--- BEGIN SCHEMA ---[\s\S]*?--- END SCHEMA ---/g, '')
+    .replace(/\n?## Active Tag Vocabulary[^\n]*\n[\s\S]*?(?=\n## |\n# |$)/g, '')
+    .replace(/\n?When assigning `type` to an entity or concept,[\s\S]*?frontmatter validator will reject it\./g, '')
+    .trim();
+}
+
+export function sanitizeWikiLinksToAllowedTargets(content: string, allowedTargets: Set<string>): string {
+  return content.replace(
+    /\[\[([^|\]#]+)(#[^|\]]+)?(?:\|([^\]]+))?\]\]/g,
+    (_match: string, rawTarget: string, anchor?: string, display?: string) => {
+      const target = rawTarget.trim().replace(/\\/g, '/').replace(/\.md$/i, '');
+      if (allowedTargets.has(target)) {
+        return `[[${target}${anchor || ''}${display ? `|${display.trim()}` : ''}]]`;
+      }
+
+      const fallback = display?.trim() || target.split('/').pop() || target;
+      return fallback.replace(/\.md$/i, '');
+    }
+  );
 }
 
 /**

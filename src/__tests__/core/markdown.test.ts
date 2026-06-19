@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { cleanMarkdownResponse } from '../../core/markdown';
+import { cleanMarkdownResponse, sanitizeWikiLinksToAllowedTargets } from '../../core/markdown';
 describe('cleanMarkdownResponse', () => {
   it('strips markdown code fence (```json...```)', () => {
     // Code only recognizes markdown/md language tags; json tag text remains
@@ -151,6 +151,29 @@ Body`;
 
   it('handles very short input without structural markers (regression)', () => {
     expect(cleanMarkdownResponse('short')).toBe('short');
+  });
+});
+
+describe('sanitizeWikiLinksToAllowedTargets', () => {
+  it('keeps allowed wiki links', () => {
+    const allowed = new Set(['concepts/late-night-coding-ritual']);
+    const input = 'See [[concepts/late-night-coding-ritual|Late-night coding ritual]].';
+
+    expect(sanitizeWikiLinksToAllowedTargets(input, allowed)).toBe(input);
+  });
+
+  it('converts missing wiki links to plain text', () => {
+    const allowed = new Set(['concepts/late-night-coding-ritual']);
+    const input = 'See [[concepts/screen-glow|screen glow]] and [[concepts/missing-concept]].';
+
+    expect(sanitizeWikiLinksToAllowedTargets(input, allowed)).toBe('See screen glow and missing-concept.');
+  });
+
+  it('converts invented non-wiki folder links to plain text', () => {
+    const allowed = new Set(['sources/2026-06-18']);
+    const input = 'Original note [[wiki-start/Personal/2026-06-18|2026-06-18]] should not leak.';
+
+    expect(sanitizeWikiLinksToAllowedTargets(input, allowed)).toBe('Original note 2026-06-18 should not leak.');
   });
 });
 

@@ -10,7 +10,11 @@
     "build:dev": "node esbuild.config.mjs dev",
     "lint": "eslint src/ --max-warnings=0",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "lab:dev": "pnpm --dir lab dev",
+    "lab:build": "pnpm --dir lab build",
+    "lab:serve": "pnpm --dir lab start",
+    "lab:shortcut": "powershell -ExecutionPolicy Bypass -File .\\lab\\scripts\\create-desktop-shortcut.ps1"
   },
   "keywords": [
     "obsidian",

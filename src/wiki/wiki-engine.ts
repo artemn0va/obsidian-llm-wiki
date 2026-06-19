@@ -15,10 +15,10 @@ import { PROMPTS } from '../prompts';
 import { TEXTS } from '../texts';
 import { getText } from '../core/i18n';
 import { slugify } from '../core/slug';
-import { parseFrontmatter } from '../core/frontmatter';
+import { enforceFrontmatterConstraints, parseFrontmatter } from '../core/frontmatter';
 import { detectRateLimitFailures, formatRateLimitNotice } from '../core/rate-limit';
 import { extractSourceTags } from '../core/arrays';
-import { cleanMarkdownResponse } from '../core/markdown';
+import { cleanMarkdownResponse, stripPromptArtifacts, sanitizeWikiLinksToAllowedTargets } from '../core/markdown';
 import { SchemaManager, SchemaTask } from '../schema/schema-manager';
 import {
   buildSystemPrompt,
@@ -36,7 +36,7 @@ import { ContradictionManager } from './contradictions';
 import { fixPollutedSources } from '../core/sources-normalizer';
 import { UNIVERSAL_LINK_CONSTRAINTS } from './prompts/constraints';
 import { SourceAnalyzer } from './source-analyzer';
-import { TOKENS_PAGE_GENERATION, NOTICE_ABORT, NOTICE_RATE_LIMIT, NOTICE_NORMAL, PAGES_CACHE_TTL_MS } from '../constants';
+import { TOKENS_PAGE_GENERATION, NOTICE_ABORT, NOTICE_RATE_LIMIT, NOTICE_NORMAL, PAGES_CACHE_TTL_MS, WIKI_SUBFOLDERS } from '../constants';
 import { PageFactory } from './page-factory';
 import { ConversationIngestor, ConversationOrchestration, formatConversation, ConversationHistory } from './conversation-ingest';
 
@@ -202,6 +202,270 @@ export class WikiEngine {
     }
   }
 
+  private normalizeExtractedName(name: string): string {
+    return name.trim().toLowerCase();
+  }
+
+  private retainAnalysisCandidates(
+    analysis: SourceAnalysis,
+    keptEntityNames: Set<string>,
+    keptConceptNames: Set<string>
+  ): void {
+    const keepEntityName = (name: string) => keptEntityNames.has(this.normalizeExtractedName(name));
+    const keepConceptName = (name: string) => keptConceptNames.has(this.normalizeExtractedName(name));
+
+    analysis.entities = analysis.entities.filter(entity => keepEntityName(entity.name));
+    analysis.concepts = analysis.concepts.filter(concept => keepConceptName(concept.name));
+
+    for (const entity of analysis.entities) {
+      entity.related_entities = (entity.related_entities || []).filter(keepEntityName);
+      entity.related_concepts = (entity.related_concepts || []).filter(keepConceptName);
+    }
+    for (const concept of analysis.concepts) {
+      concept.related_entities = (concept.related_entities || []).filter(keepEntityName);
+      concept.related_concepts = (concept.related_concepts || []).filter(keepConceptName);
+    }
+  }
+
+  private removeMentionOnlyCandidates(analysis: SourceAnalysis): void {
+    const before = analysis.entities.length + analysis.concepts.length;
+    const keptEntityNames = new Set(
+      analysis.entities
+        .filter(entity => entity.centrality !== 'mention')
+        .map(entity => this.normalizeExtractedName(entity.name))
+    );
+    const keptConceptNames = new Set(
+      analysis.concepts
+        .filter(concept => concept.centrality !== 'mention')
+        .map(concept => this.normalizeExtractedName(concept.name))
+    );
+
+    this.retainAnalysisCandidates(analysis, keptEntityNames, keptConceptNames);
+
+    const after = analysis.entities.length + analysis.concepts.length;
+    if (after !== before) {
+      console.debug(`[Analysis prune] mention-only candidates removed: ${before} -> ${after} items`);
+    }
+  }
+
+  private pruneAnalysisForGranularity(
+    analysis: SourceAnalysis,
+    sourceContent: string,
+    sourcePath: string
+  ): void {
+    const granularity = this.settings.extractionGranularity || 'standard';
+    if (granularity === 'custom') return;
+
+    const contentLength = sourceContent.trim().length;
+    const isShort = contentLength > 0 && contentLength < 1200;
+    if (!isShort) return;
+
+    const normalizedPath = sourcePath.toLowerCase().replace(/\\/g, '/');
+    const basename = normalizedPath.split('/').pop() || '';
+    const isDateLike = /^\d{4}-\d{2}-\d{2}/.test(basename);
+    const personalPath = /(^|\/)(personal|daily|journal|diary)(\/|$)/.test(normalizedPath);
+    const personalText = /\b(i|me|my|mine)\b|(^|\s)(я|мне|меня|мой|моя|мои|хочу|люблю|сижу)(\s|$)|у меня|все спят|романтик/i
+      .test(sourceContent);
+    const isPersonalish = personalPath || isDateLike || personalText;
+
+    let maxTotal: number | null = null;
+    const preferConcepts = isPersonalish;
+
+    if (granularity === 'minimal') {
+      maxTotal = isPersonalish ? 1 : 2;
+    } else if (granularity === 'coarse') {
+      maxTotal = isPersonalish ? 1 : 2;
+    } else if (granularity === 'standard' && isPersonalish) {
+      maxTotal = 2;
+    } else if (granularity === 'fine' && isPersonalish) {
+      maxTotal = 3;
+    }
+
+    if (maxTotal === null) return;
+
+    const before = analysis.entities.length + analysis.concepts.length;
+    if (before <= maxTotal) return;
+
+    type Candidate = {
+      kind: 'entity' | 'concept';
+      item: SourceAnalysis['entities'][number] | SourceAnalysis['concepts'][number];
+      order: number;
+      score: number;
+    };
+
+    const durableSignals = [
+      'ritual', 'routine', 'habit', 'practice', 'workflow', 'pattern',
+      'reflection', 'motivation', 'identity', 'decision', 'goal',
+      'open source', 'issue contribution', 'coding', 'development',
+      'learning', 'career', 'project'
+    ];
+    const incidentalSignals = [
+      'screen glow', 'screen', 'glow', 'monitor', 'monitors', 'light',
+      'ambient', 'atmosphere', 'noise', 'fan', 'fans', 'keyboard',
+      'clicks', 'laptop', 'playlist', 'timestamp', '3 am', 'late hour'
+    ];
+
+    const scoreCandidate = (candidate: Candidate): number => {
+      const haystack = `${candidate.item.name} ${candidate.item.summary}`.toLowerCase();
+      let score = 0;
+
+      if (preferConcepts) score += candidate.kind === 'concept' ? 2 : -1;
+      for (const signal of durableSignals) {
+        if (haystack.includes(signal)) score += 3;
+      }
+      for (const signal of incidentalSignals) {
+        if (haystack.includes(signal)) score -= 4;
+      }
+      if (candidate.item.name.length > 64) score -= 1;
+
+      return score;
+    };
+
+    const candidates: Candidate[] = [
+      ...analysis.entities.map((item, index) => ({ kind: 'entity' as const, item, order: index })),
+      ...analysis.concepts.map((item, index) => ({ kind: 'concept' as const, item, order: analysis.entities.length + index })),
+    ].map(candidate => ({ ...candidate, score: scoreCandidate(candidate as Candidate) }))
+      .sort((a, b) => b.score - a.score || a.order - b.order);
+
+    const kept = candidates.slice(0, maxTotal);
+    const normalizeName = (name: string) => name.trim().toLowerCase();
+    const keptEntityNames = new Set(
+      kept.filter(candidate => candidate.kind === 'entity').map(candidate => normalizeName(candidate.item.name))
+    );
+    const keptConceptNames = new Set(
+      kept.filter(candidate => candidate.kind === 'concept').map(candidate => normalizeName(candidate.item.name))
+    );
+
+    analysis.entities = analysis.entities.filter(entity => keptEntityNames.has(normalizeName(entity.name)));
+    analysis.concepts = analysis.concepts.filter(concept => keptConceptNames.has(normalizeName(concept.name)));
+
+    const keepEntityName = (name: string) => keptEntityNames.has(normalizeName(name));
+    const keepConceptName = (name: string) => keptConceptNames.has(normalizeName(name));
+
+    for (const entity of analysis.entities) {
+      entity.related_entities = (entity.related_entities || []).filter(keepEntityName);
+      entity.related_concepts = (entity.related_concepts || []).filter(keepConceptName);
+    }
+    for (const concept of analysis.concepts) {
+      concept.related_entities = (concept.related_entities || []).filter(keepEntityName);
+      concept.related_concepts = (concept.related_concepts || []).filter(keepConceptName);
+    }
+
+    console.debug(
+      `[Analysis prune] ${granularity}${isPersonalish ? ' personal' : ''} short source: ${before} -> ${analysis.entities.length + analysis.concepts.length} items`
+    );
+  }
+
+  private pruneIdeaAnalysisForGranularity(
+    analysis: SourceAnalysis,
+    sourceContent: string
+  ): void {
+    const granularity = this.settings.extractionGranularity || 'standard';
+    if (granularity === 'custom' || granularity === 'fine' || granularity === 'standard') return;
+
+    const sourceLower = sourceContent.toLowerCase();
+    const isIdeaOrMethodologyNote =
+      /(^|\n)##\s+(the core idea|architecture|operations|indexing and logging|why this works)/i.test(sourceContent) ||
+      /\b(pattern for building|core idea|persistent wiki|compounding artifact|raw sources|schema|ingest|query|lint)\b/i.test(sourceContent);
+
+    if (!isIdeaOrMethodologyNote) return;
+
+    const maxTotal = granularity === 'minimal' ? 4 : 7;
+    const before = analysis.entities.length + analysis.concepts.length;
+
+    type Candidate = {
+      kind: 'entity' | 'concept';
+      item: SourceAnalysis['entities'][number] | SourceAnalysis['concepts'][number];
+      order: number;
+      score: number;
+    };
+
+    const backboneSignals = [
+      'persistent wiki', 'compounding artifact', 'raw sources', 'source of truth',
+      'schema', 'configuration', 'ingest', 'query', 'lint', 'index', 'log',
+      'rag', 'retrieval', 'synthesis', 'contradiction', 'memex', 'architecture',
+      'operations loop', 'knowledge base', 'wiki maintainer', 'maintained wiki',
+      'durable meaning', 'semantic backbone', 'source-backed'
+    ];
+    const supportingToolSignals = [
+      'qmd', 'marp', 'dataview', 'obsidian', 'search infrastructure',
+      'local search', 'output tool', 'presentation tool', 'query infrastructure',
+      'cli search', 'slide deck', 'markdown export'
+    ];
+    const lowValueImplementationSignals = [
+      'web clipper', 'browser extension', 'attachment folder', 'download images',
+      'hotkey', 'graph view', 'chrome extension', 'files and links',
+      'assets folder', 'download attachments', 'setting', 'settings', 'shortcut',
+      'ui label', 'folder path'
+    ];
+
+    const scoreCandidate = (candidate: Candidate): number => {
+      const haystack = `${candidate.item.name} ${candidate.item.summary}`.toLowerCase();
+      let score = candidate.kind === 'concept' ? 3 : -1;
+      const role = candidate.item.role;
+      const centrality = candidate.item.centrality;
+
+      if (centrality === 'core') score += 12;
+      if (centrality === 'supporting') score += 4;
+      if (centrality === 'mention') score -= 50;
+
+      if (role === 'core_idea' || role === 'architecture' || role === 'workflow' || role === 'mechanism' || role === 'principle' || role === 'tradeoff' || role === 'source_navigation') {
+        score += 6;
+      }
+      if (role === 'tool' || role === 'historical_analogy') score += centrality === 'supporting' ? 2 : -2;
+      if (role === 'implementation_detail') score -= 8;
+
+      for (const signal of backboneSignals) {
+        if (haystack.includes(signal)) score += 4;
+      }
+      for (const signal of supportingToolSignals) {
+        if (haystack.includes(signal)) score += role === 'tool' || centrality === 'supporting' ? 3 : 1;
+      }
+      for (const signal of lowValueImplementationSignals) {
+        if (haystack.includes(signal)) score -= sourceLower.includes('tips and tricks') ? 8 : 6;
+      }
+      if (/\b(hotkey|attachment folder|download images locally|one-off setting)\b/.test(haystack)) score -= 8;
+      if (candidate.item.name.length > 64) score -= 1;
+
+      return score;
+    };
+
+    const candidates: Candidate[] = [
+      ...analysis.entities.map((item, index) => ({ kind: 'entity' as const, item, order: index })),
+      ...analysis.concepts.map((item, index) => ({ kind: 'concept' as const, item, order: analysis.entities.length + index })),
+    ].map(candidate => ({ ...candidate, score: scoreCandidate(candidate as Candidate) }))
+      .sort((a, b) => b.score - a.score || a.order - b.order);
+
+    const kept: Candidate[] = [];
+    const maxSupportingTools = granularity === 'minimal' ? 1 : 3;
+    let supportingToolCount = 0;
+
+    for (const candidate of candidates) {
+      if (kept.length >= maxTotal) break;
+      if (candidate.item.centrality === 'mention') continue;
+
+      const isSupportingTool = candidate.item.role === 'tool' && candidate.item.centrality === 'supporting';
+      if (isSupportingTool && supportingToolCount >= maxSupportingTools) continue;
+      if (candidate.score < 0 && candidate.item.centrality !== 'core') continue;
+
+      kept.push(candidate);
+      if (isSupportingTool) supportingToolCount += 1;
+    }
+
+    const keptEntityNames = new Set(
+      kept.filter(candidate => candidate.kind === 'entity').map(candidate => this.normalizeExtractedName(candidate.item.name))
+    );
+    const keptConceptNames = new Set(
+      kept.filter(candidate => candidate.kind === 'concept').map(candidate => this.normalizeExtractedName(candidate.item.name))
+    );
+
+    this.retainAnalysisCandidates(analysis, keptEntityNames, keptConceptNames);
+
+    console.debug(
+      `[Analysis prune] ${granularity} idea/methodology source: ${before} -> ${analysis.entities.length + analysis.concepts.length} items`
+    );
+  }
+
   // Proxy for lint-controller to access LintFixer methods without exposing the class
   async fixPollutedPage(oldPath: string, newBasename: string): Promise<string> {
     return fixPollutedPage(this.ctx, oldPath, newBasename);
@@ -240,6 +504,30 @@ export class WikiEngine {
     this.abortController = new AbortController();
     this.onIngestionStart?.();
 
+    const wikiRoot = normalizePath(this.settings.wikiFolder);
+    const sourcePath = normalizePath(file.path);
+    if (sourcePath === wikiRoot || sourcePath.startsWith(`${wikiRoot}/`)) {
+      const msg = `Refusing to ingest generated Wiki page: ${file.path}. Select a raw source note outside ${wikiRoot}/.`;
+      new Notice(msg, NOTICE_ABORT);
+      this.onProgress?.(msg);
+      this.abortController = null;
+      this.onIngestionEnd?.();
+      this.onDone?.({
+        sourceFile: file.path,
+        createdPages: [],
+        updatedPages: [],
+        entitiesCreated: 0,
+        conceptsCreated: 0,
+        failedItems: [],
+        collisions: [],
+        contradictionsFound: 0,
+        success: false,
+        errorMessage: msg,
+        elapsedSeconds: Math.round((Date.now() - totalStartTime) / 1000)
+      });
+      return;
+    }
+
     // Long-source warning: read file early to estimate processing time.
     // Large files trigger iterative batch extraction (multiple LLM passes),
     // which takes significantly longer than single-pass small files.
@@ -273,6 +561,9 @@ export class WikiEngine {
       if (!analysis) {
         throw new Error(`Source analysis failed for "${file.basename}". Check the developer console (Ctrl+Shift+I) for network or API errors. If you see SSL/network errors, verify your provider URL and network connection.`);
       }
+      this.removeMentionOnlyCandidates(analysis);
+      this.pruneAnalysisForGranularity(analysis, fileContent, file.path);
+      this.pruneIdeaAnalysisForGranularity(analysis, fileContent);
       const analysisTime = Date.now() - analysisStart;
       console.debug(`[Time] Source analysis phase: ${analysisTime}ms`);
       console.debug('Analysis result:', JSON.stringify(analysis, null, 2));
@@ -281,6 +572,7 @@ export class WikiEngine {
 
       const totalSteps = 1 + analysis.entities.length + analysis.concepts.length + analysis.related_pages.length + 2;
       let step = 1;
+      let summaryTime = 0;
 
       const plannedPaths: string[] = [];
       const preserveCase = this.settings.slugCase === 'preserve';
@@ -291,17 +583,7 @@ export class WikiEngine {
         plannedPaths.push(normalizePath(`${this.settings.wikiFolder}/concepts/${slugify(concept.name, preserveCase)}.md`));
       }
 
-      this.onProgress?.(`[${step}/${totalSteps}] Creating summary...`);
-      await this.apiDelay();
-
-      // Stage 2: Summary Page Generation
-      const summaryStart = Date.now();
-      const summaryPage = await this.createSummaryPage(file, analysis, plannedPaths);
-      const summaryTime = Date.now() - summaryStart;
-      console.debug(`[Time] Summary page generation: ${summaryTime}ms`);
-      analysis.created_pages.push(summaryPage);
-
-      // Stage 3: Entity/Concept Page Generation
+      // Stage 2: Entity/Concept Page Generation
       const pageGenStart = Date.now();
       let pageGenCount = 0;
 
@@ -342,7 +624,7 @@ export class WikiEngine {
             if (task.type === 'entity') {
               const entity = analysis!.entities[task.index];
               try {
-                const entityResult = await this.pageFactory.createOrUpdateEntityPage(entity, analysis!, file);
+                const entityResult = await this.pageFactory.createOrUpdateEntityPage(entity, analysis!, file, plannedPaths);
                 if (entityResult.path) {
                   analysis!.created_pages.push(entityResult.path);
                 }
@@ -359,7 +641,7 @@ export class WikiEngine {
                 // Retry once
                 try {
                   await this.apiDelay(2000);
-                  const retryResult = await this.pageFactory.createOrUpdateEntityPage(entity, analysis!, file);
+                  const retryResult = await this.pageFactory.createOrUpdateEntityPage(entity, analysis!, file, plannedPaths);
                   if (retryResult.path) {
                     analysis!.created_pages.push(retryResult.path);
                     console.debug(`Entity "${entity.name}" recovered on retry`);
@@ -376,7 +658,7 @@ export class WikiEngine {
             } else {
               const concept = analysis!.concepts[task.index];
               try {
-                const conceptResult = await this.pageFactory.createOrUpdateConceptPage(concept, analysis!, file);
+                const conceptResult = await this.pageFactory.createOrUpdateConceptPage(concept, analysis!, file, plannedPaths);
                 if (conceptResult.path) {
                   analysis!.created_pages.push(conceptResult.path);
                 }
@@ -393,7 +675,7 @@ export class WikiEngine {
                 // Retry once
                 try {
                   await this.apiDelay(2000);
-                  const retryResult = await this.pageFactory.createOrUpdateConceptPage(concept, analysis!, file);
+                  const retryResult = await this.pageFactory.createOrUpdateConceptPage(concept, analysis!, file, plannedPaths);
                   if (retryResult.path) {
                     analysis!.created_pages.push(retryResult.path);
                     console.debug(`Concept "${concept.name}" recovered on retry`);
@@ -438,6 +720,26 @@ export class WikiEngine {
           `suggested concurrency=${pageGenRateInfo.suggestedConcurrency}, delay=${pageGenRateInfo.suggestedDelay}ms`);
         new Notice(formatRateLimitNotice(pageGenRateInfo, this.settings.language), NOTICE_RATE_LIMIT);
       }
+
+      // Stage 3: Summary Page Generation
+      // Generate the source page after entity/concept resolution so it references
+      // only pages that actually exist or were merged into existing pages.
+      analysis.created_pages = Array.from(new Set(analysis.created_pages));
+      const actualContentPagePaths = analysis.created_pages.filter(p =>
+        p.includes(`/${WIKI_SUBFOLDERS.entities}/`) ||
+        p.includes(`/${WIKI_SUBFOLDERS.concepts}/`)
+      );
+
+      this.checkCancelled();
+      step++;
+      this.onProgress?.(`[${step}/${totalSteps}] Creating summary...`);
+      await this.apiDelay();
+
+      const summaryStart = Date.now();
+      const summaryPage = await this.createSummaryPage(file, analysis, actualContentPagePaths);
+      summaryTime = Date.now() - summaryStart;
+      console.debug(`[Time] Summary page generation: ${summaryTime}ms`);
+      analysis.created_pages = Array.from(new Set([summaryPage, ...analysis.created_pages]));
 
       // Stage 4: Related Pages Update
       const relatedStart = Date.now();
@@ -652,7 +954,7 @@ export class WikiEngine {
     await this.schemaManager.ensureSchemaExists();
   }
 
-  async createSummaryPage(file: TFile, analysis: SourceAnalysis, plannedPaths: string[] = []): Promise<string> {
+  async createSummaryPage(file: TFile, analysis: SourceAnalysis, createdPagePaths: string[] = []): Promise<string> {
     const preserveCase = this.settings.slugCase === 'preserve';
     const slug = slugify(file.basename, preserveCase);
     const path = normalizePath(`${this.settings.wikiFolder}/sources/${slug}.md`);
@@ -669,32 +971,41 @@ export class WikiEngine {
 
     // Issue #90: inherit tags from source note frontmatter when available,
     // so the generated summary page doesn't pollute the tag vocabulary with
-    // LLM-derived concept names. Fallback to LLM-derived tags if source has none.
+    // LLM-derived concept names.
     const sourceTags = extractSourceTags(content);
     const tagsValue = existingTags
       ? existingTags.join(', ')
       : sourceTags.length > 0
         ? sourceTags.join(', ')
-        : analysis.concepts.map(c => c.name).join(', ');
+        : '';
 
-    const createdPagesList = plannedPaths.length > 0
-      ? plannedPaths.map(p => {
+    const uniqueCreatedPagePaths = Array.from(new Set(createdPagePaths));
+
+    const createdPagesList = uniqueCreatedPagePaths.length > 0
+      ? uniqueCreatedPagePaths.map(p => {
           const relPath = p.replace(this.settings.wikiFolder + '/', '').replace('.md', '');
           const name = relPath.split('/').pop() || relPath;
           return `- [[${relPath}|${name}]]`;
         }).join('\n')
-      : analysis.entities.map(e => `- [[entities/${slugify(e.name, preserveCase)}|${e.name}]]`).join('\n') +
-        '\n' +
-        analysis.concepts.map(c => `- [[concepts/${slugify(c.name, preserveCase)}|${c.name}]]`).join('\n');
+      : '(none)';
+
+    const createdPagesInline = uniqueCreatedPagePaths.length > 0
+      ? uniqueCreatedPagePaths.map(p => {
+          const relPath = p.replace(this.settings.wikiFolder + '/', '').replace('.md', '');
+          const name = relPath.split('/').pop() || relPath;
+          return `"[[${relPath}|${name}]]"`;
+        }).join(', ')
+      : '';
 
     const prompt = PROMPTS.generateSummaryPage
-      .replace('{{source_title}}', analysis.source_title)
-      .replace('{{content}}', content.substring(0, 500))
+      .replace(/{{source_title}}/g, analysis.source_title)
+      .replace('{{content}}', content.substring(0, 4000))
       .replace('{{analysis}}', JSON.stringify(analysis))
       .replace('{{created_pages_list}}', createdPagesList || '(none)')
-      .replace(/{{source_file}}/g, file.path)
+      .replace(/{{source_path}}/g, file.path)
       .replace(/{{date}}/g, new Date().toISOString().split('T')[0])
       .replace('{{tags}}', tagsValue)
+      .replace('{{created_pages_inline}}', createdPagesInline)
       .replace('{{constraints}}', UNIVERSAL_LINK_CONSTRAINTS);
 
     const finalPrompt = this.applySectionLabels(prompt);
@@ -708,12 +1019,62 @@ export class WikiEngine {
     });
 
     const cleanedContent = cleanMarkdownResponse(pageContent);
-    await this.createOrUpdateFile(path, cleanedContent);
+    const enforcedContent = enforceFrontmatterConstraints(cleanedContent, 'source', this.settings);
+    const allowedTargets = new Set<string>();
+    allowedTargets.add(`sources/${slug}`);
+    for (const pagePath of uniqueCreatedPagePaths) {
+      allowedTargets.add(pagePath.replace(/\\/g, '/').replace(`${this.settings.wikiFolder}/`, '').replace(/\.md$/i, ''));
+    }
+    const existingPages = await getExistingWikiPages(this.app, this.settings.wikiFolder);
+    for (const page of existingPages) {
+      allowedTargets.add(page.path.replace(/\\/g, '/').replace(`${this.settings.wikiFolder}/`, '').replace(/\.md$/i, ''));
+    }
+    const finalContent = sanitizeWikiLinksToAllowedTargets(enforcedContent, allowedTargets);
+    await this.createOrUpdateFile(path, finalContent);
     return path;
+  }
+
+  private shouldSanitizeGeneratedWikiLinks(path: string): boolean {
+    const normalizedPath = normalizePath(path);
+    const wikiRoot = normalizePath(this.settings.wikiFolder);
+
+    if (normalizedPath === `${wikiRoot}/index.md`) return false;
+    if (normalizedPath === `${wikiRoot}/log.md`) return false;
+    if (normalizedPath.includes('/schema/')) return false;
+
+    return normalizedPath.startsWith(`${wikiRoot}/`);
+  }
+
+  private async buildAllowedWriteTargets(path: string, content: string): Promise<Set<string>> {
+    const wikiRoot = normalizePath(this.settings.wikiFolder);
+    const toRel = (wikiPath: string) =>
+      wikiPath.replace(/\\/g, '/').replace(`${wikiRoot}/`, '').replace(/\.md$/i, '');
+
+    const allowedTargets = new Set<string>();
+    allowedTargets.add(toRel(path));
+
+    const existingPages = await getExistingWikiPages(this.app, this.settings.wikiFolder);
+    for (const page of existingPages) {
+      allowedTargets.add(toRel(page.path));
+    }
+
+    // Entity/concept pages are generated before their source summary page exists.
+    // Preserve source backlinks that are expected to be created later in the same ingest.
+    for (const match of content.matchAll(/\[\[(sources\/[^|\]#]+)(?:#[^|\]]+)?(?:\|[^\]]+)?\]\]/g)) {
+      allowedTargets.add(match[1].trim().replace(/\\/g, '/').replace(/\.md$/i, ''));
+    }
+
+    return allowedTargets;
   }
 
   async createOrUpdateFile(path: string, content: string): Promise<void> {
     console.debug('createOrUpdateFile:', path);
+    content = stripPromptArtifacts(content);
+
+    if (this.shouldSanitizeGeneratedWikiLinks(path)) {
+      const allowedTargets = await this.buildAllowedWriteTargets(path, content);
+      content = sanitizeWikiLinksToAllowedTargets(content, allowedTargets);
+    }
 
     // Central pollution detection: strip folder-prefix duplication from wiki-links
     // before writing. This catches pollution from ALL sources (page generation,

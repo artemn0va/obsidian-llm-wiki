@@ -954,5 +954,17 @@ export class LLMWikiSettingTab extends PluginSettingTab {
       .addToggle(toggle => toggle
         .setValue(this.tempSettings.autoSmartFix)
         .onChange((value) => { this.tempSettings.autoSmartFix = value; }));
+
+    // ==========================================
+    // 6. Wiki Lab Bridge
+    // ==========================================
+    new Setting(containerEl).setName('Wiki lab').setHeading();
+
+    new Setting(containerEl)
+      .setName('Enable wiki lab bridge')
+      .setDesc('Allows the local wiki lab UI to queue ingest, lint, index, and cancel commands.')
+      .addToggle(toggle => toggle
+        .setValue(Boolean(this.tempSettings.labBridgeEnabled))
+        .onChange((value) => { this.tempSettings.labBridgeEnabled = value; }));
   }
 }

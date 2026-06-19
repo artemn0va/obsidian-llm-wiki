@@ -309,6 +309,23 @@ describe('mergeFrontmatter', () => {
     expect(result.frontmatter).toContain('reviewed: true');
   });
 
+  it('preserves extraction role and centrality metadata', () => {
+    const input = '---\ntype: concept\ncreated: 2026-01-01\nupdated: 2026-01-01\nrole: workflow\ncentrality: core\n---\n\nBody';
+    const result = mergeFrontmatter(input, 'sources/test.md');
+    expect(result.frontmatter).toContain('role: workflow');
+    expect(result.frontmatter).toContain('centrality: core');
+  });
+
+  it('adds missing extraction metadata during merge when provided', () => {
+    const input = '---\ntype: concept\ncreated: 2026-01-01\nupdated: 2026-01-01\n---\n\nBody';
+    const result = mergeFrontmatter(input, 'sources/test.md', {
+      role: 'architecture',
+      centrality: 'core',
+    });
+    expect(result.frontmatter).toContain('role: architecture');
+    expect(result.frontmatter).toContain('centrality: core');
+  });
+
   it('normalizes wiki-link format in sources', () => {
     const input = '---\ntype: entity\ncreated: 2026-01-01\nupdated: 2026-01-01\nsources: ["[[sources/old]]"]\n---\n\nBody';
     const result = mergeFrontmatter(input, 'sources/new');

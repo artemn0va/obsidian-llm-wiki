@@ -1,0 +1,67 @@
+import type {
+  BridgeCommandResponse,
+  CleanLastIngestResult,
+  LabStatus,
+  ProcessResult,
+  QAFixReport,
+  QAReport,
+  RunRecord,
+  WikiFileInfo,
+} from './types';
+
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(path, {
+    headers: {
+      'Content-Type': 'application/json',
+      ...(init?.headers || {}),
+    },
+    ...init,
+  });
+
+  const payload = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(payload?.error || `Request failed: ${response.status}`);
+  }
+
+  return payload as T;
+}
+
+export const api = {
+  health: () => request<{ ok: boolean; now: string }>('/api/health'),
+  status: () => request<LabStatus>('/api/status'),
+  runs: () => request<RunRecord[]>('/api/runs'),
+  wikiFiles: () => request<WikiFileInfo[]>('/api/wiki/files'),
+  wikiFile: (path: string) => request<{ path: string; content: string }>(`/api/wiki/file?path=${encodeURIComponent(path)}`),
+  cleanLastIngest: () =>
+    request<CleanLastIngestResult>('/api/wiki/clean-last-ingest', {
+      method: 'POST',
+      body: JSON.stringify({}),
+    }),
+  qa: () => request<QAReport>('/api/qa'),
+  qaFix: () =>
+    request<QAFixReport>('/api/qa/fix', {
+      method: 'POST',
+      body: JSON.stringify({}),
+    }),
+  reset: (execute: boolean) =>
+    request<ProcessResult>('/api/reset', {
+      method: 'POST',
+      body: JSON.stringify({ execute }),
+    }),
+  buildDeploy: () =>
+    request<{ success: boolean; build: ProcessResult; deploy: unknown }>('/api/plugin/build-deploy', {
+      method: 'POST',
+      body: JSON.stringify({}),
+    }),
+  reloadObsidian: () =>
+    request<ProcessResult>('/api/obsidian/reload', {
+      method: 'POST',
+      body: JSON.stringify({}),
+    }),
+  bridgeCommand: (body: { type: string; path?: string }) =>
+    request<BridgeCommandResponse>('/api/bridge/command', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  bridgeCommandStatus: (id: string) => request<Record<string, unknown>>(`/api/bridge/command/${id}`),
+};

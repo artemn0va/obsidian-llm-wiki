@@ -117,10 +117,10 @@ export function getSectionLabels(settings: LLMWikiSettings): Record<string, stri
 // Granularity instruction text for extraction prompts.
 // custom is generated dynamically (injects concrete entity/concept limit numbers from settings).
 const GRANULARITY_INSTRUCTIONS: Record<ExtractionGranularity, string> = {
-  fine: 'Extract ALL entities and concepts worth recording from the source, including those mentioned only once or tangentially.',
+  fine: 'Extract all wiki-worthy durable entities and concepts from the source. Fine means richer grounded summaries and pattern capture, not extracting ordinary nouns, one-off details, incidental tooling, or tangential mentions.',
   standard: 'Extract important and moderately important entities and concepts from the source. Ignore minor items mentioned only in passing.',
-  coarse: 'Extract only the most essential entities and concepts from the source — those without which the text cannot be understood. Quality over quantity.',
-  minimal: 'Extract only the most critical entities and concepts from the source — maximum 3 total items. Extreme selectivity for cost control.',
+  coarse: 'Extract only the most essential durable item(s). For short personal or daily notes, usually return zero entities and at most one broad reusable concept; keep atmosphere, timestamps, devices, playlists, and one-off sensory details in the source summary. For abstract idea, methodology, architecture, or pattern notes, extract the semantic backbone and ignore tools mentioned only in tips, plugins, examples, hotkeys, or optional tooling.',
+  minimal: 'Extract only the most critical durable item(s). For short personal or daily notes, usually return zero entities and at most one broad reusable concept. Extreme selectivity for cost control.',
   custom: '', // placeholder — never used; getGranularityInstruction handles custom dynamically
 };
 

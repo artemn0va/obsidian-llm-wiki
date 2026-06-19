@@ -10,6 +10,7 @@ import { PROMPTS } from '../prompts';
 import { slugify } from '../core/slug';
 import { parseJsonResponse } from '../core/json';
 import { cleanMarkdownResponse } from '../core/markdown';
+import { enforceFrontmatterConstraints } from '../core/frontmatter';
 import { applySectionLabels } from './system-prompts';
 import { UNIVERSAL_LINK_CONSTRAINTS } from './prompts/constraints';
 import { TOKENS_CONVERSATION_EXTRACTION, TOKENS_CONVERSATION_PAGE, TOKENS_PAGE_GENERATION, TOKENS_QUERY_SAVE_DEDUP } from '../constants';
@@ -202,16 +203,25 @@ CRITICAL RULES:
         }).join('\n')
       : '(none)';
 
-    const tags = parsed.concepts.map(c => c.name).join(', ');
+    const createdPagesInline = convPlannedPaths
+      .filter(p => p !== summaryPath)
+      .map(p => {
+        const relPath = p.replace(this.ctx.settings.wikiFolder + '/', '').replace('.md', '');
+        const name = relPath.split('/').pop() || relPath;
+        return `"[[${relPath}|${name}]]"`;
+      }).join(', ');
+
+    const tags = '';
 
     const summaryPrompt = PROMPTS.generateSummaryPage
-      .replace('{{source_title}}', parsed.source_title)
+      .replace(/{{source_title}}/g, parsed.source_title)
       .replace('{{content}}', conversationText.substring(0, 500))
       .replace('{{analysis}}', JSON.stringify(parsed))
       .replace('{{created_pages_list}}', createdPagesList)
-      .replace(/{{source_file}}/g, `Conversation: ${parsed.source_title}`)
+      .replace(/{{source_path}}/g, `Conversation: ${parsed.source_title}`)
       .replace(/{{date}}/g, actualDate)
       .replace('{{tags}}', tags)
+      .replace('{{created_pages_inline}}', createdPagesInline)
       .replace('{{constraints}}', UNIVERSAL_LINK_CONSTRAINTS);
 
     const finalSummaryPrompt = applySectionLabels(summaryPrompt, this.ctx.settings);
@@ -226,7 +236,8 @@ CRITICAL RULES:
     });
 
     const cleanedSummary = cleanMarkdownResponse(summaryPageContent);
-    await this.ctx.createOrUpdateFile(summaryPath, cleanedSummary);
+    const enforcedSummary = enforceFrontmatterConstraints(cleanedSummary, 'source', this.ctx.settings);
+    await this.ctx.createOrUpdateFile(summaryPath, enforcedSummary);
     parsed.created_pages.push(summaryPath);
 
     const failedItems: Array<{ type: 'entity' | 'concept'; name: string; reason: string }> = [];

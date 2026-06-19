@@ -3,7 +3,7 @@
 import { App } from 'obsidian';
 
 export interface SourceAnalysis {
-  source_file: string;
+  source_path: string;
   source_title: string;
   summary: string;
   entities: EntityInfo[];
@@ -15,6 +15,20 @@ export interface SourceAnalysis {
   updated_pages: string[];
 }
 
+export type ExtractionRole =
+  | 'core_idea'
+  | 'architecture'
+  | 'workflow'
+  | 'mechanism'
+  | 'principle'
+  | 'tradeoff'
+  | 'tool'
+  | 'source_navigation'
+  | 'historical_analogy'
+  | 'implementation_detail';
+
+export type ExtractionCentrality = 'core' | 'supporting' | 'mention';
+
 export interface EntityInfo {
   name: string;
   type: 'person' | 'organization' | 'project' | 'product' | 'event' | 'place' | 'other';
@@ -23,6 +37,9 @@ export interface EntityInfo {
   mentions_in_source: string[];
   related_entities?: string[];
   related_concepts?: string[];
+  role?: ExtractionRole;
+  centrality?: ExtractionCentrality;
+  page_worthiness_reason?: string;
 }
 
 export interface ConceptInfo {
@@ -33,6 +50,9 @@ export interface ConceptInfo {
   mentions_in_source: string[];
   related_concepts: string[];
   related_entities?: string[];
+  role?: ExtractionRole;
+  centrality?: ExtractionCentrality;
+  page_worthiness_reason?: string;
 }
 
 export interface ContradictionInfo {
@@ -51,6 +71,8 @@ export interface WikiPage {
     created: string;
     sources: string[];
     tags: string[];
+    role?: ExtractionRole;
+    centrality?: ExtractionCentrality;
   };
 }
 
@@ -107,6 +129,7 @@ export interface LLMWikiSettings {
   periodicLint: 'off' | 'hourly' | 'daily' | 'weekly';
   startupCheck: boolean;
   autoSmartFix: boolean;
+  labBridgeEnabled: boolean;
 
   // Ingestion acceleration
   pageGenerationConcurrency: number;
@@ -489,6 +512,7 @@ export const DEFAULT_SETTINGS: LLMWikiSettings = {
   periodicLint: 'off',
   startupCheck: true,  // Issue #81: default ON for low-level format fixes
   autoSmartFix: false,
+  labBridgeEnabled: false,
 
   // Ingestion acceleration (default: 3 parallel for most providers)
   pageGenerationConcurrency: 3,

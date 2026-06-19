@@ -133,7 +133,8 @@ export function extractBody(content: string): string {
 
 export function mergeFrontmatter(
   existingContent: string,
-  newSourcePath: string
+  newSourcePath: string,
+  metadata?: { role?: string; centrality?: string }
 ): { frontmatter: string; body: string; wasMerged: boolean } {
   const fm = parseFrontmatter(existingContent);
   const body = extractBody(existingContent);
@@ -173,6 +174,12 @@ export function mergeFrontmatter(
   if (mergedSources.length > 0) {
     lines.push(`sources:${yamlStringify(mergedSources)}`);
   }
+
+  const role = typeof fm.role === 'string' && fm.role ? fm.role : metadata?.role;
+  const centrality = typeof fm.centrality === 'string' && fm.centrality ? fm.centrality : metadata?.centrality;
+
+  if (role) lines.push(`role: ${role}`);
+  if (centrality) lines.push(`centrality: ${centrality}`);
 
   if (Array.isArray(fm.tags) && fm.tags.length > 0) {
     lines.push(`tags:${yamlStringify(fm.tags)}`);
@@ -293,6 +300,8 @@ export function enforceFrontmatterConstraints(
         j++;
       }
       if (j > i + 1) i = j - 1;
+    } else if (/^source_file\s*:/.test(line)) {
+      continue;
     } else if (!line.startsWith('- ')) {
       newLines.push(line);
     }

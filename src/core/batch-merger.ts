@@ -125,7 +125,7 @@ export function buildSourceAnalysis(
   }
 ): SourceAnalysis {
   return {
-    source_file: filePath,
+    source_path: filePath,
     source_title: firstBatchData?.sourceTitle || fileBasename,
     summary: firstBatchData?.summary || '',
     entities: accumulation.entities,

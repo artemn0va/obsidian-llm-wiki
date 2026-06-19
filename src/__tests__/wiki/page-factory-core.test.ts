@@ -9,7 +9,7 @@ function createMockAnalysis(
   overrides: Partial<SourceAnalysis> = {}
 ): SourceAnalysis {
   return {
-    source_file: 'test.md',
+    source_path: 'test.md',
     source_title: 'Test',
     summary: '',
     entities: [],

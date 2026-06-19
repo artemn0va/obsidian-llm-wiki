@@ -5,7 +5,7 @@ import type { SourceAnalysis } from '../../types';
 
 function makeAnalysis(over: Partial<SourceAnalysis> = {}): SourceAnalysis {
   return {
-    source_file: 'Notizen/New-Source.md',
+    source_path: 'Notizen/New-Source.md',
     source_title: 'New Source',
     summary: '',
     entities: [],
@@ -141,7 +141,7 @@ describe('PageFactory — updateRelatedPage no-op skip (Issue #131)', () => {
     expect(result).toBe(true);        // page still counts as updated
     const content = vault.read('wiki/concepts/Dysbiose.md')!;
     expect(content).toContain('Original body, must stay verbatim.');  // body untouched
-    expect(content).toContain('[[Notizen/New-Source.md]]');           // source recorded in frontmatter
+    expect(content).toContain('[[sources/new-source]]');              // generated source page recorded in frontmatter
   });
 
   it('still calls the LLM when the related page matches an extracted entity', async () => {

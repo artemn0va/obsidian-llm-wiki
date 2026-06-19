@@ -26,6 +26,8 @@ import {
   EntityInfo,
   ConceptInfo,
   ContradictionInfo,
+  ExtractionCentrality,
+  ExtractionRole,
   WIKI_LANGUAGES,
 } from '../types';
 import { PROMPTS } from '../prompts';
@@ -57,6 +59,73 @@ export interface NormalizedBatch {
   keyPoints: string[];
 }
 
+const EXTRACTION_ROLES: readonly ExtractionRole[] = [
+  'core_idea',
+  'architecture',
+  'workflow',
+  'mechanism',
+  'principle',
+  'tradeoff',
+  'tool',
+  'source_navigation',
+  'historical_analogy',
+  'implementation_detail',
+];
+
+const EXTRACTION_CENTRALITIES: readonly ExtractionCentrality[] = [
+  'core',
+  'supporting',
+  'mention',
+];
+
+function normalizeRole(value: unknown): ExtractionRole | undefined {
+  return typeof value === 'string' && EXTRACTION_ROLES.includes(value as ExtractionRole)
+    ? value as ExtractionRole
+    : undefined;
+}
+
+function normalizeCentrality(value: unknown): ExtractionCentrality | undefined {
+  return typeof value === 'string' && EXTRACTION_CENTRALITIES.includes(value as ExtractionCentrality)
+    ? value as ExtractionCentrality
+    : undefined;
+}
+
+function inferRole(item: EntityInfo | ConceptInfo, kind: 'entity' | 'concept'): ExtractionRole {
+  const haystack = `${item.name} ${item.type} ${item.summary}`.toLowerCase();
+  if (kind === 'entity' && item.type === 'product') return 'tool';
+  if (/\b(qmd|marp|dataview|obsidian|tool|plugin|cli|extension|software|service|app)\b/.test(haystack)) return 'tool';
+  if (/\b(workflow|loop|pipeline|process|ingest|query|lint)\b/.test(haystack)) return 'workflow';
+  if (/\b(architecture|system|schema|source of truth|layer)\b/.test(haystack)) return 'architecture';
+  if (/\b(mechanism|retrieval|indexing|synthesis|how it works)\b/.test(haystack)) return 'mechanism';
+  if (/\b(tradeoff|versus|vs\.?|comparison)\b/.test(haystack)) return 'tradeoff';
+  if (/\b(memex|historical analogy|analogy)\b/.test(haystack)) return 'historical_analogy';
+  return kind === 'concept' ? 'core_idea' : 'implementation_detail';
+}
+
+function inferCentrality(role: ExtractionRole, kind: 'entity' | 'concept'): ExtractionCentrality {
+  if (role === 'implementation_detail') return kind === 'entity' ? 'supporting' : 'mention';
+  if (role === 'tool' || role === 'historical_analogy') return 'supporting';
+  return kind === 'concept' ? 'core' : 'supporting';
+}
+
+function normalizeExtractionMetadata<T extends EntityInfo | ConceptInfo>(
+  item: T,
+  kind: 'entity' | 'concept'
+): T {
+  const role = normalizeRole(item.role) || inferRole(item, kind);
+  const centrality = normalizeCentrality(item.centrality) || inferCentrality(role, kind);
+  const pageWorthiness = typeof item.page_worthiness_reason === 'string'
+    ? item.page_worthiness_reason
+    : undefined;
+
+  return {
+    ...item,
+    role,
+    centrality,
+    ...(pageWorthiness ? { page_worthiness_reason: pageWorthiness } : {}),
+  };
+}
+
 // Normalize a raw LLM batch response into a well-formed NormalizedBatch.
 // Returns a validity flag so callers can distinguish:
 //   'unusable' — both arrays absent/unfilled ⟹ abort first batch or skip
@@ -70,9 +139,11 @@ export function normalizeBatchResponse(
   }
 
   const entities = coerceToArray<EntityInfo>(raw.entities)
-    .filter(e => e?.name?.trim());
+    .filter(e => e?.name?.trim())
+    .map(e => normalizeExtractionMetadata(e, 'entity'));
   const concepts = coerceToArray<ConceptInfo>(raw.concepts)
-    .filter(c => c?.name?.trim());
+    .filter(c => c?.name?.trim())
+    .map(c => normalizeExtractionMetadata(c, 'concept'));
 
   // Strip wiki-link formatting if LLM outputs [[path|name]] instead of plain name
   const relatedPages = coerceToArray<string>(raw.related_pages).map(p => {
@@ -212,7 +283,7 @@ export class SourceAnalyzer {
         .replace('{{granularity_instruction}}', granularityInstruction)
         .replace(/{{batch_size}}/g, String(currentBatchSize));
 
-      const langHint = `\n\nCRITICAL LANGUAGE REQUIREMENT: Summaries, descriptions, source_title, and key_points in your JSON output MUST be written in ${WIKI_LANGUAGES[this.ctx.settings.wikiLanguage || 'en'] || this.ctx.settings.wikiLanguage || 'English'}. HOWEVER: entity names and concept names MUST be preserved in their original source language — NEVER translate names. mentions_in_source MUST be verbatim quotes from the source (preserve original language).`;
+      const langHint = `\n\nCRITICAL LANGUAGE REQUIREMENT: Summaries, descriptions, source_title, key_points, and generated entity/concept names in your JSON output MUST be written in ${WIKI_LANGUAGES[this.ctx.settings.wikiLanguage || 'en'] || this.ctx.settings.wikiLanguage || 'English'} unless the exact source phrase is a proper name, product name, acronym, or established technical term. Preserve useful original-language names as aliases. mentions_in_source MUST be verbatim quotes from the source (preserve original language).`;
       // Issue #85 v6: inject the active tag vocabulary so the LLM emits
       // type values that match the user's custom vocabulary (or the
       // hardcoded defaults). Without this, the LLM invents its own types

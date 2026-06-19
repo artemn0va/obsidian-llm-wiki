@@ -303,7 +303,7 @@ describe('Batch Merger — Pure Functions', () => {
         }
       );
 
-      expect(result.source_file).toBe('/path/to/file.md');
+      expect(result.source_path).toBe('/path/to/file.md');
       expect(result.source_title).toBe('Test Source');
       expect(result.summary).toBe('Test summary');
       expect(result.entities).toHaveLength(1);

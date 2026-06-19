@@ -6,6 +6,9 @@ export const GENERATION_PROMPTS = {
 **Entity Information:**
 - Name: {{entity_name}}
 - Type: {{entity_type}}
+- Role: {{role}}
+- Centrality: {{centrality}}
+- Page worthiness: {{page_worthiness_reason}}
 - Summary: {{entity_summary}}
 - Mentions in source (VERBATIM — preserve original language): {{mentions}}
 - Related entities: {{related_entities}}
@@ -23,9 +26,14 @@ export const GENERATION_PROMPTS = {
 **Task Requirements:**
 1. Create an entity page with basic and key information
 2. When referencing other pages, copy the wiki-link format EXACTLY from the "Existing Wiki Pages" list. The LEFT side of | is the full path (entities/Page-Name), the RIGHT side is the DISPLAY NAME ONLY. NEVER duplicate folder prefixes like entities/ or concepts/ in the display name. Example: [[entities/Qwen|Qwen]] is CORRECT, [[entities/Qwen|entities/Qwen]] is WRONG
-3. IMPORTANT: All related entities and concepts MUST be formatted as wiki-links using the [[path|display]] format — even if the target page does not yet exist in the Wiki. This allows the Lint system to detect dead links and create stub pages later. Never output a related entity/concept name as plain text.
+3. IMPORTANT: Related links MUST target exact paths from the Existing Wiki Pages list or pages created in this ingest. If no valid target exists, write the name as plain text or omit it; do not create [[...]] links to missing pages.
 4. If the entity already exists in the Wiki, use the merge strategy above for intelligent merging
 4. Be objective, accurate, and concise
+5. Use Role and Centrality to shape the page:
+   - centrality=core pages should explain the source thesis, mechanism, architecture, workflow, principle, or tradeoff.
+   - centrality=supporting tool/entity pages should explain why the item matters in this Wiki context, not generic product documentation.
+   - If the item is a tool, focus on how the source uses it or why it supports future queries/workflows.
+   - centrality=mention should not be generated as a standalone page; if it appears here, keep the page minimal and source-specific.
 5. **Generate aliases for this page** — provide 1-3 alternative names. This field is REQUIRED:
    - Include acronyms, abbreviations, and same-language alternative names
    - English is universally acceptable as a "linker language" — when a term originates in English
@@ -41,22 +49,29 @@ export const GENERATION_PROMPTS = {
    - Rotary Position Embedding (Japanese wiki) → ["RoPE", "回転位置埋め込み"]
    - Neural Network (Chinese wiki) → ["神经网络", "NN"]
 6. In "Mentions in Source" section: preserve the VERBATIM quotes in their ORIGINAL language. You may ADD a brief translation in parentheses if the wiki language differs, but the original text must be preserved exactly
+7. If this entity comes from a personal or daily note, treat it as a personal memory pattern, not an encyclopedia topic:
+   - Definition should explain the user's pattern or meaning, not a generic field definition.
+   - Applications should describe source-grounded ways this page helps the user's Wiki (linking future notes, recognizing the pattern, planning experiments), not broad productivity or research advice.
+   - Add a Relevance section that captures the durable emotional, motivational, ritual, or identity signal from the source.
+   - Do not extrapolate into generic health, hardware, productivity, or environmental-design claims unless the source directly supports them.
 
 **Output Format:**
 ---
-type: entity  # MUST be exactly "entity" - do not change this value
+type: entity
 created: {{date}}
 updated: {{date}}
-sources: ["[[{{source_file}}]]"]
-tags: [{{entity_type}}]  # Use entity_type (e.g., product, person, organization) as a tag
-aliases: ["Alternative name or translation"]  # REQUIRED: at least 1 alias, must NOT be empty
+sources: ["[[{{source_page}}]]"]
+role: {{role}}
+centrality: {{centrality}}
+tags: [{{entity_type}}]
+aliases: ["Alternative name or translation"]
 ---
 
 # {{entity_name}}
 
 ## {{section_basic_information}}
 - Type: {{entity_type}}
-- Source: [[{{source_file}}]]
+- Source: [[{{source_page}}]]
 
 ## {{section_description}}
 [Detailed description of the entity with bidirectional links]
@@ -78,6 +93,9 @@ aliases: ["Alternative name or translation"]  # REQUIRED: at least 1 alias, must
 **Concept Information:**
 - Name: {{concept_name}}
 - Type: {{concept_type}}
+- Role: {{role}}
+- Centrality: {{centrality}}
+- Page worthiness: {{page_worthiness_reason}}
 - Summary: {{concept_summary}}
 - Mentions in source (VERBATIM — preserve original language): {{mentions}}
 - Related concepts: {{related_concepts}}
@@ -95,9 +113,14 @@ aliases: ["Alternative name or translation"]  # REQUIRED: at least 1 alias, must
 **Task Requirements:**
 1. Create a concept page including definition, characteristics, and applications
 2. When referencing other pages, copy the wiki-link format EXACTLY from the "Existing Wiki Pages" list. The LEFT side of | is the full path (concepts/Page-Name), the RIGHT side is the DISPLAY NAME ONLY. NEVER duplicate folder prefixes like entities/ or concepts/ in the display name. Example: [[concepts/Attention|Attention]] is CORRECT, [[concepts/Attention|concepts/Attention]] is WRONG
-3. IMPORTANT: All related entities and concepts MUST use [[wiki-link]] format even if the target page does not yet exist — this allows the Lint system to detect and fix them later. Never output a related entity/concept name as plain text.
+3. IMPORTANT: Related links MUST target exact paths from the Existing Wiki Pages list or pages created in this ingest. If no valid target exists, write the name as plain text or omit it; do not create [[...]] links to missing pages.
 4. If the concept already exists in the Wiki, use the merge strategy above for intelligent merging
 4. Be objective, accurate, and concise
+5. Use Role and Centrality to shape the page:
+   - centrality=core concept pages should explain the thesis, mechanism, workflow, architecture, principle, or tradeoff in the source.
+   - centrality=supporting tool/concept pages should explain why the item matters in this Wiki context, not generic documentation.
+   - If the item is a tool-like concept, focus on the source-grounded role it plays in future queries/workflows.
+   - centrality=mention should not be generated as a standalone page; if it appears here, keep the page minimal and source-specific.
 5. **Generate aliases for this page** — provide 1-3 alternative names. This field is REQUIRED:
    - Include acronyms, abbreviations, and same-language alternative names
    - English is universally acceptable as a "linker language" — when a term originates in English
@@ -116,12 +139,14 @@ aliases: ["Alternative name or translation"]  # REQUIRED: at least 1 alias, must
 
 **Output Format:**
 ---
-type: concept  # MUST be exactly "concept" - do not change this value
+type: concept
 created: {{date}}
 updated: {{date}}
-sources: ["[[{{source_file}}]]"]
-tags: [{{concept_type}}]  # Use concept_type (e.g., theory, method, field) as a tag
-aliases: ["Alternative name or translation"]  # REQUIRED: at least 1 alias, must NOT be empty
+sources: ["[[{{source_page}}]]"]
+role: {{role}}
+centrality: {{centrality}}
+tags: [{{concept_type}}]
+aliases: ["Alternative name or translation"]
 ---
 
 # {{concept_name}}
@@ -134,7 +159,11 @@ aliases: ["Alternative name or translation"]  # REQUIRED: at least 1 alias, must
 - Characteristic 2
 
 ## {{section_applications}}
-[Application scenarios for the concept]
+[Source-grounded usage scenarios. For personal/daily concepts, keep these specific to the user's Wiki and future notes; do not write generic advice.]
+
+[Optional for personal/daily concepts only]
+## Relevance
+[Why this pattern matters for the user's life, goals, habits, motivation, identity, or creative/work rhythm.]
 
 ## {{section_related_concepts}}
 [Reference related concepts using full paths from the list above]
@@ -164,7 +193,10 @@ aliases: ["Alternative name or translation"]  # REQUIRED: at least 1 alias, must
 3. {{constraints}}
 4. Highlight key points
 5. Be objective and accurate
-6. **Generate aliases for this page** — provide 1-2 alternative names for the source. This field is REQUIRED:
+6. Do not invent wiki-links under sources/ for the original raw note path. Use {{source_path}} as plain text when referring to the original source file path.
+7. If the source reads as a personal or daily note, preserve the durable emotional, motivational, ritual, or identity signal in an optional "Memory Signal" section. Keep atmospheric details there instead of turning them into separate pages.
+8. Preserve useful tools, formats, plugins, settings, or implementation options in "Mentioned Tools / Implementation Options" when they were not promoted to standalone pages. Use wiki links only for promoted pages from the list above; write non-promoted items as plain text.
+8. **Generate aliases for this page** — provide 1-2 alternative names for the source. This field is REQUIRED:
    - Include alternative titles, abbreviations, or common alternative names for the source
    - English is universally acceptable as a "linker language" — when a term originates in English
      (e.g. "Transformer", "DNA", "API", "RoPE"), keep it as-is even in non-English wikis
@@ -177,15 +209,20 @@ aliases: ["Alternative name or translation"]  # REQUIRED: at least 1 alias, must
 type: source
 created: {{date}}
 updated: {{date}}
-source_file: "[[{{source_file}}]]"
+source_path: "{{source_path}}"
+source_title: "{{source_title}}"
+source_kind: note
+role: source_navigation
+centrality: core
 tags: [{{tags}}]
-aliases: ["Alternative title or translation"]  # REQUIRED: at least 1 alias, must NOT be empty
+sources: [{{created_pages_inline}}]
+aliases: ["Alternative title or translation"]
 ---
 
 # {{source_title}} - Summary
 
 ## {{section_source}}
-- Original file: [[{{source_file}}]]
+- Original file path: {{source_path}}
 - Ingested: {{date}}
 
 ## {{section_core_content}}
@@ -200,6 +237,13 @@ aliases: ["Alternative title or translation"]  # REQUIRED: at least 1 alias, mus
 ## {{section_main_points}}
 - Point 1
 - Point 2
+
+## Mentioned Tools / Implementation Options
+[Optional. Preserve useful tools, formats, plugins, settings, or implementation options from the source that were not promoted to standalone pages. Use wiki links only for promoted pages from the list above; write non-promoted items as plain text.]
+
+[Optional for personal/daily sources only]
+## Memory Signal
+[Durable emotional, motivational, ritual, or identity pattern worth remembering]
 
 ---`,
 
@@ -232,7 +276,7 @@ aliases: ["Alternative title or translation"]  # REQUIRED: at least 1 alias, mus
 type: entity
 created: {{date}}
 updated: {{date}}
-sources: ["[[{{source_file}}]]"]
+sources: []
 tags: [{{tags}}]
 aliases: []
 reviewed: true
@@ -275,7 +319,7 @@ reviewed: true
 type: concept
 created: {{date}}
 updated: {{date}}
-sources: ["[[{{source_file}}]]"]
+sources: []
 tags: [{{tags}}]
 aliases: []
 reviewed: true

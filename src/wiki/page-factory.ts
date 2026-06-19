@@ -6,6 +6,8 @@ import {
   EngineContext,
   EntityInfo,
   ConceptInfo,
+  ExtractionCentrality,
+  ExtractionRole,
   SourceAnalysis,
   PageCreationResult,
 } from '../types';
@@ -17,10 +19,10 @@ import { slugify, filterRedundantAliases } from '../core/slug';
 import { parseJsonResponse } from '../core/json';
 import { parseFrontmatter, mergeFrontmatter, enforceFrontmatterConstraints } from '../core/frontmatter';
 import { truncateMentions } from '../core/report';
-import { cleanMarkdownResponse } from '../core/markdown';
+import { cleanMarkdownResponse, sanitizeWikiLinksToAllowedTargets } from '../core/markdown';
 import { normalizeLLMPath } from '../core/prompt-builders';
 import { UNIVERSAL_LINK_CONSTRAINTS } from './prompts/constraints';
-import { applySectionLabels, appendTagVocabularyToPrompt } from './system-prompts';
+import { applySectionLabels } from './system-prompts';
 import { getExistingWikiPages } from './lint/get-existing-pages';
 
 // Wrap errors with entity/concept context for better diagnostics
@@ -32,6 +34,90 @@ function contextualizeError(error: unknown, name: string, pageType: string): Err
 function mergeError(error: unknown, name: string, pageType: string): Error {
   const msg = error instanceof Error ? error.message : String(error);
   return new Error(`Failed to merge ${pageType} page "${name}": ${msg}`);
+}
+
+function getGeneratedSourcePageRef(
+  sourceFile: TFile | { path: string; basename: string },
+  settings: EngineContext['settings']
+): string {
+  return `sources/${slugify(sourceFile.basename, settings.slugCase === 'preserve')}`;
+}
+
+function toWikiRelPath(path: string, wikiFolder: string): string {
+  return path
+    .replace(/\\/g, '/')
+    .replace(`${wikiFolder}/`, '')
+    .replace(/\.md$/i, '');
+}
+
+const EXTRACTION_ROLES: readonly ExtractionRole[] = [
+  'core_idea',
+  'architecture',
+  'workflow',
+  'mechanism',
+  'principle',
+  'tradeoff',
+  'tool',
+  'source_navigation',
+  'historical_analogy',
+  'implementation_detail',
+];
+
+const EXTRACTION_CENTRALITIES: readonly ExtractionCentrality[] = [
+  'core',
+  'supporting',
+  'mention',
+];
+
+function normalizeExtractionRole(
+  info: EntityInfo | ConceptInfo,
+  pageType: 'entity' | 'concept'
+): ExtractionRole {
+  if (info.role && EXTRACTION_ROLES.includes(info.role)) return info.role;
+
+  const haystack = `${info.name} ${info.type} ${info.summary}`.toLowerCase();
+  if (pageType === 'entity' && info.type === 'product') return 'tool';
+  if (/\b(tool|plugin|cli|extension|software|service|app|qmd|marp|dataview|obsidian)\b/.test(haystack)) return 'tool';
+  if (/\b(workflow|loop|pipeline|process|ingest|query|lint)\b/.test(haystack)) return 'workflow';
+  if (/\b(architecture|system|layer|source of truth|schema)\b/.test(haystack)) return 'architecture';
+  if (/\b(mechanism|how it works|indexing|retrieval|synthesis)\b/.test(haystack)) return 'mechanism';
+  if (/\b(tradeoff|versus|vs\.?|compare|comparison)\b/.test(haystack)) return 'tradeoff';
+  if (/\b(memex|historical analogy|analogy)\b/.test(haystack)) return 'historical_analogy';
+
+  return pageType === 'concept' ? 'core_idea' : 'implementation_detail';
+}
+
+function normalizeExtractionCentrality(
+  info: EntityInfo | ConceptInfo,
+  role: ExtractionRole,
+  pageType: 'entity' | 'concept'
+): ExtractionCentrality {
+  if (info.centrality && EXTRACTION_CENTRALITIES.includes(info.centrality)) return info.centrality;
+  if (role === 'implementation_detail') return pageType === 'entity' ? 'supporting' : 'mention';
+  if (role === 'tool' || role === 'historical_analogy') return 'supporting';
+  return pageType === 'concept' ? 'core' : 'supporting';
+}
+
+async function buildAllowedWikiLinkTargets(
+  ctx: EngineContext,
+  currentPath: string,
+  sourcePageRef: string,
+  additionalAllowedPaths: string[] = []
+): Promise<Set<string>> {
+  const allowedTargets = new Set<string>();
+  allowedTargets.add(sourcePageRef);
+  allowedTargets.add(toWikiRelPath(currentPath, ctx.settings.wikiFolder));
+
+  for (const path of additionalAllowedPaths) {
+    allowedTargets.add(toWikiRelPath(path, ctx.settings.wikiFolder));
+  }
+
+  const existingPages = await getExistingWikiPages(ctx.app, ctx.settings.wikiFolder);
+  for (const page of existingPages) {
+    allowedTargets.add(toWikiRelPath(page.path, ctx.settings.wikiFolder));
+  }
+
+  return allowedTargets;
 }
 
 export class PageFactory {
@@ -328,26 +414,33 @@ export class PageFactory {
 
     try {
       const generatePrompt = pageType === 'entity' ? PROMPTS.generateEntityPage : PROMPTS.generateConceptPage;
+      const sourcePageRef = getGeneratedSourcePageRef(sourceFile, this.ctx.settings);
+      const role = normalizeExtractionRole(info, pageType);
+      const centrality = normalizeExtractionCentrality(info, role, pageType);
 
     const prompt = generatePrompt
       .replace('{{entity_name}}', info.name)
       .replace('{{concept_name}}', info.name)
       .replace('{{entity_type}}', info.type)
       .replace('{{concept_type}}', info.type)
+      .replace(/{{role}}/g, role)
+      .replace(/{{centrality}}/g, centrality)
+      .replace(/{{page_worthiness_reason}}/g, info.page_worthiness_reason || 'Reusable source-backed Wiki anchor.')
       .replace('{{entity_summary}}', info.summary)
       .replace('{{concept_summary}}', info.summary)
       .replace('{{extraction_aliases}}', info.aliases?.length
         ? `[${info.aliases.join(', ')}]` : 'None')
-      .replace('{{mentions}}', truncateMentions(info.mentions_in_source, 500, sourceFile.path) || 'No specific mentions')
+      .replace('{{mentions}}', truncateMentions(info.mentions_in_source, 500, sourcePageRef) || 'No specific mentions')
       .replace('{{related_entities}}', info.related_entities?.join(', ') || 'No related entities')
       .replace('{{related_concepts}}', info.related_concepts?.join(', ') || 'No related concepts')
       .replace('{{existing_pages}}', await this.buildPagesListForPrompt(extraPagePaths))
       .replace('{{related_content}}', 'No existing content')
       .replace('{{merge_strategy}}', 'New page, no merge needed.')
       .replace('{{date}}', new Date().toISOString().split('T')[0])
-      .replace('{{source_file}}', sourceFile.path);
+      .replace(/{{source_page}}/g, sourcePageRef)
+      .replace(/{{source_path}}/g, sourceFile.path);
 
-    const finalPrompt = appendTagVocabularyToPrompt(applySectionLabels(prompt, this.ctx.settings), this.ctx.settings);
+    const finalPrompt = applySectionLabels(prompt, this.ctx.settings);
 
     const pageContent = await client.createMessage({
       model: this.ctx.settings.model,
@@ -360,7 +453,9 @@ export class PageFactory {
     const cleanedContent = cleanMarkdownResponse(pageContent);
     // Issue #85: pass settings so custom tag vocabulary is honored
     const enforcedContent = enforceFrontmatterConstraints(cleanedContent, pageType, this.ctx.settings);
-    await this.ctx.createOrUpdateFile(path, enforcedContent);
+    const allowedTargets = await buildAllowedWikiLinkTargets(this.ctx, path, sourcePageRef);
+    const finalContent = sanitizeWikiLinksToAllowedTargets(enforcedContent, allowedTargets);
+    await this.ctx.createOrUpdateFile(path, finalContent);
     return path;
     } catch (error) {
       throw contextualizeError(error, info.name, pageType);
@@ -380,7 +475,10 @@ export class PageFactory {
 
     try {
       // 1. Programmatic frontmatter merge
-      const { frontmatter, body: existingBody } = mergeFrontmatter(existingContent, sourceFile.path);
+      const sourcePageRef = getGeneratedSourcePageRef(sourceFile, this.ctx.settings);
+      const role = normalizeExtractionRole(info, pageType);
+      const centrality = normalizeExtractionCentrality(info, role, pageType);
+      const { frontmatter, body: existingBody } = mergeFrontmatter(existingContent, sourcePageRef, { role, centrality });
 
     // 2. LLM intelligent body merge
     const mergePrompt = pageType === 'entity' ? PROMPTS.mergeEntityPage : PROMPTS.mergeConceptPage;
@@ -390,13 +488,13 @@ export class PageFactory {
       .replace('{{new_source}}', sourceFile.basename)
       .replace('{{entity_summary}}', info.summary)
       .replace('{{concept_summary}}', info.summary)
-      .replace('{{mentions}}', truncateMentions(info.mentions_in_source, 500, sourceFile.path))
+      .replace('{{mentions}}', truncateMentions(info.mentions_in_source, 500, sourcePageRef))
       .replace('{{related_entities}}', info.related_entities?.join(', ') || '')
       .replace('{{related_concepts}}', info.related_concepts?.join(', ') || '')
       .replace('{{key_details}}', info.mentions_in_source?.slice(0, 2).join('; ') || '')
       .replace('{{existing_pages}}', await this.buildPagesListForPrompt(extraPagePaths));
 
-    const finalPrompt = appendTagVocabularyToPrompt(applySectionLabels(prompt, this.ctx.settings), this.ctx.settings);
+    const finalPrompt = applySectionLabels(prompt, this.ctx.settings);
 
     const mergedBody = await client.createMessage({
       model: this.ctx.settings.model,
@@ -415,7 +513,8 @@ export class PageFactory {
 
     // 3. Assemble final content
     const finalContent = `${frontmatter}\n\n${cleanedBody}`;
-    await this.ctx.createOrUpdateFile(path, finalContent);
+    const allowedTargets = await buildAllowedWikiLinkTargets(this.ctx, path, sourcePageRef);
+    await this.ctx.createOrUpdateFile(path, sanitizeWikiLinksToAllowedTargets(finalContent, allowedTargets));
     return path;
     } catch (error) {
       throw mergeError(error, info.name, pageType);
@@ -433,18 +532,21 @@ export class PageFactory {
 
     try {
       // 1. Programmatic frontmatter merge
-      const { frontmatter, body: existingBody } = mergeFrontmatter(existingContent, sourceFile.path);
+      const sourcePageRef = getGeneratedSourcePageRef(sourceFile, this.ctx.settings);
+      const role = normalizeExtractionRole(info, parseFrontmatter(existingContent)?.type === 'entity' ? 'entity' : 'concept');
+      const centrality = normalizeExtractionCentrality(info, role, parseFrontmatter(existingContent)?.type === 'entity' ? 'entity' : 'concept');
+      const { frontmatter, body: existingBody } = mergeFrontmatter(existingContent, sourcePageRef, { role, centrality });
 
     // 2. Minimal LLM check for genuinely new content
     const prompt = PROMPTS.appendToReviewedPage
       .replace('{{existing_body}}', existingBody)
       .replace('{{new_source}}', sourceFile.basename)
       .replace('{{entity_summary}}', info.summary)
-      .replace('{{mentions}}', truncateMentions(info.mentions_in_source, 500, sourceFile.path))
+      .replace('{{mentions}}', truncateMentions(info.mentions_in_source, 500, sourcePageRef))
       .replace('{{key_details}}', info.mentions_in_source?.slice(0, 2).join('; ') || '')
       .replace('{{constraints}}', UNIVERSAL_LINK_CONSTRAINTS);
 
-    const finalPrompt = appendTagVocabularyToPrompt(applySectionLabels(prompt, this.ctx.settings), this.ctx.settings);
+    const finalPrompt = applySectionLabels(prompt, this.ctx.settings);
 
     const newContent = await client.createMessage({
       model: this.ctx.settings.model,
@@ -463,7 +565,8 @@ export class PageFactory {
 
     // 3. Assemble final content
     const finalContent = `${frontmatter}\n\n${cleanedContent}`;
-    await this.ctx.createOrUpdateFile(path, finalContent);
+    const allowedTargets = await buildAllowedWikiLinkTargets(this.ctx, path, sourcePageRef);
+    await this.ctx.createOrUpdateFile(path, sanitizeWikiLinksToAllowedTargets(finalContent, allowedTargets));
     return path;
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
@@ -489,7 +592,8 @@ export class PageFactory {
     const existingContent = await this.ctx.app.vault.read(abstractFile);
 
     // 1. Programmatic frontmatter merge (sources + updated)
-    const { frontmatter, body: existingBody } = mergeFrontmatter(existingContent, sourceFile.path);
+    const sourcePageRef = getGeneratedSourcePageRef(sourceFile, this.ctx.settings);
+    const { frontmatter, body: existingBody } = mergeFrontmatter(existingContent, sourcePageRef);
 
     // Issue #131: a "related page" is an existing page topically related to the
     // source — a different set from the entities/concepts this source extracted.
@@ -526,7 +630,8 @@ export class PageFactory {
 
     // 2. Assemble: programmatic frontmatter + LLM body
     const finalContent = `${frontmatter}\n\n${cleanedBody}`;
-    await this.ctx.createOrUpdateFile(page.path, finalContent);
+    const allowedTargets = await buildAllowedWikiLinkTargets(this.ctx, page.path, sourcePageRef);
+    await this.ctx.createOrUpdateFile(page.path, sanitizeWikiLinksToAllowedTargets(finalContent, allowedTargets));
     return true;
   }
 }

@@ -2,6 +2,7 @@ import express from 'express';
 import { commandIdSchema, bridgeCommandSchema, resetSchema, runReviewSchema } from '../schemas/api.js';
 import { createBridgeCommand, getBridgeCommand } from '../services/bridge.js';
 import { readWikiFile, getWikiFiles } from '../services/fs.js';
+import { getIngestCandidates } from '../services/ingest-candidates.js';
 import { cleanLastIngest } from '../services/last-ingest-clean.js';
 import { buildAndDeployPlugin, buildPlugin, deployPlugin } from '../services/plugin.js';
 import { reloadObsidian } from '../services/obsidian.js';
@@ -41,6 +42,10 @@ apiRouter.get('/wiki/file', asyncHandler(async (req, res) => {
 
 apiRouter.post('/wiki/clean-last-ingest', asyncHandler(async (_req, res) => {
   res.json(await cleanLastIngest());
+}));
+
+apiRouter.get('/ingest/candidates', asyncHandler(async (_req, res) => {
+  res.json(await getIngestCandidates());
 }));
 
 apiRouter.get('/qa', asyncHandler(async (_req, res) => {

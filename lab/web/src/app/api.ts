@@ -1,6 +1,8 @@
 import type {
   BridgeCommandResponse,
   CleanLastIngestResult,
+  IngestCandidates,
+  IngestGranularity,
   LabStatus,
   ProcessResult,
   QAFixReport,
@@ -38,6 +40,7 @@ export const api = {
     }),
   wikiFiles: () => request<WikiFileInfo[]>('/api/wiki/files'),
   wikiFile: (path: string) => request<{ path: string; content: string }>(`/api/wiki/file?path=${encodeURIComponent(path)}`),
+  ingestCandidates: () => request<IngestCandidates>('/api/ingest/candidates'),
   cleanLastIngest: () =>
     request<CleanLastIngestResult>('/api/wiki/clean-last-ingest', {
       method: 'POST',
@@ -64,7 +67,7 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({}),
     }),
-  bridgeCommand: (body: { type: string; path?: string }) =>
+  bridgeCommand: (body: { type: string; path?: string; granularity?: IngestGranularity }) =>
     request<BridgeCommandResponse>('/api/bridge/command', {
       method: 'POST',
       body: JSON.stringify(body),

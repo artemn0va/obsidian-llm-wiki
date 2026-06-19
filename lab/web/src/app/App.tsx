@@ -28,7 +28,7 @@ import {
 import { useEffect, useMemo, useState, type ComponentProps, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { toast } from 'sonner';
 import { api } from './api';
-import type { BridgeProgress, LabStatus, QAReport, QAFinding, RunRecord, WikiFileInfo } from './types';
+import type { BridgeProgress, IngestCandidate, IngestCandidates, IngestGranularity, LabStatus, QAReport, QAFinding, RunRecord, WikiFileInfo } from './types';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -1278,9 +1278,43 @@ function IngestCommandButton({
   const [open, setOpen] = useState(false);
   const [type, setType] = useState('ingest-file');
   const [targetPath, setTargetPath] = useState('wiki-start/Personal/2026-06-18.md');
+  const [granularity, setGranularity] = useState<IngestGranularity>('coarse');
+  const [candidates, setCandidates] = useState<IngestCandidates | null>(null);
+  const [loadingCandidates, setLoadingCandidates] = useState(false);
+
+  const needsTarget = type === 'ingest-file' || type === 'ingest-folder';
+  const needsGranularity = needsTarget;
+  const targetCandidates = type === 'ingest-folder' ? candidates?.folders || [] : candidates?.files || [];
+  const recentCandidates = type === 'ingest-file' ? candidates?.recent || [] : [];
+  const recentCandidatePaths = new Set(recentCandidates.map((candidate) => candidate.path));
+  const primaryCandidates = targetCandidates.filter((candidate) => !recentCandidatePaths.has(candidate.path));
+
+  useEffect(() => {
+    if (!open || candidates || loadingCandidates) return;
+
+    setLoadingCandidates(true);
+    api.ingestCandidates()
+      .then((nextCandidates) => {
+        setCandidates(nextCandidates);
+        const firstPath = nextCandidates.recent[0]?.path || nextCandidates.files[0]?.path || nextCandidates.folders[0]?.path;
+        if (firstPath) setTargetPath(firstPath);
+      })
+      .catch((error) => toast.error(error instanceof Error ? error.message : 'Failed to load ingest candidates'))
+      .finally(() => setLoadingCandidates(false));
+  }, [open, candidates, loadingCandidates]);
+
+  useEffect(() => {
+    if (!needsTarget || !candidates) return;
+    const firstPath = (type === 'ingest-folder' ? candidates.folders[0] : candidates.recent[0] || candidates.files[0])?.path;
+    if (firstPath) setTargetPath(firstPath);
+  }, [type, candidates, needsTarget]);
 
   const submit = async () => {
-    const command = await api.bridgeCommand({ type, path: type === 'cancel' ? undefined : targetPath });
+    const command = await api.bridgeCommand({
+      type,
+      path: needsTarget ? targetPath : undefined,
+      granularity: needsGranularity ? granularity : undefined,
+    });
     toast.info(`Bridge command queued: ${command.id}`);
     setOpen(false);
     await pollBridgeCommand(command.id);
@@ -1312,17 +1346,64 @@ function IngestCommandButton({
               </SelectGroup>
             </SelectContent>
           </Select>
-          {type !== 'cancel' ? (
-            <Input value={targetPath} onChange={(event) => setTargetPath(event.target.value)} placeholder="wiki-start/Personal/2026-06-18.md" />
+          {needsGranularity ? (
+            <Select value={granularity} onValueChange={(value) => setGranularity(value as IngestGranularity)}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Granularity" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value="coarse">Coarse</SelectItem>
+                  <SelectItem value="standard">Standard</SelectItem>
+                  <SelectItem value="fine">Fine</SelectItem>
+                  <SelectItem value="minimal">Minimal</SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          ) : null}
+          {needsTarget ? (
+            <>
+              <Select value={targetPath} onValueChange={setTargetPath} disabled={loadingCandidates || targetCandidates.length === 0}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder={loadingCandidates ? 'Loading notes...' : 'Select source'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {recentCandidates.length > 0 ? (
+                    <SelectGroup>
+                      {recentCandidates.map((candidate) => (
+                        <SelectItem key={`recent:${candidate.path}`} value={candidate.path}>
+                          {formatIngestCandidate(candidate)}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  ) : null}
+                  <SelectGroup>
+                    {primaryCandidates.map((candidate) => (
+                      <SelectItem key={candidate.path} value={candidate.path}>
+                        {formatIngestCandidate(candidate)}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+              <Input value={targetPath} onChange={(event) => setTargetPath(event.target.value)} placeholder="wiki-start/Personal/2026-06-18.md" />
+            </>
           ) : null}
         </div>
         <DialogFooter>
           <TooltipButton tooltip="Close dialog" variant="outline" onClick={() => setOpen(false)}>Cancel</TooltipButton>
-          <TooltipButton tooltip="Queue command" onClick={() => void runActionFromDialog('Queue Command', submit, runAction)}>Queue</TooltipButton>
+          <TooltipButton tooltip="Queue command" disabled={needsTarget && !targetPath.trim()} onClick={() => void runActionFromDialog('Queue Command', submit, runAction)}>Queue</TooltipButton>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
+}
+
+function formatIngestCandidate(candidate: IngestCandidate): string {
+  const detail = candidate.kind === 'folder'
+    ? `${candidate.markdownCount ?? 0} files`
+    : candidate.root;
+  return `${candidate.path} (${detail})`;
 }
 
 async function runActionFromDialog(

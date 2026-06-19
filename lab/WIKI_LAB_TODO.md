@@ -155,6 +155,15 @@ Developer-facing roadmap for the next Wiki Lab iterations. This file is not gene
 - Если plugin пока не принимает per-command granularity, UI должен показать current setting and limitation.
 - Нельзя читать или показывать secrets/settings from `data.json`.
 
+### Progress
+
+- [x] 2026-06-19: Добавлен backend endpoint `/api/ingest/candidates` для allowlisted picker по `wiki-start/` и `sources/`.
+- [x] 2026-06-19: `Ingest` dialog теперь показывает source picker для файлов/папок, recent notes и ручной fallback input.
+- [x] 2026-06-19: Добавлен per-command `granularity` (`Coarse`, `Standard`, `Fine`, `Minimal`) в Lab UI, server command JSON и plugin bridge.
+- [x] 2026-06-19: Plugin bridge временно применяет выбранный `granularity` только на время ingest и возвращает прежнюю настройку после завершения.
+- [ ] Next: добавить dry-run-ish preview с выбранным path, command payload и blocked path warnings.
+- [ ] Next: добавить search/filter внутри picker, если список `sources/` станет слишком большим.
+
 ## 5. QA Fix Center
 
 ### Goal

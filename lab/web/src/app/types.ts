@@ -138,9 +138,28 @@ export interface CleanLastIngestResult {
   preservedChanged: string[];
 }
 
+export type IngestGranularity = 'fine' | 'standard' | 'coarse' | 'minimal';
+
+export interface IngestCandidate {
+  path: string;
+  title: string;
+  kind: 'file' | 'folder';
+  root: 'wiki-start' | 'sources';
+  modifiedAt?: string;
+  size?: number;
+  markdownCount?: number;
+}
+
+export interface IngestCandidates {
+  files: IngestCandidate[];
+  folders: IngestCandidate[];
+  recent: IngestCandidate[];
+}
+
 export interface BridgeCommandResponse {
   id: string;
   type: string;
   path?: string;
+  granularity?: IngestGranularity;
   createdAt: string;
 }

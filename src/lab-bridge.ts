@@ -1,5 +1,5 @@
 import { App } from 'obsidian';
-import { LLMWikiSettings } from './types';
+import type { ExtractionGranularity, LLMWikiSettings } from './types';
 import { WikiEngine } from './wiki/wiki-engine';
 
 type BridgeCommandType = 'ingest-file' | 'ingest-folder' | 'lint-wiki' | 'regenerate-index' | 'cancel';
@@ -19,9 +19,12 @@ interface BridgeCommand {
   id: string;
   type: BridgeCommandType;
   path?: string;
+  granularity?: ExtractionGranularity;
   createdAt?: string;
   source?: string;
 }
+
+const LAB_GRANULARITIES: ExtractionGranularity[] = ['fine', 'standard', 'coarse', 'minimal'];
 
 interface BridgeHost {
   app: App;
@@ -127,10 +130,14 @@ export class LabBridge {
     switch (command.type) {
       case 'ingest-file':
         if (!command.path) throw new Error('ingest-file requires path.');
-        return this.withWikiProgress(command, onProgress => this.host.runLabIngestFile(command.path!, onProgress));
+        return this.withCommandGranularity(command, () => (
+          this.withWikiProgress(command, onProgress => this.host.runLabIngestFile(command.path!, onProgress))
+        ));
       case 'ingest-folder':
         if (!command.path) throw new Error('ingest-folder requires path.');
-        return this.withWikiProgress(command, onProgress => this.host.runLabIngestFolder(command.path!, onProgress));
+        return this.withCommandGranularity(command, () => (
+          this.withWikiProgress(command, onProgress => this.host.runLabIngestFolder(command.path!, onProgress))
+        ));
       case 'lint-wiki':
         this.reportProgress(command, 'Linting wiki...');
         await this.host.lintWiki();
@@ -146,6 +153,34 @@ export class LabBridge {
       default:
         throw new Error(`Unsupported command type: ${(command as { type: string }).type}`);
     }
+  }
+
+  private async withCommandGranularity<T>(
+    command: BridgeCommand,
+    run: () => Promise<T>,
+  ): Promise<T> {
+    const granularity = this.normalizeGranularity(command.granularity);
+    if (!granularity) return run();
+
+    const previousGranularity = this.host.settings.extractionGranularity;
+    if (previousGranularity === granularity) return run();
+
+    this.host.settings.extractionGranularity = granularity;
+    this.host.wikiEngine.updateSettings(this.host.settings);
+    this.reportProgress(command, `Using ${granularity} granularity...`);
+
+    try {
+      return await run();
+    } finally {
+      this.host.settings.extractionGranularity = previousGranularity;
+      this.host.wikiEngine.updateSettings(this.host.settings);
+    }
+  }
+
+  private normalizeGranularity(value?: string): ExtractionGranularity | null {
+    return LAB_GRANULARITIES.includes(value as ExtractionGranularity)
+      ? value as ExtractionGranularity
+      : null;
   }
 
   private async withWikiProgress<T>(

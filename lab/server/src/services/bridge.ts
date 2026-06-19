@@ -10,6 +10,7 @@ export interface BridgeCommand {
   id: string;
   type: BridgeCommandInput['type'];
   path?: string;
+  granularity?: BridgeCommandInput['granularity'];
   createdAt: string;
   source: 'wiki-lab-ui';
 }
@@ -20,6 +21,7 @@ export async function createBridgeCommand(input: BridgeCommandInput): Promise<Br
     id,
     type: input.type,
     path: input.path ? assertSafeVaultRelative(input.path) : undefined,
+    granularity: input.granularity,
     createdAt: new Date().toISOString(),
     source: 'wiki-lab-ui',
   };

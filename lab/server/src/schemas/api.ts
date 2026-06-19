@@ -7,6 +7,7 @@ export const resetSchema = z.object({
 export const bridgeCommandSchema = z.object({
   type: z.enum(['ingest-file', 'ingest-folder', 'lint-wiki', 'regenerate-index', 'cancel']),
   path: z.string().optional(),
+  granularity: z.enum(['fine', 'standard', 'coarse', 'minimal']).optional(),
 });
 
 export type BridgeCommandInput = z.infer<typeof bridgeCommandSchema>;

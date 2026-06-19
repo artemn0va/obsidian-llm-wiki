@@ -10,6 +10,7 @@ import {
   wikiRoot,
 } from '../config.js';
 import { getWikiFiles, hashFile, pathExists, readJson } from './fs.js';
+import { scoreIngestQuality, type IngestQualityScore } from './quality-score.js';
 import type { QAReport } from './qa.js';
 import { getRunReview, type RunReviewState } from './run-review.js';
 
@@ -116,6 +117,7 @@ export interface RunSummary {
   review: RunReviewState | null;
   qaBefore: QAReport | null;
   qaAfter: QAReport | null;
+  quality: IngestQualityScore;
   sourcePath: string | null;
   commandType: string;
   mode: string;
@@ -183,6 +185,7 @@ export async function getRuns(): Promise<RunSummary[]> {
             review,
             qaBefore,
             qaAfter,
+            quality: scoreIngestQuality(qaAfter),
             sourcePath: command?.path || null,
             commandType: command?.type || 'unknown',
             mode: command?.granularity || command?.type || 'unknown',

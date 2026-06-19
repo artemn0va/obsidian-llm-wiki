@@ -245,6 +245,16 @@ Developer-facing roadmap for the next Wiki Lab iterations. This file is not gene
 
 ## 7. Ingest Quality Score
 
+### Progress
+
+- [x] 2026-06-19: Added deterministic ingest quality scoring to run summaries from QA findings.
+- [x] 2026-06-19: Content score now accounts for thin pages, duplicate quotes, and missing source attribution.
+- [x] 2026-06-19: Structure score now accounts for broken links, slug/path issues, frontmatter issues, and prompt leaks.
+- [x] 2026-06-19: Runs UI now shows quality badges, risk level, score meters, reasons, and actionable next steps.
+- [x] 2026-06-19: LLM review hook is represented as disabled-by-default metadata.
+- [ ] Next: add score trend deltas between QA before/after.
+- [ ] Next: expose quality score filters in Runs.
+
 ### Goal
 
 Дать каждому ingest понятный deterministic score: content score, structure score, risks. Это не должно быть магией, а должно объяснять причины.
@@ -256,11 +266,11 @@ Developer-facing roadmap for the next Wiki Lab iterations. This file is not gene
 
 ### TODO checklist
 
-- [ ] Рассчитать `content score` на основе thin pages, duplicate quotes, source attribution.
-- [ ] Рассчитать `structure score` на основе broken links, slugs, frontmatter, schema compliance.
-- [ ] Рассчитать `risk level` по severity and affected files.
-- [ ] Показывать reason list for each score.
-- [ ] Добавить optional future hook for LLM review, disabled by default.
+- [x] Рассчитать `content score` на основе thin pages, duplicate quotes, source attribution.
+- [x] Рассчитать `structure score` на основе broken links, slugs, frontmatter, schema compliance.
+- [x] Рассчитать `risk level` по severity and affected files.
+- [x] Показывать reason list for each score.
+- [x] Добавить optional future hook for LLM review, disabled by default.
 
 ### Acceptance criteria
 

@@ -960,6 +960,7 @@ function RunsView({
                     <TableHead>Duration</TableHead>
                     <TableHead>Files</TableHead>
                     <TableHead>QA</TableHead>
+                    <TableHead>Quality</TableHead>
                     <TableHead>Updated</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -989,6 +990,7 @@ function RunsView({
                         <TableCell className="text-sm tabular-nums">{formatDuration(run.durationMs)}</TableCell>
                         <TableCell><RunDiffBadges run={run} /></TableCell>
                         <TableCell><RunQaDelta run={run} /></TableCell>
+                        <TableCell><QualityBadge quality={run.quality} /></TableCell>
                         <TableCell className="text-xs text-muted-foreground">{formatDate(run.modifiedAt)}</TableCell>
                         <TableCell>
                           <div className="flex justify-end gap-1" onClick={(event) => event.stopPropagation()}>
@@ -1086,7 +1088,10 @@ function RunDetailPanel({
               <RunMiniStat label="Duration" value={formatDuration(run.durationMs)} />
               <RunMiniStat label="Mode" value={run.mode} />
               <RunMiniStat label="QA" value={qaShort(run.qaAfter)} />
+              <RunMiniStat label="Quality" value={qualityShort(run.quality)} />
             </div>
+
+            <QualityScorePanel run={run} />
 
             <div className="rounded-md border p-3">
               <div className="mb-2 text-sm font-medium">QA before / after</div>
@@ -1601,6 +1606,76 @@ function RunQaDelta({ run, verbose = false }: { run: RunRecord; verbose?: boolea
       <QaCountDelta label="Errors" before={before.error} after={after.error} />
       <QaCountDelta label="Warnings" before={before.warning} after={after.warning} />
       <QaCountDelta label="Info" before={before.info} after={after.info} />
+    </div>
+  );
+}
+
+function QualityBadge({ quality }: { quality: RunRecord['quality'] }) {
+  const label = qualityShort(quality);
+  const variant = quality.riskLevel === 'high' ? 'destructive' : quality.riskLevel === 'medium' ? 'secondary' : 'outline';
+
+  return (
+    <div className="flex flex-col gap-1">
+      <Badge variant={variant}>{label}</Badge>
+      <span className="text-xs text-muted-foreground">{quality.riskLevel} risk</span>
+    </div>
+  );
+}
+
+function QualityScorePanel({ run }: { run: RunRecord }) {
+  const quality = run.quality;
+
+  return (
+    <div className="rounded-md border p-3">
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div>
+          <div className="text-sm font-medium">Quality score</div>
+          <div className="text-xs text-muted-foreground">Deterministic score from QA findings and affected files.</div>
+        </div>
+        <QualityBadge quality={quality} />
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-2">
+        <ScoreMeter label="Content" value={quality.contentScore} reasons={quality.reasons.content} />
+        <ScoreMeter label="Structure" value={quality.structureScore} reasons={quality.reasons.structure} />
+      </div>
+
+      <div className="mt-3 grid gap-3 md:grid-cols-2">
+        <ReasonBlock title="Risk" items={quality.reasons.risk} />
+        <ReasonBlock title="Actions" items={[...quality.reasons.actions, quality.llmReview.note]} />
+      </div>
+    </div>
+  );
+}
+
+function ScoreMeter({ label, value, reasons }: { label: string; value: number | null; reasons: string[] }) {
+  const normalized = value ?? 0;
+
+  return (
+    <div className="rounded-md border p-3">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <span className="text-sm font-medium">{label}</span>
+        <span className="font-mono text-sm tabular-nums">{value === null ? 'n/a' : `${value}/100`}</span>
+      </div>
+      <Progress value={normalized} />
+      <ul className="mt-2 flex flex-col gap-1 text-xs text-muted-foreground">
+        {reasons.slice(0, 3).map((reason) => (
+          <li key={reason}>{reason}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function ReasonBlock({ title, items }: { title: string; items: string[] }) {
+  return (
+    <div className="rounded-md border p-3">
+      <div className="mb-2 text-sm font-medium">{title}</div>
+      <ul className="flex flex-col gap-1 text-xs text-muted-foreground">
+        {items.map((item) => (
+          <li key={item}>{item}</li>
+        ))}
+      </ul>
     </div>
   );
 }
@@ -2587,6 +2662,11 @@ function formatDuration(value: number | null) {
 function qaShort(report?: QAReport | null) {
   if (!report) return 'No QA';
   return `E${report.counts.error} W${report.counts.warning} I${report.counts.info}`;
+}
+
+function qualityShort(quality: RunRecord['quality']) {
+  if (quality.contentScore === null || quality.structureScore === null) return 'No score';
+  return `C${quality.contentScore} S${quality.structureScore}`;
 }
 
 function openObsidianVaultPath(path: string | null | undefined) {

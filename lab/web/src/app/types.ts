@@ -140,6 +140,39 @@ export interface RunRecord {
   } | null;
   qaBefore?: QAReport | null;
   qaAfter?: QAReport | null;
+  quality: IngestQualityScore;
+}
+
+export type QualityRiskLevel = 'low' | 'medium' | 'high' | 'unknown';
+
+export interface IngestQualityScore {
+  contentScore: number | null;
+  structureScore: number | null;
+  riskLevel: QualityRiskLevel;
+  affectedFiles: number;
+  reasons: {
+    content: string[];
+    structure: string[];
+    risk: string[];
+    actions: string[];
+  };
+  metrics: {
+    thinPages: number;
+    duplicateQuotes: number;
+    missingSourceAttribution: number;
+    brokenLinks: number;
+    badSlugs: number;
+    frontmatterIssues: number;
+    promptLeaks: number;
+    errors: number;
+    warnings: number;
+    info: number;
+  };
+  llmReview: {
+    enabled: false;
+    status: 'disabled';
+    note: string;
+  };
 }
 
 export interface RunReviewState {

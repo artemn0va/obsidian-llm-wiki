@@ -31,7 +31,7 @@ import {
 import { useEffect, useMemo, useState, type ComponentProps, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { toast } from 'sonner';
 import { api } from './api';
-import type { BridgeProgress, IngestCandidate, IngestCandidates, IngestGranularity, LabStatus, QAReport, QAFinding, RunRecord, WikiFileInfo } from './types';
+import type { BridgeProgress, IngestCandidate, IngestCandidates, IngestGranularity, LabStatus, QAReport, QAFinding, RunDiffFileContent, RunRecord, WikiFileInfo } from './types';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -53,13 +53,14 @@ import { Toaster } from '@/components/ui/sonner';
 import { ModeToggle } from '@/components/mode-toggle';
 import { cn } from '@/lib/utils';
 
-type ViewKey = 'dashboard' | 'files' | 'qa' | 'runs' | 'bridge';
+type ViewKey = 'dashboard' | 'files' | 'qa' | 'runs' | 'diff' | 'bridge';
 
 const navItems: Array<{ key: ViewKey; label: string; icon: typeof LayoutDashboardIcon }> = [
   { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboardIcon },
   { key: 'files', label: 'Wiki Files', icon: FileTextIcon },
   { key: 'qa', label: 'QA Report', icon: ShieldCheckIcon },
   { key: 'runs', label: 'Runs', icon: ActivityIcon },
+  { key: 'diff', label: 'Last Diff', icon: FileDiffIcon },
   { key: 'bridge', label: 'Plugin Bridge', icon: PlugZapIcon },
 ];
 
@@ -261,6 +262,19 @@ export function App() {
                 {activeView === 'qa' ? <QAView qa={qa} busy={Boolean(busyLabel)} refreshQa={() => runAction('Run QA', async () => setQa(await api.qa()))} fixQa={fixQa} /> : null}
                 {activeView === 'runs' ? (
                   <RunsView
+                    runs={runs}
+                    busy={Boolean(busyLabel)}
+                    runAction={runAction}
+                    cleanLastIngest={cleanLastIngest}
+                    openDiffView={() => setActiveView('diff')}
+                    openWikiFile={(path) => {
+                      setSelectedFilePath(path);
+                      setActiveView('files');
+                    }}
+                  />
+                ) : null}
+                {activeView === 'diff' ? (
+                  <LastIngestDiffView
                     runs={runs}
                     busy={Boolean(busyLabel)}
                     runAction={runAction}
@@ -656,12 +670,14 @@ function RunsView({
   busy,
   runAction,
   cleanLastIngest,
+  openDiffView,
   openWikiFile,
 }: {
   runs: RunRecord[];
   busy: boolean;
   runAction: (label: string, action: () => Promise<unknown>) => Promise<void>;
   cleanLastIngest: () => Promise<void>;
+  openDiffView: () => void;
   openWikiFile: (path: string) => void;
 }) {
   const [selectedRunId, setSelectedRunId] = useState('');
@@ -688,7 +704,7 @@ function RunsView({
 
   const openDiff = (run: RunRecord) => {
     setSelectedRunId(run.id);
-    toast.info('Diff opened in the run detail panel.');
+    openDiffView();
   };
 
   return (
@@ -906,6 +922,354 @@ function RunDetailPanel({
       </CardContent>
     </Card>
   );
+}
+
+type DiffSectionKey = 'all' | 'created' | 'changed' | 'deleted' | 'preserved';
+type ConcreteDiffSection = Exclude<DiffSectionKey, 'all'>;
+
+interface DiffFileItem {
+  path: string;
+  section: ConcreteDiffSection;
+}
+
+function LastIngestDiffView({
+  runs,
+  busy,
+  runAction,
+  cleanLastIngest,
+  openWikiFile,
+}: {
+  runs: RunRecord[];
+  busy: boolean;
+  runAction: (label: string, action: () => Promise<unknown>) => Promise<void>;
+  cleanLastIngest: () => Promise<void>;
+  openWikiFile: (path: string) => void;
+}) {
+  const run = runs.find((item) => item.diff) || runs[0] || null;
+  const [section, setSection] = useState<DiffSectionKey>('all');
+  const [query, setQuery] = useState('');
+  const [selectedPath, setSelectedPath] = useState('');
+  const [preview, setPreview] = useState<RunDiffFileContent | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+
+  const allItems = useMemo(() => run ? buildDiffFileItems(run) : [], [run]);
+  const filteredItems = allItems.filter((item) => {
+    const sectionMatches = section === 'all' || item.section === section;
+    const queryMatches = !query.trim() || item.path.toLowerCase().includes(query.trim().toLowerCase());
+    return sectionMatches && queryMatches;
+  });
+  const selectedItem = filteredItems.find((item) => item.path === selectedPath) || filteredItems[0] || null;
+  const selectedPaths = selectedItem ? [selectedItem.path] : [];
+
+  useEffect(() => {
+    if (!selectedItem) {
+      if (selectedPath) setSelectedPath('');
+      return;
+    }
+
+    if (selectedItem.path !== selectedPath) {
+      setSelectedPath(selectedItem.path);
+    }
+  }, [selectedItem, selectedPath]);
+
+  useEffect(() => {
+    if (!run || !selectedItem) {
+      setPreview(null);
+      return;
+    }
+
+    let cancelled = false;
+    setPreviewLoading(true);
+    api.runDiffFile(run.id, selectedItem.path)
+      .then((nextPreview) => {
+        if (!cancelled) setPreview(nextPreview);
+      })
+      .catch((error) => {
+        if (!cancelled) toast.error(error instanceof Error ? error.message : 'Failed to load diff preview');
+      })
+      .finally(() => {
+        if (!cancelled) setPreviewLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [run?.id, selectedItem?.path]);
+
+  if (!run) {
+    return (
+      <Card className="min-h-0 flex-1">
+        <CardHeader>
+          <CardTitle>Last Ingest Diff</CardTitle>
+          <CardDescription>No Lab runs found.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <EmptyLine text="Run an ingest from Wiki Lab to capture a diff." />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const canRollback = run.id === runs[0]?.id && selectedItem?.section === 'created';
+
+  return (
+    <div className="grid min-h-0 flex-1 gap-4 xl:grid-cols-[0.9fr_1.2fr]">
+      <Card className="min-h-0 overflow-hidden">
+        <CardHeader>
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <CardTitle className="truncate">Last Ingest Diff</CardTitle>
+              <CardDescription className="truncate">{run.sourcePath || 'No source path'} · {shortId(run.id)}</CardDescription>
+            </div>
+            <RunStatusBadge status={run.status} />
+          </div>
+          <div className="grid gap-2 md:grid-cols-4">
+            <RunMiniStat label="Duration" value={formatDuration(run.durationMs)} />
+            <RunMiniStat label="Mode" value={run.mode} />
+            <RunMiniStat label="Started" value={run.startedAt ? formatDate(run.startedAt) : 'Pending'} />
+            <RunMiniStat label="Finished" value={run.completedAt ? formatDate(run.completedAt) : 'Pending'} />
+          </div>
+        </CardHeader>
+        <CardContent className="flex min-h-0 flex-col gap-3">
+          <div className="grid gap-2 md:grid-cols-[11rem_1fr]">
+            <Select value={section} onValueChange={(value) => setSection(value as DiffSectionKey)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Section" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value="all">All sections</SelectItem>
+                  <SelectItem value="created">Created files</SelectItem>
+                  <SelectItem value="changed">Changed files</SelectItem>
+                  <SelectItem value="deleted">Deleted files</SelectItem>
+                  <SelectItem value="preserved">Preserved files</SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+            <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Filter by path" />
+          </div>
+
+          <div className="grid gap-2 md:grid-cols-4">
+            <DiffCount label="Created" value={run.counts.created} section="created" active={section} setSection={setSection} />
+            <DiffCount label="Changed" value={run.counts.changed} section="changed" active={section} setSection={setSection} />
+            <DiffCount label="Deleted" value={run.counts.deleted} section="deleted" active={section} setSection={setSection} />
+            <DiffCount label="Preserved" value={run.diff?.preserved?.length || 0} section="preserved" active={section} setSection={setSection} />
+          </div>
+
+          <ScrollArea className="min-h-0 flex-1 rounded-md border">
+            <div className="flex flex-col gap-1 p-2">
+              {filteredItems.length ? filteredItems.map((item) => (
+                <div
+                  key={`${item.section}:${item.path}`}
+                  className={cn(
+                    'flex cursor-pointer items-center justify-between gap-2 rounded-md p-2 hover:bg-muted/40',
+                    selectedItem?.path === item.path && selectedItem.section === item.section && 'bg-muted',
+                  )}
+                  onClick={() => setSelectedPath(item.path)}
+                >
+                  <div className="min-w-0">
+                    <div className="truncate font-mono text-xs">{item.path}</div>
+                    <div className="mt-1 flex items-center gap-1">
+                      <DiffSectionBadge section={item.section} />
+                      {item.section === 'deleted' ? <Badge variant="destructive">missing now</Badge> : null}
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-1" onClick={(event) => event.stopPropagation()}>
+                    {item.section !== 'deleted' ? (
+                      <TooltipButton tooltip="Open file" variant="ghost" size="sm" onClick={() => openWikiFile(item.path)}>
+                        <BookOpenIcon data-icon="inline-start" />
+                        Open
+                      </TooltipButton>
+                    ) : null}
+                    {item.section === 'created' && run.id === runs[0]?.id ? (
+                      <TooltipButton tooltip="Rollback latest ingest" variant="ghost" size="sm" disabled={busy} onClick={() => void cleanLastIngest()}>
+                        <Trash2Icon data-icon="inline-start" />
+                        Delete created
+                      </TooltipButton>
+                    ) : null}
+                  </div>
+                </div>
+              )) : <EmptyLine text="No files match this filter." />}
+            </div>
+          </ScrollArea>
+        </CardContent>
+      </Card>
+
+      <div className="grid min-h-0 gap-4 xl:grid-rows-[1fr_0.8fr]">
+        <Card className="min-h-0 overflow-hidden">
+          <CardHeader className="flex-row items-start justify-between gap-3">
+            <div className="min-w-0">
+              <CardTitle className="truncate">{selectedItem?.path || 'File Preview'}</CardTitle>
+              <CardDescription>
+                {selectedItem ? `${selectedItem.section} · ${previewStateText(preview, selectedItem.section)}` : 'Select a file.'}
+              </CardDescription>
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              <TooltipButton tooltip="Keep file" variant="outline" size="sm" disabled={busy || !selectedPaths.length} onClick={() => void runAction('Keep Run File', () => api.reviewRun(run.id, { action: 'keep', paths: selectedPaths }))}>
+                <CheckCircle2Icon data-icon="inline-start" />
+                Keep
+              </TooltipButton>
+              <TooltipButton tooltip="Mark reviewed" variant="outline" size="sm" disabled={busy || !selectedPaths.length} onClick={() => void runAction('Mark Reviewed', () => api.reviewRun(run.id, { action: 'mark-reviewed', paths: selectedPaths }))}>
+                <ShieldCheckIcon data-icon="inline-start" />
+                Mark reviewed
+              </TooltipButton>
+              {canRollback ? (
+                <TooltipButton tooltip="Rollback latest ingest" variant="outline" size="sm" disabled={busy} onClick={() => void cleanLastIngest()}>
+                  <Trash2Icon data-icon="inline-start" />
+                  Delete created
+                </TooltipButton>
+              ) : null}
+            </div>
+          </CardHeader>
+          <CardContent className="min-h-0">
+            {previewLoading ? (
+              <Skeleton className="h-full min-h-80" />
+            ) : (
+              <DiffPreview item={selectedItem} preview={preview} />
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="min-h-0 overflow-hidden">
+          <CardHeader>
+            <CardTitle>QA Findings</CardTitle>
+            <CardDescription>Grouped findings from the run's after snapshot.</CardDescription>
+          </CardHeader>
+          <CardContent className="min-h-0">
+            <GroupedQaFindings report={run.qaAfter} />
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+function DiffCount({
+  label,
+  value,
+  section,
+  active,
+  setSection,
+}: {
+  label: string;
+  value: number;
+  section: ConcreteDiffSection;
+  active: DiffSectionKey;
+  setSection: (section: DiffSectionKey) => void;
+}) {
+  return (
+    <button
+      type="button"
+      className={cn('rounded-md border p-2 text-left hover:bg-muted/40', active === section && 'bg-muted')}
+      onClick={() => setSection(active === section ? 'all' : section)}
+    >
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className="text-lg font-semibold tabular-nums">{value}</div>
+    </button>
+  );
+}
+
+function DiffPreview({ item, preview }: { item: DiffFileItem | null; preview: RunDiffFileContent | null }) {
+  if (!item) return <EmptyLine text="Select a diff file." />;
+  if (!preview) return <EmptyLine text="No preview available." />;
+
+  if (item.section === 'changed') {
+    return (
+      <div className="grid h-full min-h-80 gap-3 md:grid-cols-2">
+        <MarkdownPane title="Before backup" content={preview.beforeContent} missingText="No backup content." />
+        <MarkdownPane title="Current wiki" content={preview.afterContent} missingText="Current file is missing." />
+      </div>
+    );
+  }
+
+  if (item.section === 'deleted') {
+    return <MarkdownPane title="Before backup" content={preview.beforeContent} missingText="No backup content for deleted file." />;
+  }
+
+  return <MarkdownPane title={item.section === 'created' ? 'Current wiki' : 'Markdown preview'} content={preview.afterContent} missingText="Current file is missing." />;
+}
+
+function MarkdownPane({ title, content, missingText }: { title: string; content: string | null; missingText: string }) {
+  return (
+    <div className="flex min-h-0 flex-col gap-2 rounded-md border p-3">
+      <div className="flex items-center justify-between gap-2">
+        <div className="text-sm font-medium">{title}</div>
+        <Badge variant={content === null ? 'destructive' : 'outline'}>{content === null ? 'missing' : 'available'}</Badge>
+      </div>
+      {content === null ? (
+        <EmptyLine text={missingText} />
+      ) : (
+        <ScrollArea className="h-full min-h-72 rounded-md border bg-muted/20">
+          <pre className="whitespace-pre-wrap break-words p-3 font-mono text-xs leading-relaxed">{content}</pre>
+        </ScrollArea>
+      )}
+    </div>
+  );
+}
+
+function GroupedQaFindings({ report }: { report?: QAReport | null }) {
+  if (!report || !report.findings.length) return <EmptyLine text="No QA findings for this run." />;
+
+  const groups: Array<QAFinding['severity']> = ['error', 'warning', 'info'];
+
+  return (
+    <ScrollArea className="h-full rounded-md border">
+      <div className="flex flex-col gap-2 p-3">
+        {groups.map((severity) => {
+          const findings = report.findings.filter((finding) => finding.severity === severity);
+          if (!findings.length) return null;
+
+          return (
+            <div key={severity} className="rounded-md border p-3">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <SeverityBadge severity={severity} />
+                <Badge variant="outline">{findings.length}</Badge>
+              </div>
+              <div className="flex flex-col gap-2">
+                {findings.slice(0, 8).map((finding) => <FindingRow key={`${finding.file}-${finding.line}-${finding.message}`} finding={finding} />)}
+                {findings.length > 8 ? <div className="text-xs text-muted-foreground">+{findings.length - 8} more</div> : null}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </ScrollArea>
+  );
+}
+
+function buildDiffFileItems(run: RunRecord): DiffFileItem[] {
+  const diff = run.diff;
+  if (!diff) return [];
+
+  return [
+    ...toDiffFileItems(diff.created || [], 'created'),
+    ...toDiffFileItems(diff.changed || [], 'changed'),
+    ...toDiffFileItems(diff.deleted || [], 'deleted'),
+    ...toDiffFileItems(diff.preserved || [], 'preserved'),
+  ];
+}
+
+function toDiffFileItems(files: Array<{ path?: string }>, section: ConcreteDiffSection): DiffFileItem[] {
+  return files
+    .map((file) => file.path)
+    .filter((path): path is string => Boolean(path))
+    .map((path) => ({ path, section }));
+}
+
+function DiffSectionBadge({ section }: { section: ConcreteDiffSection }) {
+  const variant = section === 'deleted' ? 'destructive' : section === 'preserved' ? 'outline' : 'secondary';
+  return <Badge variant={variant}>{section}</Badge>;
+}
+
+function previewStateText(preview: RunDiffFileContent | null, section: ConcreteDiffSection) {
+  if (!preview) return 'No preview loaded';
+  if (section === 'changed') {
+    if (preview.beforeExists && preview.afterExists) return 'before and current available';
+    if (!preview.beforeExists && !preview.afterExists) return 'before and current missing';
+    return preview.beforeExists ? 'current missing' : 'backup missing';
+  }
+  if (section === 'deleted') return preview.beforeExists ? 'deleted from current wiki' : 'deleted, backup missing';
+  return preview.afterExists ? 'current file available' : 'current file missing';
 }
 
 function StaleRunsCleanupButton({

@@ -7,6 +7,7 @@ import type {
   ProcessResult,
   QAFixReport,
   QAReport,
+  RunDiffFileContent,
   RunReviewState,
   RunRecord,
   StaleRunCleanupResult,
@@ -44,6 +45,8 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ ids }),
     }),
+  runDiffFile: (id: string, path: string) =>
+    request<RunDiffFileContent>(`/api/runs/${encodeURIComponent(id)}/diff-file?path=${encodeURIComponent(path)}`),
   wikiFiles: () => request<WikiFileInfo[]>('/api/wiki/files'),
   wikiFile: (path: string) => request<{ path: string; content: string }>(`/api/wiki/file?path=${encodeURIComponent(path)}`),
   ingestCandidates: () => request<IngestCandidates>('/api/ingest/candidates'),

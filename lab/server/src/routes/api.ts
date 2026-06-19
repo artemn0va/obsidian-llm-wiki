@@ -9,6 +9,7 @@ import { reloadObsidian } from '../services/obsidian.js';
 import { fixQA, runQA } from '../services/qa.js';
 import { resetWiki } from '../services/reset.js';
 import { cleanupStaleRuns } from '../services/run-cleanup.js';
+import { readRunDiffFile } from '../services/run-diff.js';
 import { updateRunReview } from '../services/run-review.js';
 import { getRuns, getStatus } from '../services/status.js';
 
@@ -35,6 +36,12 @@ apiRouter.post('/runs/:id/review', asyncHandler(async (req, res) => {
 apiRouter.post('/runs/stale/cleanup', asyncHandler(async (req, res) => {
   const body = staleRunCleanupSchema.parse(req.body);
   res.json(await cleanupStaleRuns(body.ids));
+}));
+
+apiRouter.get('/runs/:id/diff-file', asyncHandler(async (req, res) => {
+  const params = commandIdSchema.parse(req.params);
+  const target = String(req.query.path || '');
+  res.json(await readRunDiffFile(params.id, target));
 }));
 
 apiRouter.get('/wiki/files', asyncHandler(async (_req, res) => {

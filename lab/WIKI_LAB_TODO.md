@@ -51,8 +51,10 @@ Developer-facing roadmap for the next Wiki Lab iterations. This file is not gene
 - [x] 2026-06-19: Selected run detail now shows `Created files`, `Changed files`, `Deleted files`, and `Preserved files`.
 - [x] 2026-06-19: Added file actions in the run detail panel: `Open`, `Delete created`, `Keep`, and `Mark reviewed`.
 - [x] 2026-06-19: Added run-local review state in `.llm-wiki-lab/runs/<id>/review.json` so `Keep` and `Mark reviewed` do not mutate wiki content.
-- [ ] Next: split this into a dedicated full-screen `Last Ingest Diff` view with filtering and richer QA finding grouping.
-- [ ] Next: add per-file diff content preview for changed files.
+- [x] 2026-06-19: Added dedicated full-screen `Last Diff` view with section/path filtering and QA findings grouped by severity.
+- [x] 2026-06-19: Added per-file preview endpoint and UI; changed files show before-backup vs current-wiki markdown content.
+- [ ] Next: add line-level diff highlighting for changed files.
+- [ ] Next: add selective delete for individual created files instead of only latest-ingest rollback.
 
 ### Goal
 
@@ -65,12 +67,12 @@ Developer-facing roadmap for the next Wiki Lab iterations. This file is not gene
 
 ### TODO checklist
 
-- [ ] Сделать dedicated panel для last ingest diff.
-- [ ] Показывать sections: `Created files`, `Changed files`, `Deleted files`, `Preserved files`, `QA findings`.
-- [ ] Для файлов добавить actions: `Open`, `Delete created`, `Keep`, `Mark reviewed`.
-- [ ] Добавить markdown preview выбранного файла.
-- [ ] Добавить clear visual state для files that are already deleted or missing.
-- [ ] Добавить summary header: source path, run id, duration, status.
+- [x] Сделать dedicated panel для last ingest diff.
+- [x] Показывать sections: `Created files`, `Changed files`, `Deleted files`, `Preserved files`, `QA findings`.
+- [x] Для файлов добавить actions: `Open`, `Delete created`, `Keep`, `Mark reviewed`.
+- [x] Добавить markdown preview выбранного файла.
+- [x] Добавить clear visual state для files that are already deleted or missing.
+- [x] Добавить summary header: source path, run id, duration, status.
 
 ### Acceptance criteria
 

@@ -130,6 +130,15 @@ export interface StaleRunCleanupResult {
   skipped: Array<{ id: string; reason: string }>;
 }
 
+export interface RunDiffFileContent {
+  runId: string;
+  path: string;
+  beforeContent: string | null;
+  afterContent: string | null;
+  beforeExists: boolean;
+  afterExists: boolean;
+}
+
 export interface ProcessResult {
   exitCode: number | null;
   stdout: string;

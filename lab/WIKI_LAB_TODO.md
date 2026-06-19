@@ -44,6 +44,14 @@ Developer-facing roadmap for the next Wiki Lab iterations. This file is not gene
 
 ## 2. Last Ingest Diff Viewer
 
+### Progress
+
+- [x] 2026-06-19: Selected run detail now shows `Created files`, `Changed files`, `Deleted files`, and `Preserved files`.
+- [x] 2026-06-19: Added file actions in the run detail panel: `Open`, `Delete created`, `Keep`, and `Mark reviewed`.
+- [x] 2026-06-19: Added run-local review state in `.llm-wiki-lab/runs/<id>/review.json` so `Keep` and `Mark reviewed` do not mutate wiki content.
+- [ ] Next: split this into a dedicated full-screen `Last Ingest Diff` view with filtering and richer QA finding grouping.
+- [ ] Next: add per-file diff content preview for changed files.
+
 ### Goal
 
 Сделать нормальную панель для анализа последнего ingest: что создано, что изменено, что сохранено, какие QA issues появились, и какие действия доступны.

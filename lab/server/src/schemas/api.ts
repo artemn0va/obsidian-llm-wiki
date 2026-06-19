@@ -14,3 +14,8 @@ export type BridgeCommandInput = z.infer<typeof bridgeCommandSchema>;
 export const commandIdSchema = z.object({
   id: z.string().min(8),
 });
+
+export const runReviewSchema = z.object({
+  action: z.enum(['keep', 'mark-reviewed']),
+  paths: z.array(z.string().min(1)).default([]),
+});

@@ -1,5 +1,5 @@
 import express from 'express';
-import { commandIdSchema, bridgeCommandSchema, resetSchema } from '../schemas/api.js';
+import { commandIdSchema, bridgeCommandSchema, resetSchema, runReviewSchema } from '../schemas/api.js';
 import { createBridgeCommand, getBridgeCommand } from '../services/bridge.js';
 import { readWikiFile, getWikiFiles } from '../services/fs.js';
 import { cleanLastIngest } from '../services/last-ingest-clean.js';
@@ -7,6 +7,7 @@ import { buildAndDeployPlugin, buildPlugin, deployPlugin } from '../services/plu
 import { reloadObsidian } from '../services/obsidian.js';
 import { fixQA, runQA } from '../services/qa.js';
 import { resetWiki } from '../services/reset.js';
+import { updateRunReview } from '../services/run-review.js';
 import { getRuns, getStatus } from '../services/status.js';
 
 export const apiRouter = express.Router();
@@ -21,6 +22,12 @@ apiRouter.get('/status', asyncHandler(async (_req, res) => {
 
 apiRouter.get('/runs', asyncHandler(async (_req, res) => {
   res.json(await getRuns());
+}));
+
+apiRouter.post('/runs/:id/review', asyncHandler(async (req, res) => {
+  const params = commandIdSchema.parse(req.params);
+  const body = runReviewSchema.parse(req.body);
+  res.json(await updateRunReview(params.id, body));
 }));
 
 apiRouter.get('/wiki/files', asyncHandler(async (_req, res) => {

@@ -255,7 +255,18 @@ export function App() {
                   <WikiFiles files={files} selectedFile={selectedFile} selectedPath={selectedFilePath} setSelectedPath={setSelectedFilePath} content={selectedFileContent} />
                 ) : null}
                 {activeView === 'qa' ? <QAView qa={qa} busy={Boolean(busyLabel)} refreshQa={() => runAction('Run QA', async () => setQa(await api.qa()))} fixQa={fixQa} /> : null}
-                {activeView === 'runs' ? <RunsView runs={runs} /> : null}
+                {activeView === 'runs' ? (
+                  <RunsView
+                    runs={runs}
+                    busy={Boolean(busyLabel)}
+                    runAction={runAction}
+                    cleanLastIngest={cleanLastIngest}
+                    openWikiFile={(path) => {
+                      setSelectedFilePath(path);
+                      setActiveView('files');
+                    }}
+                  />
+                ) : null}
                 {activeView === 'bridge' ? (
                   <BridgeView status={status} busyLabel={busyLabel} runAction={runAction} />
                 ) : null}
@@ -636,7 +647,19 @@ function QAView({
   );
 }
 
-function RunsView({ runs }: { runs: RunRecord[] }) {
+function RunsView({
+  runs,
+  busy,
+  runAction,
+  cleanLastIngest,
+  openWikiFile,
+}: {
+  runs: RunRecord[];
+  busy: boolean;
+  runAction: (label: string, action: () => Promise<unknown>) => Promise<void>;
+  cleanLastIngest: () => Promise<void>;
+  openWikiFile: (path: string) => void;
+}) {
   const [selectedRunId, setSelectedRunId] = useState('');
   const selectedRun = runs.find((run) => run.id === selectedRunId) || runs[0] || null;
   const latestRun = runs[0] || null;
@@ -718,13 +741,34 @@ function RunsView({ runs }: { runs: RunRecord[] }) {
           </CardContent>
         </Card>
 
-        <RunDetailPanel run={selectedRun} />
+        <RunDetailPanel
+          run={selectedRun}
+          isLatest={Boolean(selectedRun && selectedRun.id === runs[0]?.id)}
+          busy={busy}
+          runAction={runAction}
+          cleanLastIngest={cleanLastIngest}
+          openWikiFile={openWikiFile}
+        />
       </div>
     </div>
   );
 }
 
-function RunDetailPanel({ run }: { run: RunRecord | null }) {
+function RunDetailPanel({
+  run,
+  isLatest,
+  busy,
+  runAction,
+  cleanLastIngest,
+  openWikiFile,
+}: {
+  run: RunRecord | null;
+  isLatest: boolean;
+  busy: boolean;
+  runAction: (label: string, action: () => Promise<unknown>) => Promise<void>;
+  cleanLastIngest: () => Promise<void>;
+  openWikiFile: (path: string) => void;
+}) {
   if (!run) {
     return (
       <Card className="h-full min-h-0 overflow-hidden">
@@ -742,6 +786,7 @@ function RunDetailPanel({ run }: { run: RunRecord | null }) {
   const created = run.diff?.created || [];
   const changed = run.diff?.changed || [];
   const deleted = run.diff?.deleted || [];
+  const preserved = run.diff?.preserved || [];
 
   return (
     <Card className="h-full min-h-0 overflow-hidden">
@@ -768,9 +813,46 @@ function RunDetailPanel({ run }: { run: RunRecord | null }) {
               <RunQaDelta run={run} verbose />
             </div>
 
-            <RunFileList title="Created files" files={created} empty="No created files." />
-            <RunFileList title="Changed files" files={changed} empty="No changed files." />
-            <RunFileList title="Deleted files" files={deleted} empty="No deleted files." />
+            <RunFileList
+              title="Created files"
+              files={created}
+              empty="No created files."
+              review={run.review}
+              busy={busy}
+              onOpenFile={openWikiFile}
+              onDeleteCreated={isLatest && created.length ? () => void cleanLastIngest() : undefined}
+              onKeep={(paths) => void runAction('Keep Run Files', () => api.reviewRun(run.id, { action: 'keep', paths }))}
+              onMarkReviewed={(paths) => void runAction('Mark Reviewed', () => api.reviewRun(run.id, { action: 'mark-reviewed', paths }))}
+            />
+            <RunFileList
+              title="Changed files"
+              files={changed}
+              empty="No changed files."
+              review={run.review}
+              busy={busy}
+              onOpenFile={openWikiFile}
+              onKeep={(paths) => void runAction('Keep Run Files', () => api.reviewRun(run.id, { action: 'keep', paths }))}
+              onMarkReviewed={(paths) => void runAction('Mark Reviewed', () => api.reviewRun(run.id, { action: 'mark-reviewed', paths }))}
+            />
+            <RunFileList
+              title="Deleted files"
+              files={deleted}
+              empty="No deleted files."
+              review={run.review}
+              busy={busy}
+              onKeep={(paths) => void runAction('Keep Run Files', () => api.reviewRun(run.id, { action: 'keep', paths }))}
+              onMarkReviewed={(paths) => void runAction('Mark Reviewed', () => api.reviewRun(run.id, { action: 'mark-reviewed', paths }))}
+            />
+            <RunFileList
+              title="Preserved files"
+              files={preserved}
+              empty="No preserved files."
+              review={run.review}
+              busy={busy}
+              onOpenFile={openWikiFile}
+              onKeep={(paths) => void runAction('Keep Run Files', () => api.reviewRun(run.id, { action: 'keep', paths }))}
+              onMarkReviewed={(paths) => void runAction('Mark Reviewed', () => api.reviewRun(run.id, { action: 'mark-reviewed', paths }))}
+            />
 
             <div className="rounded-md border p-3">
               <div className="mb-2 text-sm font-medium">Raw command</div>
@@ -850,27 +932,95 @@ function RunFileList({
   title,
   files,
   empty,
+  review,
+  busy,
+  onOpenFile,
+  onDeleteCreated,
+  onKeep,
+  onMarkReviewed,
 }: {
   title: string;
   files: Array<{ path?: string }>;
   empty: string;
+  review?: RunRecord['review'];
+  busy: boolean;
+  onOpenFile?: (path: string) => void;
+  onDeleteCreated?: () => void;
+  onKeep: (paths: string[]) => void;
+  onMarkReviewed: (paths: string[]) => void;
 }) {
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const paths = files.map((file) => file.path).filter((path): path is string => Boolean(path));
+  const keptPaths = new Set(review?.keptPaths || []);
+  const reviewedPaths = new Set(review?.reviewedPaths || []);
+
   return (
     <div className="rounded-md border p-3">
       <div className="mb-2 flex items-center justify-between gap-3">
         <div className="text-sm font-medium">{title}</div>
-        <Badge variant="outline">{files.length}</Badge>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline">{files.length}</Badge>
+          {onDeleteCreated ? (
+            <TooltipButton tooltip="Delete created" variant="outline" size="sm" disabled={busy} onClick={() => setDeleteOpen(true)}>
+              <Trash2Icon data-icon="inline-start" />
+              Delete created
+            </TooltipButton>
+          ) : null}
+          <TooltipButton tooltip="Keep files" variant="outline" size="sm" disabled={busy || !paths.length} onClick={() => onKeep(paths)}>
+            <CheckCircle2Icon data-icon="inline-start" />
+            Keep
+          </TooltipButton>
+          <TooltipButton tooltip="Mark reviewed" variant="outline" size="sm" disabled={busy || !paths.length} onClick={() => onMarkReviewed(paths)}>
+            <ShieldCheckIcon data-icon="inline-start" />
+            Mark reviewed
+          </TooltipButton>
+        </div>
       </div>
       <div className="flex flex-col gap-1">
         {files.length ? files.slice(0, 10).map((file, index) => (
-          <div key={`${file.path || 'unknown'}-${index}`} className="truncate font-mono text-xs text-muted-foreground">
-            {file.path || 'unknown path'}
+          <div key={`${file.path || 'unknown'}-${index}`} className="flex items-center justify-between gap-2 rounded-md px-2 py-1 hover:bg-muted/40">
+            <div className="min-w-0 truncate font-mono text-xs text-muted-foreground">
+              {file.path || 'unknown path'}
+            </div>
+            <div className="flex shrink-0 items-center gap-1">
+              {file.path && keptPaths.has(file.path) ? <Badge variant="secondary">kept</Badge> : null}
+              {file.path && reviewedPaths.has(file.path) ? <Badge variant="secondary">reviewed</Badge> : null}
+              {file.path && onOpenFile ? (
+                <TooltipButton tooltip="Open file" variant="ghost" size="sm" onClick={() => onOpenFile(file.path || '')}>
+                  <BookOpenIcon data-icon="inline-start" />
+                  Open
+                </TooltipButton>
+              ) : null}
+            </div>
           </div>
         )) : <EmptyLine text={empty} />}
         {files.length > 10 ? (
           <div className="text-xs text-muted-foreground">+{files.length - 10} more</div>
         ) : null}
       </div>
+      {onDeleteCreated ? (
+        <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete created files from the last ingest?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This removes files that were created by the latest tracked ingest. Files that existed before that ingest are kept.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  setDeleteOpen(false);
+                  onDeleteCreated();
+                }}
+              >
+                Delete created
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      ) : null}
     </div>
   );
 }

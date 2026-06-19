@@ -5,6 +5,7 @@ import type {
   ProcessResult,
   QAFixReport,
   QAReport,
+  RunReviewState,
   RunRecord,
   WikiFileInfo,
 } from './types';
@@ -30,6 +31,11 @@ export const api = {
   health: () => request<{ ok: boolean; now: string }>('/api/health'),
   status: () => request<LabStatus>('/api/status'),
   runs: () => request<RunRecord[]>('/api/runs'),
+  reviewRun: (id: string, body: { action: 'keep' | 'mark-reviewed'; paths: string[] }) =>
+    request<RunReviewState>(`/api/runs/${encodeURIComponent(id)}/review`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
   wikiFiles: () => request<WikiFileInfo[]>('/api/wiki/files'),
   wikiFile: (path: string) => request<{ path: string; content: string }>(`/api/wiki/file?path=${encodeURIComponent(path)}`),
   cleanLastIngest: () =>

@@ -11,6 +11,7 @@ import {
 } from '../config.js';
 import { getWikiFiles, hashFile, pathExists, readJson } from './fs.js';
 import type { QAReport } from './qa.js';
+import { getRunReview, type RunReviewState } from './run-review.js';
 
 export interface LabStatus {
   activeVaultRoot: string;
@@ -85,12 +86,14 @@ interface RunResponse {
 
 interface SnapshotLike {
   capturedAt?: string;
+  files?: Array<{ path: string }>;
 }
 
 interface RunDiff {
   created?: unknown[];
   changed?: unknown[];
   deleted?: unknown[];
+  preserved?: unknown[];
 }
 
 export interface RunSummary {
@@ -101,6 +104,7 @@ export interface RunSummary {
   before: unknown;
   after: unknown;
   diff: RunDiff | null;
+  review: RunReviewState | null;
   qaBefore: QAReport | null;
   qaAfter: QAReport | null;
   sourcePath: string | null;
@@ -134,10 +138,12 @@ export async function getRuns(): Promise<RunSummary[]> {
           const before = await readJson<SnapshotLike>(path.join(runPath, 'before.json'));
           const after = await readJson<SnapshotLike>(path.join(runPath, 'after.json'));
           const diff = await readJson<RunDiff>(path.join(runPath, 'diff.json'));
+          const review = await getRunReview(entry.name);
           const qaBefore = await readJson<QAReport>(path.join(runPath, 'qa-before.json'));
           const qaAfter =
             await readJson<QAReport>(path.join(runPath, 'qa-after.json')) ??
             await readJson<QAReport>(path.join(runPath, 'qa.json'));
+          const fullDiff = diff ? { ...diff, preserved: preservedFiles(before, after, diff) } : null;
           const startedAt = response?.startedAt || before?.capturedAt || command?.createdAt || null;
           const completedAt = response?.completedAt || after?.capturedAt || null;
 
@@ -148,7 +154,8 @@ export async function getRuns(): Promise<RunSummary[]> {
             response,
             before,
             after,
-            diff,
+            diff: fullDiff,
+            review,
             qaBefore,
             qaAfter,
             sourcePath: command?.path || null,
@@ -159,9 +166,9 @@ export async function getRuns(): Promise<RunSummary[]> {
             completedAt,
             durationMs: startedAt && completedAt ? Math.max(0, new Date(completedAt).getTime() - new Date(startedAt).getTime()) : null,
             counts: {
-              created: diff?.created?.length || 0,
-              changed: diff?.changed?.length || 0,
-              deleted: diff?.deleted?.length || 0,
+              created: fullDiff?.created?.length || 0,
+              changed: fullDiff?.changed?.length || 0,
+              deleted: fullDiff?.deleted?.length || 0,
             },
           };
         }),
@@ -171,4 +178,25 @@ export async function getRuns(): Promise<RunSummary[]> {
   } catch {
     return [];
   }
+}
+
+function preservedFiles(before: SnapshotLike | null, after: SnapshotLike | null, diff: RunDiff) {
+  if (!before?.files || !after?.files) return [];
+  const afterPaths = new Set(after.files.map((file) => file.path));
+  const changedPaths = new Set((diff.changed || []).map((file) => pathFromDiffFile(file)).filter(Boolean));
+  const deletedPaths = new Set((diff.deleted || []).map((file) => pathFromDiffFile(file)).filter(Boolean));
+
+  return before.files.filter((file) =>
+    afterPaths.has(file.path) &&
+    !changedPaths.has(file.path) &&
+    !deletedPaths.has(file.path),
+  );
+}
+
+function pathFromDiffFile(value: unknown) {
+  if (value && typeof value === 'object' && typeof (value as { path?: unknown }).path === 'string') {
+    return (value as { path: string }).path;
+  }
+
+  return null;
 }

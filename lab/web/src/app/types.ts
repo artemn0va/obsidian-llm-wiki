@@ -105,9 +105,21 @@ export interface RunRecord {
     created?: Array<{ path?: string }>;
     changed?: Array<{ path?: string }>;
     deleted?: Array<{ path?: string }>;
+    preserved?: Array<{ path?: string }>;
+  } | null;
+  review?: {
+    updatedAt: string;
+    keptPaths: string[];
+    reviewedPaths: string[];
   } | null;
   qaBefore?: QAReport | null;
   qaAfter?: QAReport | null;
+}
+
+export interface RunReviewState {
+  updatedAt: string;
+  keptPaths: string[];
+  reviewedPaths: string[];
 }
 
 export interface ProcessResult {

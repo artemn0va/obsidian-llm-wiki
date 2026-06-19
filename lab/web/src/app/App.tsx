@@ -12,6 +12,8 @@ import {
   BookOpenIcon,
   BoxesIcon,
   CheckCircle2Icon,
+  ExternalLinkIcon,
+  FileDiffIcon,
   FileTextIcon,
   HammerIcon,
   LayoutDashboardIcon,
@@ -24,6 +26,7 @@ import {
   ShieldCheckIcon,
   Trash2Icon,
   WandSparklesIcon,
+  XCircleIcon,
 } from 'lucide-react';
 import { useEffect, useMemo, useState, type ComponentProps, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { toast } from 'sonner';
@@ -663,11 +666,10 @@ function RunsView({
 }) {
   const [selectedRunId, setSelectedRunId] = useState('');
   const selectedRun = runs.find((run) => run.id === selectedRunId) || runs[0] || null;
-  const latestRun = runs[0] || null;
   const completedRuns = runs.filter((run) => ['success', 'error', 'cancelled'].includes(run.status)).length;
+  const staleRuns = runs.filter((run) => run.isStale && run.canCleanup);
   const totalCreated = runs.reduce((sum, run) => sum + run.counts.created, 0);
   const totalChanged = runs.reduce((sum, run) => sum + run.counts.changed, 0);
-  const latestQaErrors = latestRun?.qaAfter?.counts.error ?? 0;
 
   useEffect(() => {
     if (!runs.length) {
@@ -680,20 +682,32 @@ function RunsView({
     }
   }, [runs, selectedRunId]);
 
+  const openRun = (run: RunRecord) => {
+    setSelectedRunId(run.id);
+  };
+
+  const openDiff = (run: RunRecord) => {
+    setSelectedRunId(run.id);
+    toast.info('Diff opened in the run detail panel.');
+  };
+
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard title="Tracked Runs" value={runs.length} description={`${completedRuns} terminal bridge commands`} />
         <MetricCard title="Created Files" value={totalCreated} description="Files created across tracked runs" />
         <MetricCard title="Changed Files" value={totalChanged} description="Existing files changed by ingest" />
-        <MetricCard title="Latest QA Errors" value={latestQaErrors} description={latestRun ? latestRun.sourcePath || latestRun.id : 'No runs yet'} />
+        <MetricCard title="Stale Runs" value={staleRuns.length} description={staleRuns.length ? 'Cleanup available' : 'No unfinished stale runs'} />
       </div>
 
       <div className="grid min-h-0 flex-1 gap-4 xl:grid-cols-[1.35fr_0.95fr]">
         <Card className="h-full min-h-0 overflow-hidden">
-          <CardHeader>
-            <CardTitle>Ingest Runs</CardTitle>
-            <CardDescription>Readable bridge history with source, duration, diff, and QA movement.</CardDescription>
+          <CardHeader className="flex-row items-start justify-between gap-3">
+            <div className="min-w-0">
+              <CardTitle>Ingest Runs</CardTitle>
+              <CardDescription>Readable bridge history with source, duration, diff, and QA movement.</CardDescription>
+            </div>
+            <StaleRunsCleanupButton staleRuns={staleRuns} busy={busy} runAction={runAction} />
           </CardHeader>
           <CardContent className="min-h-0 flex-1">
             <ScrollArea className="h-full rounded-md border">
@@ -706,6 +720,7 @@ function RunsView({
                     <TableHead>Files</TableHead>
                     <TableHead>QA</TableHead>
                     <TableHead>Updated</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -726,6 +741,7 @@ function RunsView({
                         <TableCell>
                           <div className="flex flex-col gap-1">
                             <RunStatusBadge status={run.status} />
+                            {run.isStale ? <Badge variant="destructive">stale</Badge> : null}
                             <RunProgressInline progress={response?.progress} compact />
                           </div>
                         </TableCell>
@@ -733,6 +749,22 @@ function RunsView({
                         <TableCell><RunDiffBadges run={run} /></TableCell>
                         <TableCell><RunQaDelta run={run} /></TableCell>
                         <TableCell className="text-xs text-muted-foreground">{formatDate(run.modifiedAt)}</TableCell>
+                        <TableCell>
+                          <div className="flex justify-end gap-1" onClick={(event) => event.stopPropagation()}>
+                            <TooltipButton tooltip="Open run" variant="ghost" size="sm" onClick={() => openRun(run)}>
+                              <BookOpenIcon data-icon="inline-start" />
+                              Run
+                            </TooltipButton>
+                            <TooltipButton tooltip="Open source" variant="ghost" size="sm" disabled={!run.sourcePath} onClick={run.sourcePath ? () => openObsidianVaultPath(run.sourcePath) : undefined}>
+                              <ExternalLinkIcon data-icon="inline-start" />
+                              Source
+                            </TooltipButton>
+                            <TooltipButton tooltip="Open diff" variant="ghost" size="sm" disabled={!run.diff} onClick={() => openDiff(run)}>
+                              <FileDiffIcon data-icon="inline-start" />
+                              Diff
+                            </TooltipButton>
+                          </div>
+                        </TableCell>
                       </TableRow>
                     );
                   })}
@@ -796,6 +828,12 @@ function RunDetailPanel({
           <div className="min-w-0">
             <CardTitle className="truncate">{run.sourcePath || 'Run detail'}</CardTitle>
             <CardDescription className="truncate">{run.commandType} · {shortId(run.id)} · {formatDate(run.modifiedAt)}</CardDescription>
+            {run.isStale && run.staleReason ? (
+              <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+                <AlertTriangleIcon />
+                <span className="truncate">{run.staleReason}</span>
+              </div>
+            ) : null}
           </div>
           <RunStatusBadge status={run.status} />
         </div>
@@ -867,6 +905,70 @@ function RunDetailPanel({
         </ScrollArea>
       </CardContent>
     </Card>
+  );
+}
+
+function StaleRunsCleanupButton({
+  staleRuns,
+  busy,
+  runAction,
+}: {
+  staleRuns: RunRecord[];
+  busy: boolean;
+  runAction: (label: string, action: () => Promise<unknown>) => Promise<void>;
+}) {
+  const [open, setOpen] = useState(false);
+
+  const cleanup = () =>
+    runAction('Clean Stale Runs', async () => {
+      const result = await api.cleanupStaleRuns(staleRuns.map((run) => run.id));
+      toast.info(
+        result.deleted.length
+          ? `Removed ${result.deleted.length} stale run records.`
+          : 'No stale run records were removed.',
+      );
+      if (result.skipped.length) {
+        toast.info(`${result.skipped.length} runs were skipped because they are no longer stale.`);
+      }
+    });
+
+  return (
+    <AlertDialog open={open} onOpenChange={setOpen}>
+      <TooltipButton tooltip="Clean stale runs" variant="outline" size="sm" disabled={busy || !staleRuns.length} onClick={() => setOpen(true)}>
+        <XCircleIcon data-icon="inline-start" />
+        Clean stale
+      </TooltipButton>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Clean stale run records?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This removes unfinished Lab run metadata, queued command files, and stale response files. It does not delete or restore wiki markdown files.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <div className="flex flex-col gap-2 rounded-md border p-3">
+          {staleRuns.slice(0, 6).map((run) => (
+            <div key={run.id} className="min-w-0">
+              <div className="truncate font-mono text-xs">{run.sourcePath || run.id}</div>
+              <div className="truncate text-xs text-muted-foreground">{run.staleReason || 'Unfinished stale run.'}</div>
+            </div>
+          ))}
+          {staleRuns.length > 6 ? (
+            <div className="text-xs text-muted-foreground">+{staleRuns.length - 6} more stale runs</div>
+          ) : null}
+        </div>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => {
+              setOpen(false);
+              void cleanup();
+            }}
+          >
+            Clean stale
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
 
@@ -1678,6 +1780,12 @@ function formatDuration(value: number | null) {
 function qaShort(report?: QAReport | null) {
   if (!report) return 'No QA';
   return `E${report.counts.error} W${report.counts.warning} I${report.counts.info}`;
+}
+
+function openObsidianVaultPath(path: string | null | undefined) {
+  if (!path) return;
+  const normalized = path.replace(/\\/g, '/').replace(/^\/+/, '');
+  window.location.href = `obsidian://open?vault=Roadmap&file=${encodeURIComponent(normalized)}`;
 }
 
 function titleFor(view: ViewKey) {

@@ -9,8 +9,10 @@ Developer-facing roadmap for the next Wiki Lab iterations. This file is not gene
 - [x] 2026-06-19: `/api/runs` now returns readable run summary fields: source path, command type, mode, status, duration, diff counts, QA before/after snapshots when available.
 - [x] 2026-06-19: New queued ingests save `qa-before.json`; finalized ingests save both `qa.json` and `qa-after.json`.
 - [x] 2026-06-19: `Runs` UI now has cockpit summary cards, readable run table, selected run detail panel, diff file lists, and QA before/after display.
-- [ ] Next: add explicit row actions: `Open run`, `Open source`, `Open diff`.
-- [ ] Next: add stale/unfinished run detection and cleanup flow.
+- [x] 2026-06-19: Added explicit row actions: `Open run`, `Open source`, `Open diff`.
+- [x] 2026-06-19: Added stale/unfinished run detection, stale badges, stale run metric, and cleanup flow.
+- [ ] Next: add run table filtering by status/source/stale state.
+- [ ] Next: add per-run artifact links for `command.json`, `response.json`, `diff.json`, and QA snapshots.
 
 ### Goal
 

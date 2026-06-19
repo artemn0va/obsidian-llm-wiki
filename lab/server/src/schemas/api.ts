@@ -20,3 +20,7 @@ export const runReviewSchema = z.object({
   action: z.enum(['keep', 'mark-reviewed']),
   paths: z.array(z.string().min(1)).default([]),
 });
+
+export const staleRunCleanupSchema = z.object({
+  ids: z.array(z.string().min(8)).optional(),
+});

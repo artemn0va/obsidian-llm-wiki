@@ -9,6 +9,7 @@ import type {
   QAReport,
   RunReviewState,
   RunRecord,
+  StaleRunCleanupResult,
   WikiFileInfo,
 } from './types';
 
@@ -37,6 +38,11 @@ export const api = {
     request<RunReviewState>(`/api/runs/${encodeURIComponent(id)}/review`, {
       method: 'POST',
       body: JSON.stringify(body),
+    }),
+  cleanupStaleRuns: (ids?: string[]) =>
+    request<StaleRunCleanupResult>('/api/runs/stale/cleanup', {
+      method: 'POST',
+      body: JSON.stringify({ ids }),
     }),
   wikiFiles: () => request<WikiFileInfo[]>('/api/wiki/files'),
   wikiFile: (path: string) => request<{ path: string; content: string }>(`/api/wiki/file?path=${encodeURIComponent(path)}`),

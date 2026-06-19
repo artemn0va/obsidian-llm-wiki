@@ -84,6 +84,15 @@ interface RunResponse {
   completedAt?: string;
 }
 
+interface RuntimeStatus {
+  busy?: boolean;
+  running?: boolean;
+  updatedAt?: string;
+  activeCommand?: {
+    id?: string;
+  } | null;
+}
+
 interface SnapshotLike {
   capturedAt?: string;
   files?: Array<{ path: string }>;
@@ -114,6 +123,9 @@ export interface RunSummary {
   startedAt: string | null;
   completedAt: string | null;
   durationMs: number | null;
+  isStale: boolean;
+  staleReason: string | null;
+  canCleanup: boolean;
   counts: {
     created: number;
     changed: number;
@@ -121,10 +133,14 @@ export interface RunSummary {
   };
 }
 
+export const STALE_RUN_MS = 10 * 60 * 1000;
+const terminalRunStatuses = new Set(['success', 'error', 'cancelled']);
+
 export async function getRuns(): Promise<RunSummary[]> {
   const runsRoot = path.join(labStateRoot, 'runs');
   try {
     const entries = await fs.readdir(runsRoot, { withFileTypes: true });
+    const runtimeStatus = await readJson<RuntimeStatus>(path.join(labStateRoot, 'runtime-status.json'));
     const runs = await Promise.all(
       entries
         .filter((entry) => entry.isDirectory())
@@ -146,6 +162,15 @@ export async function getRuns(): Promise<RunSummary[]> {
           const fullDiff = diff ? { ...diff, preserved: preservedFiles(before, after, diff) } : null;
           const startedAt = response?.startedAt || before?.capturedAt || command?.createdAt || null;
           const completedAt = response?.completedAt || after?.capturedAt || null;
+          const status = response?.status || 'queued';
+          const staleInfo = getRunStaleInfo({
+            id: entry.name,
+            status,
+            modifiedAt: stats.mtime.toISOString(),
+            response,
+            command,
+            runtimeStatus,
+          });
 
           return {
             id: entry.name,
@@ -161,10 +186,13 @@ export async function getRuns(): Promise<RunSummary[]> {
             sourcePath: command?.path || null,
             commandType: command?.type || 'unknown',
             mode: command?.granularity || command?.type || 'unknown',
-            status: response?.status || 'queued',
+            status,
             startedAt,
             completedAt,
             durationMs: startedAt && completedAt ? Math.max(0, new Date(completedAt).getTime() - new Date(startedAt).getTime()) : null,
+            isStale: staleInfo.isStale,
+            staleReason: staleInfo.reason,
+            canCleanup: staleInfo.canCleanup,
             counts: {
               created: fullDiff?.created?.length || 0,
               changed: fullDiff?.changed?.length || 0,
@@ -178,6 +206,64 @@ export async function getRuns(): Promise<RunSummary[]> {
   } catch {
     return [];
   }
+}
+
+export function getRunStaleInfo(input: {
+  id: string;
+  status: string;
+  modifiedAt: string;
+  response?: RunResponse | null;
+  command?: RunCommand | null;
+  runtimeStatus?: RuntimeStatus | null;
+}): { isStale: boolean; reason: string | null; canCleanup: boolean } {
+  if (terminalRunStatuses.has(input.status)) {
+    return { isStale: false, reason: null, canCleanup: false };
+  }
+
+  const now = Date.now();
+  const lastTouchedAt = latestTimestamp([
+    input.modifiedAt,
+    input.response?.completedAt,
+    input.response?.startedAt,
+    progressUpdatedAt(input.response?.progress),
+    input.command?.createdAt,
+  ]);
+  const ageMs = lastTouchedAt ? now - lastTouchedAt : Number.POSITIVE_INFINITY;
+  const activeCommandId = input.runtimeStatus?.activeCommand?.id;
+  const runtimeUpdatedAt = input.runtimeStatus?.updatedAt ? new Date(input.runtimeStatus.updatedAt).getTime() : 0;
+  const runtimeFresh = runtimeUpdatedAt > 0 && now - runtimeUpdatedAt <= STALE_RUN_MS;
+
+  if (activeCommandId === input.id && runtimeFresh && input.runtimeStatus?.busy) {
+    return { isStale: false, reason: null, canCleanup: false };
+  }
+
+  if (ageMs <= STALE_RUN_MS) {
+    return { isStale: false, reason: null, canCleanup: false };
+  }
+
+  const minutes = Math.max(1, Math.round(ageMs / 60000));
+  const reason = activeCommandId === input.id
+    ? `Active bridge command has no fresh heartbeat for ${minutes} min.`
+    : `Unfinished run has no update for ${minutes} min.`;
+
+  return { isStale: true, reason, canCleanup: true };
+}
+
+function latestTimestamp(values: Array<string | undefined | null>): number | null {
+  const timestamps = values
+    .map((value) => value ? new Date(value).getTime() : NaN)
+    .filter((value) => Number.isFinite(value));
+
+  if (!timestamps.length) return null;
+  return Math.max(...timestamps);
+}
+
+function progressUpdatedAt(progress: unknown): string | null {
+  if (progress && typeof progress === 'object' && typeof (progress as { updatedAt?: unknown }).updatedAt === 'string') {
+    return (progress as { updatedAt: string }).updatedAt;
+  }
+
+  return null;
 }
 
 function preservedFiles(before: SnapshotLike | null, after: SnapshotLike | null, diff: RunDiff) {

@@ -92,6 +92,9 @@ export interface RunRecord {
   startedAt: string | null;
   completedAt: string | null;
   durationMs: number | null;
+  isStale: boolean;
+  staleReason: string | null;
+  canCleanup: boolean;
   counts: {
     created: number;
     changed: number;
@@ -120,6 +123,11 @@ export interface RunReviewState {
   updatedAt: string;
   keptPaths: string[];
   reviewedPaths: string[];
+}
+
+export interface StaleRunCleanupResult {
+  deleted: string[];
+  skipped: Array<{ id: string; reason: string }>;
 }
 
 export interface ProcessResult {

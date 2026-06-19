@@ -26,12 +26,12 @@ Developer-facing roadmap for the next Wiki Lab iterations. This file is not gene
 
 ### TODO checklist
 
-- [ ] Показывать `source path`, command type, ingest mode/granularity, status, start/end time и duration.
-- [ ] Показывать счетчики `created`, `changed`, `deleted`.
-- [ ] Показывать QA before/after: errors, warnings, info.
-- [ ] Добавить compact row view и expandable detail view.
-- [ ] Добавить быстрые actions: `Open run`, `Open source`, `Open diff`.
-- [ ] Явно показывать stale/unfinished runs.
+- [x] Показывать `source path`, command type, ingest mode/granularity, status, start/end time и duration.
+- [x] Показывать счетчики `created`, `changed`, `deleted`.
+- [x] Показывать QA before/after: errors, warnings, info.
+- [x] Добавить compact row view и expandable detail view.
+- [x] Добавить быстрые actions: `Open run`, `Open source`, `Open diff`.
+- [x] Явно показывать stale/unfinished runs.
 
 ### Acceptance criteria
 

@@ -321,7 +321,7 @@ export interface CleanLastIngestPreview {
   preservedChanged: string[];
 }
 
-export type IngestGranularity = 'fine' | 'standard' | 'coarse' | 'minimal';
+export type IngestGranularity = 'auto' | 'fine' | 'standard' | 'coarse' | 'minimal';
 
 export interface IngestCandidate {
   path: string;

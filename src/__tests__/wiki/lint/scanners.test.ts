@@ -194,6 +194,7 @@ describe('scanTagViolations', () => {
     customEntityTags: '',
     customConceptTags: '',
     autoSmartFix: false,
+    labBridgeEnabled: false,
     slugCase: 'lower' as const,
   };
 

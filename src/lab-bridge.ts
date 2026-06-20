@@ -41,7 +41,7 @@ interface BridgeCommand {
   targetCommandId?: string;
 }
 
-const LAB_GRANULARITIES: ExtractionGranularity[] = ['fine', 'standard', 'coarse', 'minimal'];
+const LAB_GRANULARITIES: ExtractionGranularity[] = ['auto', 'fine', 'standard', 'coarse', 'minimal'];
 
 interface BridgeHost {
   app: App;

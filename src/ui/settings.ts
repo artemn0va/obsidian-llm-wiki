@@ -624,14 +624,15 @@ export class LLMWikiSettingTab extends PluginSettingTab {
       .setName(this.getText('extractionGranularityName'))
       .setDesc(this.getText('extractionGranularityDesc'))
       .addDropdown(dropdown => {
+        dropdown.addOption('auto', this.getText('extractionGranularityAuto'));
         dropdown.addOption('fine', this.getText('extractionGranularityFine'));
         dropdown.addOption('standard', this.getText('extractionGranularityStandard'));
         dropdown.addOption('coarse', this.getText('extractionGranularityCoarse'));
         dropdown.addOption('minimal', this.getText('extractionGranularityMinimal'));
         dropdown.addOption('custom', this.getText('extractionGranularityCustom'));
-        dropdown.setValue(this.tempSettings.extractionGranularity || 'standard');
+        dropdown.setValue(this.tempSettings.extractionGranularity || 'auto');
         dropdown.onChange((value: string) => {
-          this.tempSettings.extractionGranularity = value as 'fine' | 'standard' | 'coarse' | 'minimal' | 'custom';
+          this.tempSettings.extractionGranularity = value as 'auto' | 'fine' | 'standard' | 'coarse' | 'minimal' | 'custom';
           updateCustomVisibility(value);
         });
       });

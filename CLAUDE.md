@@ -1,10 +1,13 @@
 # LLM Wiki Plugin Project Development Standards
 
-**Last Updated:** 2026-06-18
+**Last Updated:** 2026-06-20
 
 ---
 
 ## Current Phase: v1.21.0 — Schema Coherence Phase 1 (Planned)
+
+### Completed (fork) - 2026-06-20
+- LLM preflight Auto granularity: `auto` is the default, adds one small model call per ingest, and resolves to `coarse`, `standard`, `fine`, or `custom` for that source. Manual modes skip preflight and remain available in Obsidian settings and Lab.
 
 ### Completed (v1.20.1) — Hotfix 2026-06-18
 - ✅ **AnthropicClient prefill rejection fix (#141, #147).** Newer Claude models (Opus 4.8+, Sonnet 4.6+, Fable 5, Mythos 5) reject assistant prefill messages. Auto-fallback to no-prefill retry with caching. 4 regression tests.
@@ -95,6 +98,7 @@ src/
 │   ├── wiki-engine.ts              # Orchestrator
 │   ├── query-engine.ts             # Conversational query (streaming + thinking UI)
 │   ├── source-analyzer.ts          # Iterative batch extraction
+│   ├── granularity-preflight.ts     # Auto mode LLM preflight
 │   ├── page-factory.ts             # Entity/concept CRUD + merge
 │   ├── conversation-ingest.ts      # Chat → wiki knowledge
 │   ├── contradictions.ts           # Contradiction detection
@@ -488,3 +492,24 @@ For any new function or behavior change: write a failing test first, then write 
 ---
 
 **Maintainer:** Greener-Dalii | **Repository:** green-dalii/obsidian-llm-wiki
+
+## AIB
+
+This project uses AIB for TS/JS code work and compact repo reads.
+
+Before reading or changing TS/JS files, run:
+
+aib help
+
+On the first AIB pass in this repo, read bootstrap from the help entrypoint.
+
+After context compaction, run:
+
+aib help help-protocol quick-map; aib config aliases
+
+Follow help-protocol instead of guessing when to reread bootstrap or focused help.
+Use AIB guidance while working with TS/JS code.
+Prefer the suitable AIB command when it is the more token-efficient way to get the answer; refresh focused help instead of guessing command shape.
+This AIB install may not expose `aib rg`; use AIB `inspect`/`qr` for TS/JS-aware work and plain `rg` for simple text lookup.
+Use aib qr for quick reads, with aliases and BATCH when useful; it is not a replacement for aib inspect.
+Use aib git -- <args> instead of git <args>

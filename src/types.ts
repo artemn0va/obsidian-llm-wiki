@@ -92,7 +92,18 @@ export interface ProviderConfig {
 
 // Plugin settings
 
-export type ExtractionGranularity = 'fine' | 'standard' | 'coarse' | 'minimal' | 'custom';
+export type ResolvedExtractionGranularity = 'fine' | 'standard' | 'coarse' | 'minimal' | 'custom';
+export type ExtractionGranularity = 'auto' | ResolvedExtractionGranularity;
+
+export interface GranularityDecision {
+  requested: ExtractionGranularity;
+  resolved: ResolvedExtractionGranularity;
+  source_kind: string;
+  reason: string;
+  customEntityLimit?: number;
+  customConceptLimit?: number;
+  warning?: string;
+}
 
 export interface LLMWikiSettings {
   provider: string;
@@ -120,6 +131,7 @@ export interface LLMWikiSettings {
   extractionGranularity: ExtractionGranularity;
   customEntityLimit?: number;
   customConceptLimit?: number;
+  granularityAutoMigrated?: boolean;
 
   // Auto-maintenance
   autoWatchSources: boolean;
@@ -246,6 +258,7 @@ export interface IngestReport {
   skippedFiles?: number;
   totalFilesInFolder?: number;
   cancelled?: boolean;
+  granularityDecision?: GranularityDecision;
 }
 
 // LLM Client interface
@@ -502,7 +515,7 @@ export const DEFAULT_SETTINGS: LLMWikiSettings = {
   customConceptTags: '',
 
   // Extraction
-  extractionGranularity: 'standard',
+  extractionGranularity: 'auto',
 
   // Auto-maintenance
   autoWatchSources: false,

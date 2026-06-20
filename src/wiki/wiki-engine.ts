@@ -10,6 +10,7 @@ import {
   ContradictionInfo,
   IngestReport,
   EngineContext,
+  GranularityDecision,
 } from '../types';
 import { PROMPTS } from '../prompts';
 import { TEXTS } from '../texts';
@@ -39,6 +40,11 @@ import { SourceAnalyzer } from './source-analyzer';
 import { TOKENS_PAGE_GENERATION, NOTICE_ABORT, NOTICE_RATE_LIMIT, NOTICE_NORMAL, PAGES_CACHE_TTL_MS, WIKI_SUBFOLDERS } from '../constants';
 import { PageFactory } from './page-factory';
 import { ConversationIngestor, ConversationOrchestration, formatConversation, ConversationHistory } from './conversation-ingest';
+import {
+  applyGranularityDecision,
+  formatGranularityDecision,
+  resolveGranularityPreflight,
+} from './granularity-preflight';
 
 export class WikiEngine {
   private app: App;
@@ -245,6 +251,84 @@ export class WikiEngine {
     const after = analysis.entities.length + analysis.concepts.length;
     if (after !== before) {
       console.debug(`[Analysis prune] mention-only candidates removed: ${before} -> ${after} items`);
+    }
+  }
+
+  private extractToolQuoteSentences(sourceContent: string, term: string): string[] {
+    const normalized = sourceContent.replace(/\r\n/g, '\n');
+    const lower = normalized.toLowerCase();
+    const idx = lower.indexOf(term.toLowerCase());
+    if (idx === -1) return [];
+
+    const paragraphStart = Math.max(0, normalized.lastIndexOf('\n\n', idx));
+    const paragraphEndIdx = normalized.indexOf('\n\n', idx);
+    const paragraphEnd = paragraphEndIdx === -1 ? normalized.length : paragraphEndIdx;
+    const paragraph = normalized
+      .slice(paragraphStart, paragraphEnd)
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (!paragraph) return [];
+
+    const sentences = (paragraph.match(/[^.!?]+[.!?]+(?:\s+|$)|[^.!?]+$/g) || [paragraph])
+      .map(sentence => sentence.trim())
+      .filter(Boolean);
+    const sentenceIdx = sentences.findIndex(sentence => sentence.toLowerCase().includes(term.toLowerCase()));
+    if (sentenceIdx === -1) return [paragraph.slice(0, 700)];
+
+    const start = Math.max(0, sentenceIdx - 1);
+    return sentences.slice(start, sentenceIdx + 2).slice(0, 3);
+  }
+
+  private recoverUsefulToolAnchors(analysis: SourceAnalysis, sourceContent: string): void {
+    const hasEntity = (name: string) =>
+      analysis.entities.some(entity => this.normalizeExtractedName(entity.name) === this.normalizeExtractedName(name));
+    const lower = sourceContent.toLowerCase();
+
+    const toolAnchors = [
+      {
+        name: 'qmd',
+        aliases: ['qmd'],
+        context: /\b(search|markdown|bm25|vector|re-ranking|reranking|cli|mcp|on-device|local search)\b/i,
+        summary: 'qmd is presented in the source as local search infrastructure for markdown wiki pages, with hybrid BM25/vector search, LLM re-ranking, a CLI, and an MCP server. In this Wiki context, it is a supporting tool for making a larger generated wiki searchable by agents and humans.',
+        page_worthiness_reason: 'The source positions qmd as reusable search infrastructure for larger markdown wikis.',
+      },
+      {
+        name: 'Marp',
+        aliases: ['Marp'],
+        context: /\b(slide|slides|deck|presentation|presentations|markdown-based)\b/i,
+        summary: 'Marp is presented in the source as a markdown-based slide deck format. In this Wiki context, it is a supporting output tool for turning wiki content or query results into presentations.',
+        page_worthiness_reason: 'The source positions Marp as a reusable output option for wiki-generated presentations.',
+      },
+      {
+        name: 'Dataview',
+        aliases: ['Dataview', 'Obsidian Dataview plugin'],
+        context: /\b(frontmatter|query|queries|tables|lists|dynamic)\b/i,
+        summary: 'Dataview is presented in the source as an Obsidian plugin for querying page frontmatter and generating dynamic tables or lists. In this Wiki context, it is a supporting tool for navigation, maintenance, and structured views over generated wiki metadata.',
+        page_worthiness_reason: 'The source positions Dataview as reusable query infrastructure for generated wiki metadata.',
+      },
+    ];
+
+    for (const tool of toolAnchors) {
+      if (!lower.includes(tool.name.toLowerCase())) continue;
+      if (hasEntity(tool.name)) continue;
+
+      const idx = lower.indexOf(tool.name.toLowerCase());
+      const contextWindow = sourceContent.slice(Math.max(0, idx - 500), Math.min(sourceContent.length, idx + 900));
+      if (!tool.context.test(contextWindow)) continue;
+
+      analysis.entities.push({
+        name: tool.name,
+        type: 'product',
+        aliases: tool.aliases,
+        summary: tool.summary,
+        mentions_in_source: this.extractToolQuoteSentences(sourceContent, tool.name),
+        related_entities: [],
+        related_concepts: [],
+        role: 'tool',
+        centrality: 'supporting',
+        page_worthiness_reason: tool.page_worthiness_reason,
+      });
     }
   }
 
@@ -494,6 +578,17 @@ export class WikiEngine {
     this.ctx.settings = settings;
   }
 
+  private useScopedSettings(settings: LLMWikiSettings): () => void {
+    const previousSettings = this.settings;
+    const previousCtxSettings = this.ctx.settings;
+    this.settings = settings;
+    this.ctx.settings = settings;
+    return () => {
+      this.settings = previousSettings;
+      this.ctx.settings = previousCtxSettings;
+    };
+  }
+
   async ingestSource(file: TFile) {
     console.debug('=== Ingestion started ===');
     console.debug('Source file:', file.path);
@@ -546,14 +641,50 @@ export class WikiEngine {
       console.debug(`[Long Source] ${file.basename}: ${lineCount} lines, ${sizeKB}KB — long ingestion expected`);
     }
 
-    this.onProgress?.(`Analyzing: ${file.basename}`);
-
     const failedItems: Array<{ type: 'entity' | 'concept'; name: string; reason: string }> = [];
     const collisions: Array<{ name: string; sourceType: 'entity' | 'concept'; targetType: 'entity' | 'concept'; targetPath: string }> = [];
     let analysis: SourceAnalysis | null = null;
+    let granularityDecision: GranularityDecision | undefined;
+    let restoreScopedSettings: (() => void) | null = null;
 
     try {
       await this.ensureWikiStructure();
+
+      if (this.settings.extractionGranularity === 'auto') {
+        this.notifyProgress(`Auto preflight: ${file.basename}`);
+        const client = this.getLLMClient();
+        if (client) {
+          granularityDecision = await resolveGranularityPreflight({
+            settings: this.settings,
+            client,
+            sourcePath: file.path,
+            basename: file.basename,
+            content: fileContent,
+          }) ?? undefined;
+        } else {
+          granularityDecision = {
+            requested: 'auto',
+            resolved: 'standard',
+            source_kind: 'unknown',
+            reason: 'LLM client was not initialized; using standard granularity.',
+            warning: 'Auto preflight skipped because the LLM client was not initialized.',
+          };
+        }
+
+        if (granularityDecision) {
+          const decisionSummary = formatGranularityDecision(granularityDecision);
+          console.debug(decisionSummary);
+          if (granularityDecision.warning) {
+            console.warn('[Auto preflight]', granularityDecision.warning);
+          }
+          this.notifyProgress(decisionSummary);
+          restoreScopedSettings = this.useScopedSettings(
+            applyGranularityDecision(this.settings, granularityDecision)
+          );
+        }
+      }
+
+      this.notifyProgress(`Analyzing: ${file.basename}`);
 
       // Stage 1: Source Analysis
       const analysisStart = Date.now();
@@ -562,6 +693,7 @@ export class WikiEngine {
         throw new Error(`Source analysis failed for "${file.basename}". Check the developer console (Ctrl+Shift+I) for network or API errors. If you see SSL/network errors, verify your provider URL and network connection.`);
       }
       this.removeMentionOnlyCandidates(analysis);
+      this.recoverUsefulToolAnchors(analysis, fileContent);
       this.pruneAnalysisForGranularity(analysis, fileContent, file.path);
       this.pruneIdeaAnalysisForGranularity(analysis, fileContent);
       const analysisTime = Date.now() - analysisStart;
@@ -879,7 +1011,8 @@ export class WikiEngine {
         collisions,
         contradictionsFound: analysis.contradictions.length,
         success: true,
-        elapsedSeconds: Math.round(totalTime / 1000)
+        elapsedSeconds: Math.round(totalTime / 1000),
+        granularityDecision
       });
 
     } catch (error) {
@@ -901,7 +1034,8 @@ export class WikiEngine {
           success: false,
           cancelled: true,
           errorMessage: 'Cancelled by user',
-          elapsedSeconds: Math.round((Date.now() - totalStartTime) / 1000)
+          elapsedSeconds: Math.round((Date.now() - totalStartTime) / 1000),
+          granularityDecision
         });
         return;
       }
@@ -921,10 +1055,12 @@ export class WikiEngine {
         contradictionsFound: analysis?.contradictions?.length || 0,
         success: false,
         errorMessage: errorMsg,
-        elapsedSeconds: Math.round((Date.now() - totalStartTime) / 1000)
+        elapsedSeconds: Math.round((Date.now() - totalStartTime) / 1000),
+        granularityDecision
       });
       throw error;
     } finally {
+      restoreScopedSettings?.();
       this.abortController = null;
       this.onIngestionEnd?.();
     }

@@ -2582,7 +2582,7 @@ function IngestCommandButton({
   const [open, setOpen] = useState(false);
   const [type, setType] = useState('ingest-file');
   const [targetPath, setTargetPath] = useState('wiki-start/Personal/2026-06-18.md');
-  const [granularity, setGranularity] = useState<IngestGranularity>('coarse');
+  const [granularity, setGranularity] = useState<IngestGranularity>('auto');
   const [candidates, setCandidates] = useState<IngestCandidates | null>(null);
   const [loadingCandidates, setLoadingCandidates] = useState(false);
 
@@ -2661,6 +2661,7 @@ function IngestCommandButton({
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
+                  <SelectItem value="auto">Auto</SelectItem>
                   <SelectItem value="coarse">Coarse</SelectItem>
                   <SelectItem value="standard">Standard</SelectItem>
                   <SelectItem value="fine">Fine</SelectItem>

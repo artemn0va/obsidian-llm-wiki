@@ -264,6 +264,7 @@ export const ZH_TEXTS = {
     extractionSectionTitle: '知识提取',
     extractionGranularityName: '提取颗粒度',
     extractionGranularityDesc: '控制每篇源文件提取的实体/概念数量。越高 = 生成页面越多，API消耗越大。\n精细：单篇深度。标准：日常笔记。粗放：快速概览。极简：批量100+文件。自定义：自行设定（最高300个）。\n提示：批量处理大量文件时，建议使用极简或粗放以节省时间和成本。',
+    extractionGranularityAuto: 'Auto - LLM preflight (recommended)',
     extractionGranularityFine: '精细 — 单篇深度分析（≤100个）',
     extractionGranularityStandard: '标准 — 日常笔记（≤50个）',
     extractionGranularityCoarse: '粗放 — 快速概览（≤10个）',

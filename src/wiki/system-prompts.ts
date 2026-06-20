@@ -1,7 +1,7 @@
 // System prompt builder — extracted from WikiEngine for modularity.
 // Pure functions with no Obsidian vault dependencies.
 
-import { LLMWikiSettings, WIKI_LANGUAGES, ExtractionGranularity } from '../types';
+import { LLMWikiSettings, WIKI_LANGUAGES, ResolvedExtractionGranularity } from '../types';
 import { getActiveEntityTags, getActiveConceptTags } from '../core/tag-vocab';
 
 export function buildWikiLanguageDirective(settings: LLMWikiSettings): string {
@@ -116,7 +116,7 @@ export function getSectionLabels(settings: LLMWikiSettings): Record<string, stri
 
 // Granularity instruction text for extraction prompts.
 // custom is generated dynamically (injects concrete entity/concept limit numbers from settings).
-const GRANULARITY_INSTRUCTIONS: Record<ExtractionGranularity, string> = {
+const GRANULARITY_INSTRUCTIONS: Record<ResolvedExtractionGranularity, string> = {
   fine: 'Extract all wiki-worthy durable entities and concepts from the source. Fine means richer grounded summaries and pattern capture, not extracting ordinary nouns, one-off details, incidental tooling, or tangential mentions.',
   standard: 'Extract important and moderately important entities and concepts from the source. Ignore minor items mentioned only in passing.',
   coarse: 'Extract only the most essential durable item(s). For short personal or daily notes, usually return zero entities and at most one broad reusable concept; keep atmosphere, timestamps, devices, playlists, and one-off sensory details in the source summary. For abstract idea, methodology, architecture, or pattern notes, extract the semantic backbone and ignore tools mentioned only in tips, plugins, examples, hotkeys, or optional tooling.',
@@ -127,7 +127,7 @@ const GRANULARITY_INSTRUCTIONS: Record<ExtractionGranularity, string> = {
 // Numeric limits for entity/concept generation in fix (non-ingestion) contexts.
 // Keyed by granularity: max per type (entities, concepts).
 // custom is handled dynamically in getGranularityFixLimits.
-const GRANULARITY_FIX_LIMITS: Record<ExtractionGranularity, { maxEntities: number; maxConcepts: number }> = {
+const GRANULARITY_FIX_LIMITS: Record<ResolvedExtractionGranularity, { maxEntities: number; maxConcepts: number }> = {
   fine:     { maxEntities: 6, maxConcepts: 6 },
   standard: { maxEntities: 3, maxConcepts: 3 },
   coarse:   { maxEntities: 2, maxConcepts: 2 },
@@ -137,6 +137,9 @@ const GRANULARITY_FIX_LIMITS: Record<ExtractionGranularity, { maxEntities: numbe
 
 export function getGranularityInstruction(settings: LLMWikiSettings): string {
   const granularity = settings.extractionGranularity || 'standard';
+  if (granularity === 'auto') {
+    return GRANULARITY_INSTRUCTIONS.standard;
+  }
   if (granularity === 'custom') {
     const entityLimit = settings.customEntityLimit ?? 5;
     const conceptLimit = settings.customConceptLimit ?? 5;
@@ -157,6 +160,9 @@ export function appendGranularityToPrompt(prompt: string, settings: LLMWikiSetti
 
 export function getGranularityFixLimits(settings: LLMWikiSettings): { maxEntities: number; maxConcepts: number } {
   const granularity = settings.extractionGranularity || 'standard';
+  if (granularity === 'auto') {
+    return GRANULARITY_FIX_LIMITS.standard;
+  }
   if (granularity === 'custom') {
     return {
       maxEntities: settings.customEntityLimit ?? 5,

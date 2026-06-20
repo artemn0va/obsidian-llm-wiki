@@ -257,13 +257,24 @@ export class IngestReportModal extends Modal {
   }
 
   onOpen() {
-    const { sourceFile, createdPages, updatedPages, entitiesCreated, conceptsCreated, failedItems, contradictionsFound, success, errorMessage, collisions, elapsedSeconds, skippedFiles, totalFilesInFolder } = this.report;
+    const { sourceFile, createdPages, updatedPages, entitiesCreated, conceptsCreated, failedItems, contradictionsFound, success, errorMessage, collisions, elapsedSeconds, skippedFiles, totalFilesInFolder, granularityDecision } = this.report;
 
     const statusEmoji = success ? '✅' : '⚠️';
     this.contentEl.createEl('h2', { text: `${statusEmoji} ${this.t('ingestReportTitle')}` });
 
     // Source file
     this.contentEl.createEl('p', { text: `${this.t('ingestReportSourceFile')}：${sourceFile}` });
+
+    if (granularityDecision) {
+      const custom = granularityDecision.resolved === 'custom'
+        ? ` (${granularityDecision.customEntityLimit}/${granularityDecision.customConceptLimit})`
+        : '';
+      const warning = granularityDecision.warning ? ` Warning: ${granularityDecision.warning}` : '';
+      this.contentEl.createEl('p', {
+        text: `Auto preflight: ${granularityDecision.resolved}${custom} - ${granularityDecision.source_kind}: ${granularityDecision.reason}${warning}`,
+        attr: { style: `color: ${granularityDecision.warning ? 'var(--text-warning)' : 'var(--text-muted)'}; font-size: 13px;` }
+      });
+    }
 
     // Skipped files (batch ingest only)
     if (skippedFiles !== undefined && skippedFiles > 0) {

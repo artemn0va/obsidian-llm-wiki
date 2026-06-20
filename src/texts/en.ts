@@ -271,7 +271,8 @@ export const EN_TEXTS = {
     // Extraction Settings
     extractionSectionTitle: 'Extraction',
     extractionGranularityName: 'Extraction Granularity',
-    extractionGranularityDesc: 'Controls entities/concepts extracted per source file. Higher = more pages, more API tokens.\nFine: deep analysis. Standard: daily notes. Coarse: quick overview. Minimal: batch 100+ files. Custom: set your own (up to 500).\nTip: Use Minimal/Coarse for folders with many files to save time and cost.',
+    extractionGranularityDesc: 'Controls entities/concepts extracted per source file. Auto uses one small LLM preflight call to choose an effective mode. Higher manual modes = more pages, more API tokens.\nFine: deep analysis. Standard: daily notes. Coarse: quick overview. Minimal: batch 100+ files. Custom: set your own (up to 500).',
+    extractionGranularityAuto: 'Auto - LLM preflight (recommended)',
     extractionGranularityFine: 'Fine — deep analysis (≤100 items)',
     extractionGranularityStandard: 'Standard — daily notes (≤50 items)',
     extractionGranularityCoarse: 'Coarse — quick overview (≤10 items)',

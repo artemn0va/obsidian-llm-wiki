@@ -173,13 +173,14 @@ Settings → **LLM Configuration**:
 
 **5️⃣ Review current settings:**
 - **🌐 Wiki Output Language**: Independent from UI language — your Wiki can be in Chinese while the plugin UI stays in English, or vice versa.
-- **📊 Extraction Granularity**: Five options control how deeply the LLM extracts entities from sources:
+- **📊 Extraction Granularity**: Auto is the default. It uses one small LLM preflight call per ingest to choose an effective manual mode; you can still override it:
+  - **Auto** - LLM preflight chooses Coarse, Standard, Fine, or Custom for this source.
   - **Fine** (~100 items) — Deep analysis, edge-case mentions included. High token cost, best for key sources.
   - **Standard** (~50 items) — Balanced extraction. Good default for daily notes.
   - **Coarse** (~10 items) — Quick overview, core entities only. Low cost, fast ingestion.
   - **Minimal** (~5 items) — Essential items only. Ideal for batch processing 100+ files or testing new sources.
   - **Custom** (1–300 items) — User-defined entity/concept limits for specialized workflows.
-  > 💡 **Recommendation**: Use Minimal or Coarse for large folders to save time and API costs. Use Fine selectively on key documents that warrant deep analysis.
+  > 💡 **Recommendation**: Use Auto for normal one-click ingest. Use manual modes when you need predictable cost or want to debug extraction behavior.
 - **🔄 Auto-Maintenance**: Startup Quick Fixes defaults ON (one-time startup health check); File Watcher and Periodic Lint default OFF — enable only if you want automatic background processing.
 
 > **🛡️ Safety**: Parallel generation uses `Promise.allSettled` — if one page fails, others continue. Failed pages are retried individually with exponential backoff. Smart Batch Skip automatically detects already-ingested files to save time and API costs.
@@ -380,7 +381,8 @@ The plugin auto-detects rate-limiting and suggests: lower concurrency to 1–2, 
 **How do I control API costs?**
 - Auto-Maintenance is OFF by default (enable only if you need background processing)
 - Smart Batch Skip automatically skips already-ingested files
-- "Standard" or "Coarse" granularity = fewer LLM calls
+- Auto granularity adds one small preflight call, then chooses a manual extraction mode for the source
+- "Standard" or "Coarse" granularity = fewer extraction pages and tokens
 - Batch Delay > 500ms spaces calls without increasing token usage
 - Lint report shows counts before you run fixes — decide what's worth it
 

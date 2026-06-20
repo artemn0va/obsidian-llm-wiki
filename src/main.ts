@@ -270,10 +270,11 @@ export default class LLMWikiPlugin extends Plugin {
   async loadSettings() {
     const savedData = await this.loadData() as Partial<LLMWikiSettings> | null;
     this.settings = Object.assign({}, DEFAULT_SETTINGS, savedData || {});
+    let shouldPersistSettings = false;
 
     if (savedData && !savedData.wikiLanguage) {
       this.settings.wikiLanguage = this.settings.language;
-      await this.saveData(this.settings);
+      shouldPersistSettings = true;
     }
 
     if (!Array.isArray(this.settings.watchedFolders)) {
@@ -303,6 +304,16 @@ export default class LLMWikiPlugin extends Plugin {
       this.settings.disableThinking = false;
       this.settings.advancedSettingsMode = 'default';
       console.debug('loadSettings: v1.20.0 migration — reset disableThinking to false, advancedSettingsMode to default');
+      shouldPersistSettings = true;
+    }
+
+    if (savedData && savedData.granularityAutoMigrated !== true) {
+      if (!savedData.extractionGranularity || savedData.extractionGranularity === 'standard') {
+        this.settings.extractionGranularity = 'auto';
+      }
+      this.settings.granularityAutoMigrated = true;
+      shouldPersistSettings = true;
+      console.debug('loadSettings: migrated default extraction granularity to auto');
     }
 
     // Migrate existing users: if they already have a working config, trust it
@@ -312,6 +323,11 @@ export default class LLMWikiPlugin extends Plugin {
       if (hasConfig) {
         console.debug('loadSettings: existing user with config detected, llmReady = true');
       }
+      shouldPersistSettings = true;
+    }
+
+    if (shouldPersistSettings) {
+      await this.saveData(this.settings);
     }
   }
 
